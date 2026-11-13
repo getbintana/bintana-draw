@@ -467,6 +467,15 @@ msgstr "Seleccioná algo primero."
 msgid "Added {0} to the library."
 msgstr "Se agregó {0} a la biblioteca."
 
+msgid "Filter shapes…"
+msgstr "Filtrar formas…"
+
+msgid "My shapes"
+msgstr "Mis formas"
+
+msgid "Unfiled"
+msgstr "Sin grupo"
+
 msgid "No item selected"
 msgstr "No hay elemento seleccionado"
 

@@ -41,14 +41,16 @@ The window is started with a blank canvas and the shape palette on the left.
   travels alone.
 - **Shape library** — the **Library** tab saves the current selection as a
   reusable stamp, shows it in a preview, inserts it at the centre of the view,
-  and deletes it. The library lives in the application's config directory and
-  can be exported as `.btlib`. **Import** accepts a `.btlib`, a `.draw`, an
-  uncompressed `.drawio`/XML diagram, a draw.io stencil set (`<shapes>`), or a
-  draw.io `.mxlibrary` with uncompressed `xml` entries. Stencil geometry is
-  kept as vector paths, so the imported shapes resize without a picture.
-  **Get stencils…** downloads a curated set into the library, grouped by
-  category and filtered by name or shape word, with its license shown before
-  the request.
+  and deletes it. The list groups stamps by where they came from — **My
+  shapes**, an imported file or a downloaded set — and filters by name. The
+  library lives in the application's config directory and can be exported as
+  `.btlib`. **Import** accepts a `.btlib`, a `.draw`, an uncompressed
+  `.drawio`/XML diagram, a draw.io stencil set (`<shapes>`), or a draw.io
+  `.mxlibrary` with uncompressed `xml` entries. Stencil geometry is kept as
+  vector paths, so the imported shapes resize without a picture. **Get
+  stencils…** downloads a curated set into the library, grouped by category
+  and filtered by name or shape word, with its license shown before the
+  request.
 
 - **Connectors** — the connector tool, dragged from one shape to another,
   produces an orthogonal route that follows both shapes when they move or

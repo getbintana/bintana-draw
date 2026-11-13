@@ -2338,25 +2338,63 @@ export class MainForm extends Form {
         }
     }
 
+    librarySelection() {
+        if (!this.TrvLibrary) return -1;
+        const key = this.TrvLibrary.Key;
+        if (!key || key.indexOf("item:") !== 0) return -1;
+        const index = parseInt(key.slice(5), 10);
+        return index >= 0 && index < this.library.items.length ? index : -1;
+    }
+
+    libraryGroup(item) {
+        return item.group || Locale.Text("Unfiled");
+    }
+
     refreshLibrary(select) {
-        if (!this.LstLibrary) return;
+        if (!this.TrvLibrary) return;
+        const previous = typeof select === "number" ? select
+                                                     : this.librarySelection();
+        const query = this.TxtLibraryFilter
+            ? (this.TxtLibraryFilter.Text || "").trim().toLowerCase() : "";
+        const groups = new Map();
+        let first = -1;
+
         this.syncingLibrary = true;
-        this.LstLibrary.Clear();
-        for (let i = 0; i < this.library.items.length; i++)
-            this.LstLibrary.Add(this.library.items[i].name, String(i));
-        if (typeof select === "number" && select >= 0 &&
-            select < this.library.items.length)
-            this.LstLibrary.Index = select;
+        this.TrvLibrary.Clear();
+        for (let i = 0; i < this.library.items.length; i++) {
+            const item = this.library.items[i];
+            const group = this.libraryGroup(item);
+            if (query &&
+                (item.name + " " + group).toLowerCase().indexOf(query) < 0)
+                continue;
+            const groupKey = "group:" + group;
+            if (!groups.has(group)) {
+                this.TrvLibrary.Add(groupKey, group);
+                groups.set(group, groupKey);
+            }
+            this.TrvLibrary.Add("item:" + i, item.name, groupKey);
+            if (first < 0) first = i;
+        }
+        this.TrvLibrary.ExpandAll();
+
+        const target = previous >= 0 &&
+                       this.TrvLibrary.Exists("item:" + previous)
+            ? previous : first;
+        if (target >= 0) this.TrvLibrary.Key = "item:" + target;
         this.syncingLibrary = false;
         this.refreshLibraryButtons();
         this.refreshLibraryPreview();
     }
 
+    TxtLibraryFilter_Change() {
+        if (!this.syncingLibrary) this.refreshLibrary();
+    }
+
     /* A preview is a page nobody saved: the stamp inserted at the centre of a
      * scratch diagram puts every piece back where the item keeps it. */
     libraryPreviewDiagram() {
-        if (!this.library || !this.LstLibrary) return null;
-        const index = this.LstLibrary.Index;
+        if (!this.library || !this.TrvLibrary) return null;
+        const index = this.librarySelection();
         if (index < 0 || index >= this.library.items.length) return null;
         const item = this.library.items[index];
         const preview = new Diagram();
@@ -2388,21 +2426,20 @@ export class MainForm extends Form {
 
     refreshLibraryButtons() {
         if (!this.BtnLibraryAdd) return;
-        const index = this.LstLibrary.Index;
-        const hasItem = index >= 0 && index < this.library.items.length;
+        const hasItem = this.librarySelection() >= 0;
         this.BtnLibraryAdd.Enabled = this.sel.length > 0;
         this.BtnLibraryInsert.Enabled = hasItem;
         this.BtnLibraryDelete.Enabled = hasItem;
         this.BtnLibraryExport.Enabled = this.library.items.length > 0;
     }
 
-    LstLibrary_Select() {
+    TrvLibrary_Select() {
         if (this.syncingLibrary) return;
         this.refreshLibraryButtons();
         this.refreshLibraryPreview();
     }
 
-    LstLibrary_Activate() { this.insertLibraryItem(); }
+    TrvLibrary_Activate() { this.insertLibraryItem(); }
 
     BtnLibraryAdd_Click() {
         const item = this.library.addSelection(this.selectionData());
@@ -2411,12 +2448,13 @@ export class MainForm extends Form {
             return;
         }
         if (!this.saveLibrary()) return;
+        if (this.TxtLibraryFilter) this.TxtLibraryFilter.Text = "";
         this.refreshLibrary(this.library.items.length - 1);
         this.setStatus(Locale.Text("Added {0} to the library.", item.name));
     }
 
     insertLibraryItem() {
-        const index = this.LstLibrary.Index;
+        const index = this.librarySelection();
         if (index < 0 || index >= this.library.items.length) return;
         if (!this.canEditActiveLayer()) return;
 
@@ -2437,7 +2475,7 @@ export class MainForm extends Form {
     BtnLibraryInsert_Click() { this.insertLibraryItem(); }
 
     BtnLibraryDelete_Click() {
-        const index = this.LstLibrary.Index;
+        const index = this.librarySelection();
         if (index < 0 || index >= this.library.items.length) return;
         this.library.items.splice(index, 1);
         this.saveLibrary();
@@ -2446,8 +2484,9 @@ export class MainForm extends Form {
 
     BtnLibraryDownload_Click() {
         StencilsForm.show((items, entry) => {
-            this.library.addItems(items);
+            this.library.addItems(items, entry.name);
             if (!this.saveLibrary()) return;
+            if (this.TxtLibraryFilter) this.TxtLibraryFilter.Text = "";
             this.refreshLibrary(this.library.items.length - items.length);
             this.setStatus(Locale.Text("Downloaded {0} shapes from {1}.",
                                        items.length, entry.name));
@@ -2480,8 +2519,9 @@ export class MainForm extends Form {
             this.setStatus(Locale.Text("The library is empty."));
             return;
         }
-        this.library.addItems(items);
+        this.library.addItems(items, File.Name(path));
         if (!this.saveLibrary()) return;
+        if (this.TxtLibraryFilter) this.TxtLibraryFilter.Text = "";
         this.refreshLibrary(this.library.items.length - items.length);
         this.setStatus(Locale.Text("Imported {0} items.", items.length));
     }

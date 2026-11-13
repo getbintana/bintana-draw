@@ -1190,7 +1190,7 @@ class TestForm extends Form {
         fm.BtnLibraryAdd_Click();
         this.eq("image: a library stamp keeps it",
                 fm.library.items[0].shapes[0].image, data);
-        fm.LstLibrary.Index = 0;
+        fm.TrvLibrary.Key = "item:0";
         fm.BtnLibraryInsert_Click();
         this.eq("image: inserting the stamp brings it back",
                 fm.doc.shapes[1].image, data);
@@ -1382,13 +1382,29 @@ class TestForm extends Form {
         fm.select([a.id, b.id]);
         fm.BtnLibraryAdd_Click();
         this.eq("library: the selection was added", fm.library.items.length, 1);
-        this.eq("library: the list shows it", fm.LstLibrary.Count, 1);
+        this.check("library: the list shows it",
+                   fm.TrvLibrary.Exists("item:0"));
         this.eq("library: the item took the first label",
                 fm.library.items[0].name, "Start");
         this.eq("library: it has the connector", fm.library.items[0].edges.length, 1);
+        this.eq("library: it is filed under My shapes",
+                fm.library.items[0].group, Locale.Text("My shapes"));
+        this.check("library: the group is a parent",
+                   fm.TrvLibrary.Exists("group:" + Locale.Text("My shapes")));
+
+        fm.TxtLibraryFilter.Text = "Start";
+        fm.TxtLibraryFilter_Change();
+        this.check("library: the filter finds by name",
+                   fm.TrvLibrary.Exists("item:0"));
+        fm.TxtLibraryFilter.Text = "zzzz";
+        fm.TxtLibraryFilter_Change();
+        this.check("library: the filter hides the rest",
+                   !fm.TrvLibrary.Exists("item:0"));
+        fm.TxtLibraryFilter.Text = "";
+        fm.TxtLibraryFilter_Change();
 
         fm.select([]);
-        fm.LstLibrary.Index = 0;
+        fm.TrvLibrary.Key = "item:0";
         fm.refreshLibraryButtons();
         this.eq("library: the preview builds the stamp",
                 fm.libraryPreviewDiagram().shapes.length, 2);
@@ -1409,6 +1425,8 @@ class TestForm extends Form {
         const imported = importLibrary(file);
         this.eq("library: a .btlib round-trips", imported.length, 1);
         this.eq("library: its shapes came", imported[0].shapes.length, 2);
+        this.eq("library: and its group",
+                imported[0].group, Locale.Text("My shapes"));
         File.Delete(file);
 
         const mx = File.Join(Application.Directory, "test.mxlibrary");
@@ -1451,7 +1469,7 @@ class TestForm extends Form {
         lineLib.insert(lineCopy, 0, 20, 20, lineCopy.layers[0].id);
         this.eq("library: inserting it makes a line", lineCopy.edges.length, 1);
 
-        fm.LstLibrary.Index = 0;
+        fm.TrvLibrary.Key = "item:0";
         fm.BtnLibraryDelete_Click();
         this.eq("library: delete empties it", fm.library.items.length, 0);
         this.eq("library: and the preview goes quiet",
@@ -1512,7 +1530,8 @@ class TestForm extends Form {
             BtnLayerVisible: ["Click"], BtnLayerLocked: ["Click"],
             BtnLayerAssign: ["Click"],
             TxtLayerName: ["Activate", "LostFocus"],
-            LstLibrary: ["Select", "Activate"],
+            TrvLibrary: ["Select", "Activate"],
+            TxtLibraryFilter: ["Change"],
             LibraryPreview: ["Draw"],
             ActImage: ["Execute"],
             BtnLibraryDownload: ["Click"],

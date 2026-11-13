@@ -1235,6 +1235,16 @@
               },
               "children": [
                 {
+                  "type": "TextBox",
+                  "name": "TxtLibraryFilter",
+                  "properties": {
+                    "HAlign": "Fill",
+                    "Height": 32,
+                    "Placeholder": "Filter shapes…",
+                    "AccessibleName": "Filter the library"
+                  }
+                },
+                {
                   "type": "Scroller",
                   "name": "LibraryScroll",
                   "properties": {
@@ -1248,13 +1258,14 @@
                   },
                   "children": [
                     {
-                      "type": "ListBox",
-                      "name": "LstLibrary",
+                      "type": "TreeView",
+                      "name": "TrvLibrary",
                       "properties": {
                         "HAlign": "Fill",
                         "VAlign": "Fill",
                         "Width": 190,
                         "MinHeight": 40,
+                        "AutoExpand": true,
                         "AccessibleName": "Library",
                         "HExpand": true,
                         "VExpand": true

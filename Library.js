@@ -96,6 +96,7 @@ export class ShapeLibrary {
             library.items.push({
                 name: typeof raw.name === "string" && raw.name.trim()
                     ? raw.name : Locale.Text("Item"),
+                group: typeof raw.group === "string" ? raw.group : "",
                 w: Math.max(1, Number(raw.w) || 1),
                 h: Math.max(1, Number(raw.h) || 1),
                 shapes: raw.shapes.map(shapeCopy),
@@ -110,7 +111,8 @@ export class ShapeLibrary {
             format: "bintana-draw-library/1",
             version: 1,
             items: this.items.map((item) => ({
-                name: item.name, w: item.w, h: item.h,
+                name: item.name, group: item.group || "",
+                w: item.w, h: item.h,
                 shapes: item.shapes.map(shapeCopy),
                 edges: item.edges.map(edgeCopy),
             })),
@@ -124,6 +126,7 @@ export class ShapeLibrary {
         const item = normalize(shapes, edges);
         const saved = {
             name: shapes.length ? nameFor(shapes) : Locale.Text("Line"),
+            group: Locale.Text("My shapes"),
             w: item.w, h: item.h,
             shapes: item.shapes, edges: item.edges,
         };
@@ -150,7 +153,7 @@ export class ShapeLibrary {
             const copiedEdges = edges.map(edgeCopy);
             const item = normalize(shapes, copiedEdges);
             items.push({
-                name: nameFor(shapes), w: item.w, h: item.h,
+                name: nameFor(shapes), group: "", w: item.w, h: item.h,
                 shapes: item.shapes, edges: item.edges,
             });
         };
@@ -195,17 +198,20 @@ export class ShapeLibrary {
             const copied = edgeCopy(edge);
             const item = normalize([], [copied]);
             items.push({
-                name: Locale.Text("Line"), w: item.w, h: item.h,
+                name: Locale.Text("Line"), group: "", w: item.w, h: item.h,
                 shapes: [], edges: item.edges,
             });
         }
         return items;
     }
 
-    addItems(items) {
-        for (const item of items)
-            if (item && (item.shapes.length || item.edges.length))
-                this.items.push(item);
+    addItems(items, group) {
+        for (const item of items) {
+            if (!item || (!item.shapes.length && !item.edges.length)) continue;
+            if (!item.group && group) item.group = group;
+            else if (typeof item.group !== "string") item.group = "";
+            this.items.push(item);
+        }
     }
 
     insert(diagram, index, x, y, layer) {
