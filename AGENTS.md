@@ -112,6 +112,11 @@ BINTANA=/path/to/build/bintana tests/run.sh
   by `s.x`/`s.y` — forgetting that offset draws every stencil at the origin.
   Arcs are converted to cubic Béziers at import because the painter has no
   elliptical arc.
+- **A gate's port is not its bounding box.** `andGateLayout` gives the cap's
+  centre and radii; `shapePortPoint` projects any port past the cap's centre
+  back onto the semicircle, and `nearestPort` for AND/NAND samples the left,
+  top, bottom and cap edges. `edgeRoute` takes an explicit port before
+  `sideAnchor`, or an orthogonal connector would still start at the box.
 - **A shape kind is one case in `shapePath`.** There are no per-shape classes:
   add the name to `SHAPE_KINDS` in `Diagram.js`, a case in `Render.js`
   (`shapePath`, plus any inner lines in `drawShape`, or a branch in

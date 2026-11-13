@@ -1055,6 +1055,28 @@ class TestForm extends Form {
         }
         fm.refreshAll();
 
+        /* A gate's right side is its cap, not the bounding box. */
+        const gate = fm.doc.addShape("and", 0, 0, 120, 80);
+        const cap = shapePortPoint(gate, { x: 1, y: 0 });
+        this.check("gates: the top-right port is on the cap",
+                   cap.x < 120 && cap.x > 80 && cap.y > 0);
+        const near = nearestPort(gate, { x: 118, y: 40 });
+        this.check("gates: a drop on the cap finds the cap",
+                   near.side === "right" && near.point.x > 115);
+        this.check("gates: the cap has more than the box ports",
+                   shapePorts(gate).length > 4);
+        const target = fm.doc.addShape("rect", 250, 0, 80, 40);
+        const edge = fm.doc.addEdge(gate.id, target.id, {
+            fromPort: { x: 1, y: 0 }, fromSide: "right",
+        });
+        const start = edgeEndpoint(fm.doc, edge, "start");
+        this.check("gates: the arrow starts on the curve",
+                   start.x < gate.x + gate.w && start.y > gate.y);
+        const route = edgeRoute(fm.doc, edge);
+        this.eq("gates: the orthogonal route starts at the port",
+                route[0], start.x);
+        this.eq("gates: and stays on its height", route[1], start.y);
+
         /* All of them paint without a throw. */
         const png = File.Join(Application.Directory, "shapes.png");
         fm.exporting = true;

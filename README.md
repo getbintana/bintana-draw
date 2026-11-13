@@ -54,7 +54,8 @@ The window is started with a blank canvas and the shape palette on the left.
 
 - **Connectors** — the connector tool, dragged from one shape to another,
   produces an orthogonal route that follows both shapes when they move or
-  resize. Connectors can be labelled and can be dashed.
+  resize. A connector endpoint on a logic gate snaps to its curved edge, not
+  to the bounding box. Connectors can be labelled and can be dashed.
 - **Text** — double-click a shape or a connector and the editor opens over it.
   Enter or clicking away keeps the text; Escape puts it back.
 - **Pages** — the bar under the canvas switches, adds, removes, reorders and

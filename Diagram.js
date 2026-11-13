@@ -802,9 +802,43 @@ export function sideFacing(shape, point) {
     return "bottom";
 }
 
+export function gateBubble(shape) {
+    return (shape.kind === "nand" || shape.kind === "nor")
+        ? Math.min(10, shape.h * 0.14) : 0;
+}
+
+export function andGateLayout(shape) {
+    const bubble = gateBubble(shape);
+    const inset = bubble * 2;
+    const right = shape.x + shape.w - inset;
+    const r = Math.min(shape.h / 2, (right - shape.x) * 0.55);
+    return {
+        bubble: bubble, inset: inset, right: right, r: r,
+        cx: right - r,
+        cy: shape.y + shape.h / 2,
+        ry: shape.h / 2,
+    };
+}
+
 export function shapePortPoint(shape, port) {
     let x = shape.x + port.x * shape.w;
     let y = shape.y + port.y * shape.h;
+
+    /* The right side of an AND/NAND is a semicircle, not the bounding
+     * rectangle: a port stored at any x past the cap's centre is put back on
+     * the curve, so resizing the gate keeps the arrow on its edge. */
+    if (shape.kind === "and" || shape.kind === "nand") {
+        const g = andGateLayout(shape);
+        if (x >= g.cx) {
+            const dx = (x - g.cx) / Math.max(0.001, g.r);
+            const dy = (y - g.cy) / Math.max(0.001, g.ry);
+            const angle = Math.max(-Math.PI / 2,
+                          Math.min(Math.PI / 2, Math.atan2(dy, dx)));
+            x = g.cx + g.r * Math.cos(angle);
+            y = g.cy + g.ry * Math.sin(angle);
+        }
+    }
+
     if (shape.rotation) {
         const c = shapeCenter(shape);
         const p = rotatePoint(x, y, c.x, c.y, shape.rotation);
@@ -831,7 +865,65 @@ function cornerSide(shape, point) {
     return dy >= 0 ? "bottom" : "top";
 }
 
+function andGatePorts(shape) {
+    const g = andGateLayout(shape);
+    const list = [];
+    const add = (x, y, side) => list.push({
+        port: { x: (x - shape.x) / shape.w, y: (y - shape.y) / shape.h },
+        side: side,
+    });
+    add(shape.x, g.cy, "left");
+    add(shape.x + (g.cx - shape.x) / 2, shape.y, "top");
+    add(shape.x + (g.cx - shape.x) / 2, shape.y + shape.h, "bottom");
+    add(g.cx, shape.y, "top");
+    add(g.cx + g.r * 0.7071, g.cy - g.ry * 0.7071, "right");
+    add(g.right, g.cy, "right");
+    add(g.cx + g.r * 0.7071, g.cy + g.ry * 0.7071, "right");
+    add(g.cx, shape.y + shape.h, "bottom");
+    return list.map((item) => ({
+        port: item.port,
+        side: item.side,
+        point: shapePortPoint(shape, item.port),
+    }));
+}
+
+function nearestAndPort(shape, point) {
+    const g = andGateLayout(shape);
+    let best = null;
+    const consider = (x, y, side) => {
+        const dx = x - point.x, dy = y - point.y;
+        const distance = dx * dx + dy * dy;
+        if (!best || distance < best.distance) {
+            best = {
+                port: { x: (x - shape.x) / shape.w,
+                        y: (y - shape.y) / shape.h },
+                side: side,
+                point: { x: x, y: y },
+                distance: distance,
+            };
+        }
+    };
+
+    consider(shape.x, Math.max(shape.y,
+             Math.min(shape.y + shape.h, point.y)), "left");
+    consider(Math.max(shape.x, Math.min(g.cx, point.x)), shape.y, "top");
+    consider(Math.max(shape.x, Math.min(g.cx, point.x)),
+             shape.y + shape.h, "bottom");
+
+    for (let degrees = -90; degrees <= 90; degrees += 2) {
+        const a = degrees * Math.PI / 180;
+        const x = g.cx + g.r * Math.cos(a);
+        const y = g.cy + g.ry * Math.sin(a);
+        const side = y < g.cy - g.ry * 0.35 ? "top"
+                   : (y > g.cy + g.ry * 0.35 ? "bottom" : "right");
+        consider(x, y, side);
+    }
+    return best;
+}
+
 export function shapePorts(shape) {
+    if (shape.kind === "and" || shape.kind === "nand")
+        return andGatePorts(shape);
     return PORT_LIST.map((item) => ({
         port: { x: item.x, y: item.y },
         side: item.side,
@@ -840,6 +932,9 @@ export function shapePorts(shape) {
 }
 
 export function nearestPort(shape, point) {
+    if (shape.kind === "and" || shape.kind === "nand")
+        return nearestAndPort(shape, point);
+
     let best = null;
     for (const item of shapePorts(shape)) {
         const dx = item.point.x - point.x;
@@ -1017,8 +1112,12 @@ export function edgeRoute(diagram, edge) {
         const auto = chooseSides(a, b);
         const outSide = edge.fromSide || endSide(diagram, edge, "start") || auto[0];
         const inSide = edge.toSide || endSide(diagram, edge, "end") || auto[1];
-        const p0 = sideAnchor(a, outSide);
-        const p1 = sideAnchor(b, inSide);
+        /* An explicit port wins over the side's midpoint: the arrow has to
+         * start on the point the person chose, not on the bounding box. */
+        const p0 = edge.fromPort
+            ? edgeEndpoint(diagram, edge, "start") : sideAnchor(a, outSide);
+        const p1 = edge.toPort
+            ? edgeEndpoint(diagram, edge, "end") : sideAnchor(b, inSide);
         const v0 = sideVector(outSide);
         const v1 = sideVector(inSide);
 

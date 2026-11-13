@@ -99,27 +99,17 @@ function notePath(p, s) {
                s.x + s.w, s.y + s.h, s.x, s.y + s.h]);
 }
 
-function gateBubble(s) {
-    return (s.kind === "nand" || s.kind === "nor")
-        ? Math.min(10, s.h * 0.14) : 0;
-}
-
 function andGatePath(p, s) {
-    const bubble = gateBubble(s);
-    const inset = bubble * 2;
-    const right = s.x + s.w - inset;
-    const r = Math.min(s.h / 2, (right - s.x) * 0.55);
-    const cx = right - r;
-    const cy = s.y + s.h / 2;
-    const ry = s.h / 2;
+    const g = andGateLayout(s);
 
-    p.MoveTo(cx, s.y);
+    p.MoveTo(g.cx, s.y);
     p.LineTo(s.x, s.y);
     p.LineTo(s.x, s.y + s.h);
-    p.LineTo(cx, s.y + s.h);
-    p.CurveTo(cx + r * KAPPA, s.y + s.h, right,
-              cy + ry * KAPPA, right, cy);
-    p.CurveTo(right, cy - ry * KAPPA, cx + r * KAPPA, s.y, cx, s.y);
+    p.LineTo(g.cx, s.y + s.h);
+    p.CurveTo(g.cx + g.r * KAPPA, s.y + s.h, g.right,
+              g.cy + g.ry * KAPPA, g.right, g.cy);
+    p.CurveTo(g.right, g.cy - g.ry * KAPPA, g.cx + g.r * KAPPA,
+              s.y, g.cx, s.y);
     p.ClosePath();
 }
 
@@ -897,12 +887,15 @@ function drawGuides(p, guides, view, width, height) {
 }
 
 function drawConnectionTarget(p, target, zoom) {
-    const box = shapeRectBounds(target.shape);
     p.Color = "rgba(53,132,228,0.55)";
     p.LineWidth = 1.2 / zoom;
     p.LineDash = [5 / zoom, 4 / zoom];
-    p.Rectangle(box.x - 4 / zoom, box.y - 4 / zoom,
-                box.w + 8 / zoom, box.h + 8 / zoom);
+    if (target.shape.kind === "text") {
+        p.Rectangle(target.shape.x, target.shape.y,
+                    target.shape.w, target.shape.h);
+    } else {
+        shapePath(p, target.shape);
+    }
     p.Stroke();
     p.LineDash = [];
 
