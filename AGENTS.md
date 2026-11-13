@@ -71,6 +71,10 @@ BINTANA=/path/to/build/bintana tests/run.sh
   holds every member; resizing does not, because more than one shape is
   selected and handles only appear for one. A paste must remap group ids, or
   the copy joins the original group.
+- **A free line is an edge with no shapes.** `from` and `to` are empty and the
+  geometry is `x1/y1/x2/y2`; `edgeRoute` returns those two points, `layerVisible`
+  does not look for endpoints, and `bounds` includes them. Copy/paste has to
+  branch on the empty ends or it drops the line.
 - **A rotated shape is drawn, hit-tested and bounded through its centre.** The
   model keeps `x/y/w/h` unrotated; `shapeRectBounds` is the axis-aligned box the
   canvas and the export use, `pointInShape` inverse-rotates the pointer, and

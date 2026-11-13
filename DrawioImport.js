@@ -252,19 +252,19 @@ function importModel(model) {
 
         const source = mapped.get(node.Attr("source"));
         const target = mapped.get(node.Attr("target"));
-        if (!source || !target) continue;
 
         const style = node.Attr("style") || "";
         const map = styleMap(style);
         const fontValue = parseFloat(map.fontSize || "11");
         const fontSize = (fontValue === fontValue) ? fontValue : 11;
         const edgeCell = byId.get(node.Attr("id"));
+        const layer = edgeCell
+            ? (layerMap.get(layerOf(edgeCell, byId)) || diagram.layers[0].id)
+            : diagram.layers[0].id;
         const edgeWidth = parseFloat(map.strokeWidth || "2");
         const fontStyle = parseInt(map.fontStyle || "0", 10);
-        diagram.addEdge(source, target, {
-            layer: edgeCell
-                ? (layerMap.get(layerOf(edgeCell, byId)) || diagram.layers[0].id)
-                : diagram.layers[0].id,
+        const common = {
+            layer: layer,
             text: cleanText(node.Attr("value")),
             stroke: colour(map, "strokeColor", "#000000"),
             strokeWidth: edgeWidth === edgeWidth ? edgeWidth : 2,
@@ -273,7 +273,32 @@ function importModel(model) {
             fontSize: fontSize === fontSize ? Math.round(fontSize) : 11,
             textBold: (fontStyle & 1) !== 0,
             textItalic: (fontStyle & 2) !== 0,
-        });
+        };
+
+        if (source && target) {
+            diagram.addEdge(source, target, common);
+            continue;
+        }
+
+        /* A line with no shapes has its two ends in sourcePoint/targetPoint. */
+        const geometry = node.Find("mxGeometry");
+        let sx = null, sy = null, tx = null, ty = null;
+        if (geometry) {
+            for (const point of geometry.FindAll("mxPoint")) {
+                const at = point.Attr("as");
+                if (at === "sourcePoint") {
+                    sx = attrNumber(point, "x", 0);
+                    sy = attrNumber(point, "y", 0);
+                } else if (at === "targetPoint") {
+                    tx = attrNumber(point, "x", 0);
+                    ty = attrNumber(point, "y", 0);
+                }
+            }
+        }
+        if (sx !== null && tx !== null) {
+            common.arrowEnd = map.endArrow !== "none";
+            diagram.addLine(sx, sy, tx, ty, common);
+        }
     }
 
     return diagram;

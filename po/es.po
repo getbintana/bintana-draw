@@ -414,6 +414,22 @@ msgid "Bottom"
 msgstr "Abajo"
 
 
+
+msgid "Arrow"
+msgstr "Flecha"
+
+msgid "Drag to draw a line."
+msgstr "Arrastrá para dibujar una línea."
+
+msgid "Drag to draw an arrow."
+msgstr "Arrastrá para dibujar una flecha."
+
+msgid "Draw line"
+msgstr "Dibujar línea"
+
+msgid "Draw arrow"
+msgstr "Dibujar flecha"
+
 msgid "Rotate"
 msgstr "Rotar"
 

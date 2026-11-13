@@ -212,6 +212,7 @@ class TestForm extends Form {
         this.format(fm);
         this.zorder(fm);
         this.groups(fm);
+        this.freeLines(fm);
         this.layers(fm);
         this.pages(fm);
 
@@ -845,6 +846,82 @@ class TestForm extends Form {
         this.eq("groups: the group offset is applied", importedShapes[0].x, 50);
     }
 
+    freeLines(fm) {
+        fm.resetDocument();
+        fm.panX = 0;
+        fm.panY = 0;
+        fm.zoom = 1;
+
+        fm.chooseTool("line", fm.BtnToolLine);
+        fm.Canvas_MouseDown(100, 100, 1, false, false);
+        fm.Canvas_MouseMove(300, 120, 1, false, false);
+        fm.Canvas_MouseUp(300, 120, 1, false, false);
+        this.eq("lines: a line was drawn", fm.doc.edges.length, 1);
+        const line = fm.doc.edges[0];
+        this.eq("lines: it has no source", line.from, "");
+        this.eq("lines: it has no target", line.to, "");
+        this.eq("lines: the line tool leaves no arrow", line.arrowEnd, false);
+        this.eq("lines: the tool went back to select", fm.tool, "select");
+
+        fm.chooseTool("arrow", fm.BtnToolArrow);
+        fm.Canvas_MouseDown(100, 200, 1, false, false);
+        fm.Canvas_MouseMove(300, 220, 1, false, false);
+        fm.Canvas_MouseUp(300, 220, 1, false, false);
+        this.eq("lines: an arrow was drawn", fm.doc.edges.length, 2);
+        const arrow = fm.doc.edges[1];
+        this.eq("lines: the arrow keeps its head", arrow.arrowEnd, true);
+
+        /* A free line can be dragged by its body. */
+        fm.select([line.id]);
+        const x = line.x1;
+        fm.Canvas_MouseDown(200, 110, 1, false, false);
+        fm.Canvas_MouseMove(240, 110, 1, false, false);
+        fm.Canvas_MouseUp(240, 110, 1, false, false);
+        this.eq("lines: dragging moves the line",
+                fm.doc.edgeById(line.id).x1, x + 40);
+
+        /* A free line can be copied on its own. */
+        fm.select([line.id]);
+        fm.ActCopy_Execute();
+        fm.ActPaste_Execute();
+        this.eq("lines: paste adds one", fm.doc.edges.length, 3);
+        const pasted = fm.doc.edges[2];
+        this.eq("lines: paste offsets it",
+                pasted.x1, fm.doc.edgeById(line.id).x1 + 20);
+        fm.ActUndo_Execute();
+        this.eq("lines: undo paste", fm.doc.edges.length, 2);
+
+        /* The file keeps the free line and its endpoints. */
+        const file = File.Join(Application.Directory, "lines.draw");
+        fm.writeDocument(file);
+        fm.resetDocument();
+        fm.openDocument(file);
+        this.eq("lines: the line came back", fm.doc.edges.length, 2);
+        const back = fm.doc.edges.find((e) => !e.from && !e.to);
+        this.check("lines: it is still free", !!back);
+        this.eq("lines: its arrow came back", back.arrowEnd, false);
+        File.Delete(file);
+
+        /* The bounds include a free line that goes past every shape. */
+        fm.resetDocument();
+        fm.doc.addShape("rect", 0, 0, 50, 50);
+        fm.doc.addLine(100, 100, 400, 200, {});
+        const box = fm.doc.bounds();
+        this.check("lines: the bounds cover the line", box.w >= 400);
+
+        const imported = DrawioImport.parse(`<mxfile><diagram id="p"><mxGraphModel><root>
+            <mxCell id="0"/><mxCell id="1" parent="0"/>
+            <mxCell id="e" value="" style="endArrow=none;strokeColor=#ff0000;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="10" y="20" as="sourcePoint"/><mxPoint x="110" y="80" as="targetPoint"/></mxGeometry></mxCell>
+        </root></mxGraphModel></diagram></mxfile>`);
+        this.eq("lines: draw.io floating line", imported.diagram.edges.length, 1);
+        this.eq("lines: draw.io line is free",
+                imported.diagram.edges[0].from, "");
+        this.eq("lines: draw.io line endpoints",
+                imported.diagram.edges[0].x2, 110);
+        this.eq("lines: draw.io line has no arrow",
+                imported.diagram.edges[0].arrowEnd, false);
+    }
+
     confirmDialog() {
         let answer = "";
         let dialog = ConfirmForm.ask("Title", "Message", "Save",
@@ -913,6 +990,7 @@ class TestForm extends Form {
             ActAlignMiddle: ["Execute"], ActAlignBottom: ["Execute"],
             ActDistributeHorizontal: ["Execute"],
             ActDistributeVertical: ["Execute"],
+            BtnToolLine: ["Click"], BtnToolArrow: ["Click"],
             ActGroup: ["Execute"], ActUngroup: ["Execute"],
             ActBringFront: ["Execute"], ActSendBack: ["Execute"],
             ActBringForward: ["Execute"], ActSendBackward: ["Execute"],

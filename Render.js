@@ -245,7 +245,7 @@ function drawEdgeLine(p, e, points) {
     p.Polyline(points);
     p.Stroke();
     p.LineDash = [];
-    arrowHead(p, points, color, width);
+    if (e.arrowEnd !== false) arrowHead(p, points, color, width);
 }
 
 /* ------------------------------------------------------------------ handles */
@@ -429,6 +429,18 @@ function drawCreatePreview(p, preview) {
     p.LineDash = [];
 }
 
+function drawLinePreview(p, preview) {
+    p.Color = ACCENT;
+    p.LineWidth = 2;
+    p.LineDash = [6, 5];
+    p.MoveTo(preview.x1, preview.y1);
+    p.LineTo(preview.x2, preview.y2);
+    p.Stroke();
+    p.LineDash = [];
+    if (preview.arrow)
+        arrowHead(p, [preview.x1, preview.y1, preview.x2, preview.y2], ACCENT, 2);
+}
+
 function drawConnectPreview(p, preview) {
     p.Color = ACCENT;
     p.LineWidth = 2;
@@ -495,6 +507,7 @@ export function drawCanvas(p, diagram, view, width, height) {
     drawGuides(p, view.guides, view, width, height);
     if (view.createPreview) drawCreatePreview(p, view.createPreview);
     if (view.connectPreview) drawConnectPreview(p, view.connectPreview);
+    if (view.linePreview) drawLinePreview(p, view.linePreview);
     if (view.band) drawBand(p, view.band);
 
     p.Pop();

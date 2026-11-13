@@ -61,6 +61,11 @@ The window is started with a blank canvas and the shape palette on the left.
 - **Rotation** — the `Rotate` field turns a shape around its centre in degrees;
   its text, hit-test, bounds and connector anchors follow. A rotated shape has
   no resize handles: set `Rotate` back to 0 to resize it.
+- **Free lines and arrows** — the `Line` and `Arrow` tools draw a segment with
+  no shapes attached. A free line can be selected, dragged by its body, moved
+  with the arrows, labelled, styled, copied, pasted, and it is included in the
+  bounds and the export. The endpoint handles are not there yet: to change just
+  one end, draw it again.
 - **Alignment** — while a shape is moved or resized, its edges and centre snap
   to the other shapes and a dotted guide shows why. `Edit > Align` lines up a
   selection; `Edit > Distribute` spaces its centres.
@@ -180,8 +185,9 @@ handler whose control name is misspelled is silently dead.
 
 This is a first editor, not a draw.io replacement. Missing, in the order they
 would change what a person can draw: custom shape libraries and stencils,
-curved connectors with movable waypoints, images and icons, system-clipboard
-interchange with other applications, SVG import/export, and collaboration.
+curved connectors with movable waypoints, endpoint editing on free lines,
+images and icons, system-clipboard interchange with other applications, SVG
+import/export, and collaboration.
 
 The draw.io import is deliberately the basic half: it reads every uncompressed
 page of a file, maps the common shapes by style (`rounded`, `ellipse`,

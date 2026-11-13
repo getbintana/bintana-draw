@@ -400,7 +400,7 @@
           "name": "Palette",
           "properties": {
             "Arrangement": "Vertical",
-            "Spacing": 5,
+            "Spacing": 4,
             "Padding": "10",
             "Width": 184,
             "Style": "draw-sidebar"
@@ -422,7 +422,7 @@
                 "Text": "Select",
                 "Active": true,
                 "HAlign": "Fill",
-                "Height": 30
+                "Height": 28
               }
             },
             {
@@ -431,7 +431,7 @@
               "properties": {
                 "Text": "Rectangle",
                 "HAlign": "Fill",
-                "Height": 30
+                "Height": 28
               }
             },
             {
@@ -440,7 +440,7 @@
               "properties": {
                 "Text": "Rounded rectangle",
                 "HAlign": "Fill",
-                "Height": 30
+                "Height": 28
               }
             },
             {
@@ -449,7 +449,7 @@
               "properties": {
                 "Text": "Ellipse",
                 "HAlign": "Fill",
-                "Height": 30
+                "Height": 28
               }
             },
             {
@@ -458,7 +458,7 @@
               "properties": {
                 "Text": "Decision",
                 "HAlign": "Fill",
-                "Height": 30
+                "Height": 28
               }
             },
             {
@@ -467,7 +467,7 @@
               "properties": {
                 "Text": "Terminator",
                 "HAlign": "Fill",
-                "Height": 30
+                "Height": 28
               }
             },
             {
@@ -476,7 +476,7 @@
               "properties": {
                 "Text": "Data",
                 "HAlign": "Fill",
-                "Height": 30
+                "Height": 28
               }
             },
             {
@@ -485,7 +485,7 @@
               "properties": {
                 "Text": "Database",
                 "HAlign": "Fill",
-                "Height": 30
+                "Height": 28
               }
             },
             {
@@ -494,7 +494,7 @@
               "properties": {
                 "Text": "Note",
                 "HAlign": "Fill",
-                "Height": 30
+                "Height": 28
               }
             },
             {
@@ -503,7 +503,7 @@
               "properties": {
                 "Text": "Text",
                 "HAlign": "Fill",
-                "Height": 30
+                "Height": 28
               }
             },
             {
@@ -512,7 +512,25 @@
               "properties": {
                 "Text": "Connector",
                 "HAlign": "Fill",
-                "Height": 30
+                "Height": 28
+              }
+            },
+            {
+              "type": "ToggleButton",
+              "name": "BtnToolLine",
+              "properties": {
+                "Text": "Line",
+                "HAlign": "Fill",
+                "Height": 28
+              }
+            },
+            {
+              "type": "ToggleButton",
+              "name": "BtnToolArrow",
+              "properties": {
+                "Text": "Arrow",
+                "HAlign": "Fill",
+                "Height": 28
               }
             },
             {
@@ -562,18 +580,6 @@
                 "HAlign": "Start",
                 "Width": 70,
                 "Height": 28
-              }
-            },
-            {
-              "type": "Label",
-              "name": "LblTip",
-              "properties": {
-                "Text": "Pick a shape, then drag on the canvas.",
-                "Style": "dim-label",
-                "Wrap": true,
-                "Expand": true,
-                "VAlign": "End",
-                "Height": 48
               }
             }
           ]

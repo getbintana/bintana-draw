@@ -52,6 +52,8 @@ function copyShape(s) {
 function copyEdge(e) {
     return {
         id: e.id, from: e.from, to: e.to, layer: e.layer, text: e.text,
+        x1: e.x1, y1: e.y1, x2: e.x2, y2: e.y2,
+        arrowEnd: e.arrowEnd !== false,
         stroke: e.stroke, strokeWidth: e.strokeWidth, dash: e.dash,
         dashed: e.dash !== "solid", textColor: e.textColor,
         fontSize: e.fontSize, textBold: e.textBold, textItalic: e.textItalic,
@@ -233,6 +235,35 @@ export class Diagram {
         return edge;
     }
 
+    /* A line that belongs to no shape: two world points and an arrowhead at
+     * the end, or not, chosen by the tool that drew it. */
+    addLine(x1, y1, x2, y2, options) {
+        const o = options || {};
+        const layer = this.layerById(o.layer) ? o.layer : this.layers[0].id;
+        const edge = {
+            id: "e" + (this.nextEdge++),
+            from: "",
+            to: "",
+            layer: layer,
+            x1: number(x1, 0),
+            y1: number(y1, 0),
+            x2: number(x2, 0),
+            y2: number(y2, 0),
+            arrowEnd: o.arrowEnd !== false,
+            text: text(o.text, ""),
+            stroke: text(o.stroke, DEFAULT_EDGE),
+            strokeWidth: Math.max(0.5, number(o.strokeWidth, 2)),
+            dash: o.dash === "dash" || o.dash === "dot" ? o.dash : "solid",
+            dashed: o.dash === "dash" || o.dash === "dot",
+            textColor: text(o.textColor, ""),
+            fontSize: Math.max(6, Math.round(number(o.fontSize, 11))),
+            textBold: o.textBold === true,
+            textItalic: o.textItalic === true,
+        };
+        this.edges.push(edge);
+        return edge;
+    }
+
     shapeById(id) {
         for (const s of this.shapes) if (s.id === id) return s;
         return null;
@@ -301,6 +332,14 @@ export class Diagram {
             y0 = Math.min(y0, box.y);
             x1 = Math.max(x1, box.x + box.w);
             y1 = Math.max(y1, box.y + box.h);
+        }
+        for (const edge of this.edges) {
+            if (edge.from || edge.to || !this.layerVisible(edge)) continue;
+            if (edge.x1 === undefined) continue;
+            x0 = Math.min(x0, edge.x1, edge.x2);
+            y0 = Math.min(y0, edge.y1, edge.y2);
+            x1 = Math.max(x1, edge.x1, edge.x2);
+            y1 = Math.max(y1, edge.y1, edge.y2);
         }
         if (x0 === Infinity) return null;
         return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
@@ -384,10 +423,19 @@ export class Diagram {
         const edges = Array.isArray(data.edges) ? data.edges : [];
         for (const raw of edges) {
             if (!raw || typeof raw !== "object") continue;
-            const from = renamed.has(text(raw.from, "")) ? renamed.get(raw.from) : text(raw.from, "");
-            const to   = renamed.has(text(raw.to, "")) ? renamed.get(raw.to) : text(raw.to, "");
-            if (!from || !to || from === to) continue;
-            if (!diagram.shapeById(from) || !diagram.shapeById(to)) continue;
+
+            const rawFrom = text(raw.from, "");
+            const rawTo   = text(raw.to, "");
+            const free = !rawFrom && !rawTo && raw.x1 !== undefined &&
+                         raw.x2 !== undefined;
+            let from = "", to = "";
+
+            if (!free) {
+                from = renamed.has(rawFrom) ? renamed.get(rawFrom) : rawFrom;
+                to   = renamed.has(rawTo) ? renamed.get(rawTo) : rawTo;
+                if (!from || !to || from === to) continue;
+                if (!diagram.shapeById(from) || !diagram.shapeById(to)) continue;
+            }
 
             let id = text(raw.id, "");
             if (!id || diagram.edgeById(id)) id = "e" + (diagram.nextEdge++);
@@ -397,6 +445,11 @@ export class Diagram {
                 to: to,
                 layer: diagram.layerById(text(raw.layer, ""))
                     ? raw.layer : diagram.layers[0].id,
+                x1: free ? number(raw.x1, 0) : undefined,
+                y1: free ? number(raw.y1, 0) : undefined,
+                x2: free ? number(raw.x2, 0) : undefined,
+                y2: free ? number(raw.y2, 0) : undefined,
+                arrowEnd: raw.arrowEnd !== false,
                 text: text(raw.text, ""),
                 stroke: text(raw.stroke, DEFAULT_EDGE),
                 strokeWidth: Math.max(0.5, number(raw.strokeWidth, 2)),
@@ -646,6 +699,10 @@ function dedupe(points) {
  * corridor outside both, and perpendicular sides turn once.
  */
 export function edgeRoute(diagram, edge) {
+    if (!edge.from && !edge.to) {
+        if (edge.x1 === undefined || edge.x2 === undefined) return [];
+        return [edge.x1, edge.y1, edge.x2, edge.y2];
+    }
     const a = diagram.shapeById(edge.from);
     const b = diagram.shapeById(edge.to);
     if (!a || !b) return [];

@@ -245,6 +245,7 @@ export class MainForm extends Form {
 
         let createPreview = null;
         let connectPreview = null;
+        let linePreview = null;
         let band = null;
 
         if (this.drag) {
@@ -261,6 +262,12 @@ export class MainForm extends Form {
                         zoom: this.zoom,
                     };
                 }
+            } else if (this.drag.kind === "freeLine") {
+                linePreview = {
+                    x1: this.drag.start.x, y1: this.drag.start.y,
+                    x2: this.drag.at.x, y2: this.drag.at.y,
+                    arrow: this.drag.tool === "arrow",
+                };
             } else if (this.drag.kind === "band") {
                 band = rectOf(this.drag.start, this.drag.at);
             }
@@ -274,6 +281,7 @@ export class MainForm extends Form {
             selected: this.sel,
             createPreview: createPreview,
             connectPreview: connectPreview,
+            linePreview: linePreview,
             band: band,
             guides: this.guides,
         }, width, height);
@@ -327,11 +335,15 @@ export class MainForm extends Form {
     BtnToolNote_Click()       { this.toolButtonClicked("note", this.BtnToolNote); }
     BtnToolText_Click()       { this.toolButtonClicked("text", this.BtnToolText); }
     BtnToolConnect_Click()    { this.toolButtonClicked("connect", this.BtnToolConnect); }
+    BtnToolLine_Click()       { this.toolButtonClicked("line", this.BtnToolLine); }
+    BtnToolArrow_Click()      { this.toolButtonClicked("arrow", this.BtnToolArrow); }
 
     toolHint(tool) {
         switch (tool) {
         case "select":     return Locale.Text("Select and drag. Double-click to edit text.");
         case "connect":    return Locale.Text("Drag from one shape to another to connect them.");
+        case "line":       return Locale.Text("Drag to draw a line.");
+        case "arrow":      return Locale.Text("Drag to draw an arrow.");
         case "text":       return Locale.Text("Click where the text should go.");
         case "note":       return Locale.Text("Drag a note, or click for the default size.");
         default:           return Locale.Text("Drag a shape, or click for the default size.");
@@ -719,6 +731,13 @@ export class MainForm extends Form {
             return;
         }
 
+        if (this.tool === "line" || this.tool === "arrow") {
+            if (!this.canEditActiveLayer()) return;
+            this.drag = { kind: "freeLine", tool: this.tool,
+                          start: world, at: world };
+            return;
+        }
+
         if (this.tool !== "select") {
             if (!this.canEditActiveLayer()) return;
             this.drag = { kind: "create", tool: this.tool,
@@ -758,8 +777,18 @@ export class MainForm extends Form {
 
         const edge = this.doc.edgeAt(world.x, world.y, EDGE_HIT / this.zoom);
         if (edge) {
-            if (shift) this.toggleSelection(edge.id);
-            else this.select([edge.id]);
+            if (shift) {
+                this.toggleSelection(edge.id);
+            } else {
+                this.select([edge.id]);
+                if (!edge.from && !edge.to) {
+                    this.drag = {
+                        kind: "moveLine", id: edge.id, start: world,
+                        x1: edge.x1, y1: edge.y1, x2: edge.x2, y2: edge.y2,
+                        before: this.snapshot(),
+                    };
+                }
+            }
             return;
         }
 
@@ -831,6 +860,30 @@ export class MainForm extends Form {
             return;
         }
 
+        if (d.kind === "freeLine") {
+            d.at = world;
+            this.Canvas.Redraw();
+            return;
+        }
+
+        if (d.kind === "moveLine") {
+            let dx = this.snap(world.x - d.start.x);
+            let dy = this.snap(world.y - d.start.y);
+            if (shift) {
+                if (Math.abs(dx) >= Math.abs(dy)) dy = 0;
+                else dx = 0;
+            }
+            const edge = this.doc.edgeById(d.id);
+            if (edge) {
+                edge.x1 = d.x1 + dx;
+                edge.y1 = d.y1 + dy;
+                edge.x2 = d.x2 + dx;
+                edge.y2 = d.y2 + dy;
+            }
+            this.Canvas.Redraw();
+            return;
+        }
+
         if (d.kind === "create") {
             d.at = world;
             this.Canvas.Redraw();
@@ -862,12 +915,17 @@ export class MainForm extends Form {
             return;
         }
 
-        if (d.kind === "move" || d.kind === "resize") {
+        if (d.kind === "move" || d.kind === "resize" || d.kind === "moveLine") {
             const after = this.snapshot();
             if (d.before !== after)
                 this.pushUndo(d.kind === "resize" ? Locale.Text("Resize")
                                                   : Locale.Text("Move"), d.before);
             this.refreshAll();
+            return;
+        }
+
+        if (d.kind === "freeLine") {
+            this.finishFreeLine(d, this.toWorld(x, y));
             return;
         }
 
@@ -993,6 +1051,32 @@ export class MainForm extends Form {
         this.chooseTool("select", this.BtnToolSelect);
 
         if (d.tool === "text") this.beginEdit(shape);
+        this.refreshAll();
+    }
+
+    finishFreeLine(d, end) {
+        if (!this.canEditActiveLayer()) return;
+        const dx = end.x - d.start.x;
+        const dy = end.y - d.start.y;
+        if (Math.hypot(dx, dy) < 6) return;
+
+        const before = this.snapshot();
+        const edge = this.doc.addLine(d.start.x, d.start.y, end.x, end.y, {
+            layer: this.activeLayer,
+            arrowEnd: d.tool === "arrow",
+            stroke: this.defaultStroke,
+            strokeWidth: this.defaultStrokeWidth,
+            dash: this.defaultDash,
+            textColor: this.defaultTextColor,
+            fontSize: this.defaultFontSize,
+            textBold: this.defaultTextBold,
+            textItalic: this.defaultTextItalic,
+        });
+
+        this.select([edge.id]);
+        this.pushUndo(d.tool === "arrow" ? Locale.Text("Draw arrow")
+                                         : Locale.Text("Draw line"), before);
+        this.chooseTool("select", this.BtnToolSelect);
         this.refreshAll();
     }
 
@@ -1140,9 +1224,15 @@ export class MainForm extends Form {
 
     nudge(dx, dy) {
         const shapes = this.selectedShapes();
-        if (!shapes.length) return;
+        const lines = this.selectedEdges()
+            .filter((e) => !e.from && !e.to);
+        if (!shapes.length && !lines.length) return;
         const before = this.snapshot();
         for (const s of shapes) { s.x += dx; s.y += dy; }
+        for (const e of lines) {
+            e.x1 += dx; e.y1 += dy;
+            e.x2 += dx; e.y2 += dy;
+        }
         this.pushUndo(Locale.Text("Move"), before);
         this.refreshAll();
     }
@@ -1168,10 +1258,17 @@ export class MainForm extends Form {
 
         const outEdges = [];
         for (const e of this.doc.edges) {
-            if (!ids.has(e.from) || !ids.has(e.to)) continue;
+            const free = !e.from && !e.to;
+            if (free) {
+                if (this.sel.indexOf(e.id) < 0) continue;
+            } else if (!ids.has(e.from) || !ids.has(e.to)) {
+                continue;
+            }
             if (!this.doc.canSelect(e)) continue;
             outEdges.push({
                 id: e.id, from: e.from, to: e.to, text: e.text,
+                x1: e.x1, y1: e.y1, x2: e.x2, y2: e.y2,
+                arrowEnd: e.arrowEnd !== false,
                 stroke: e.stroke, strokeWidth: e.strokeWidth,
                 dash: e.dash, dashed: e.dashed, textColor: e.textColor,
                 fontSize: e.fontSize, textBold: e.textBold,
@@ -1183,7 +1280,7 @@ export class MainForm extends Form {
 
     copySelection() {
         const data = this.selectionData();
-        if (!data.shapes.length) return false;
+        if (!data.shapes.length && !data.edges.length) return false;
         this.clipboard = JSON.stringify(data);
         this.refreshActions();
         this.setStatus(Locale.Text("Copied."));
@@ -1191,7 +1288,7 @@ export class MainForm extends Form {
     }
 
     pasteData(data, dx, dy) {
-        if (!data || !data.shapes || !data.shapes.length) return;
+        if (!data || (!data.shapes.length && !data.edges.length)) return;
         if (!this.canEditActiveLayer()) return;
         const before = this.snapshot();
         const renamed = new Map();
@@ -1219,15 +1316,27 @@ export class MainForm extends Form {
         }
 
         for (const raw of data.edges || []) {
-            const from = renamed.get(raw.from);
-            const to = renamed.get(raw.to);
-            if (!from || !to) continue;
-            const edge = this.doc.addEdge(from, to,
-                { text: raw.text, stroke: raw.stroke,
-                  strokeWidth: raw.strokeWidth, dash: raw.dash,
-                  dashed: raw.dashed, textColor: raw.textColor,
-                  fontSize: raw.fontSize, textBold: raw.textBold,
-                  textItalic: raw.textItalic, layer: this.activeLayer });
+            let edge;
+            if (!raw.from && !raw.to) {
+                edge = this.doc.addLine(raw.x1 + dx, raw.y1 + dy,
+                                        raw.x2 + dx, raw.y2 + dy,
+                    { arrowEnd: raw.arrowEnd !== false,
+                      text: raw.text, stroke: raw.stroke,
+                      strokeWidth: raw.strokeWidth, dash: raw.dash,
+                      textColor: raw.textColor, fontSize: raw.fontSize,
+                      textBold: raw.textBold, textItalic: raw.textItalic,
+                      layer: this.activeLayer });
+            } else {
+                const from = renamed.get(raw.from);
+                const to = renamed.get(raw.to);
+                if (!from || !to) continue;
+                edge = this.doc.addEdge(from, to,
+                    { text: raw.text, stroke: raw.stroke,
+                      strokeWidth: raw.strokeWidth, dash: raw.dash,
+                      dashed: raw.dashed, textColor: raw.textColor,
+                      fontSize: raw.fontSize, textBold: raw.textBold,
+                      textItalic: raw.textItalic, layer: this.activeLayer });
+            }
             if (edge) ids.push(edge.id);
         }
 
@@ -1243,7 +1352,7 @@ export class MainForm extends Form {
 
     duplicateSelection() {
         const data = this.selectionData();
-        if (!data.shapes.length) return;
+        if (!data.shapes.length && !data.edges.length) return;
         this.pasteData(data, PASTE_OFFSET, PASTE_OFFSET);
     }
 
