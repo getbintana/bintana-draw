@@ -42,14 +42,19 @@ function copyShape(s) {
         id: s.id, kind: s.kind, layer: s.layer,
         x: s.x, y: s.y, w: s.w, h: s.h,
         text: s.text, fill: s.fill, stroke: s.stroke,
+        strokeWidth: s.strokeWidth, dash: s.dash,
         textColor: s.textColor, fontSize: s.fontSize, radius: s.radius,
+        textBold: s.textBold, textItalic: s.textItalic,
+        textAlign: s.textAlign, textVAlign: s.textVAlign,
     };
 }
 
 function copyEdge(e) {
     return {
         id: e.id, from: e.from, to: e.to, layer: e.layer, text: e.text,
-        stroke: e.stroke, dashed: e.dashed, fontSize: e.fontSize,
+        stroke: e.stroke, strokeWidth: e.strokeWidth, dash: e.dash,
+        dashed: e.dash !== "solid", textColor: e.textColor,
+        fontSize: e.fontSize, textBold: e.textBold, textItalic: e.textItalic,
     };
 }
 
@@ -170,9 +175,15 @@ export class Diagram {
             text: text(o.text, ""),
             fill: text(o.fill, DEFAULT_FILL),
             stroke: text(o.stroke, DEFAULT_STROKE),
+            strokeWidth: Math.max(0.5, number(o.strokeWidth, 1.5)),
+            dash: o.dash === "dash" || o.dash === "dot" ? o.dash : "solid",
             textColor: text(o.textColor, DEFAULT_TEXT),
             fontSize: Math.max(6, Math.round(number(o.fontSize, 12))),
             radius: Math.max(0, Math.round(number(o.radius, 12))),
+            textBold: o.textBold === true,
+            textItalic: o.textItalic === true,
+            textAlign: text(o.textAlign, ""),
+            textVAlign: text(o.textVAlign, ""),
         };
         this.shapes.push(shape);
         return shape;
@@ -189,8 +200,15 @@ export class Diagram {
             layer: layer,
             text: text(o.text, ""),
             stroke: text(o.stroke, DEFAULT_EDGE),
-            dashed: o.dashed === true,
+            strokeWidth: Math.max(0.5, number(o.strokeWidth, 2)),
+            dash: o.dash === "dash" || o.dash === "dot"
+                ? o.dash : (o.dashed === true ? "dash" : "solid"),
+            dashed: o.dash === "dash" || o.dash === "dot" ||
+                    o.dashed === true,
+            textColor: text(o.textColor, ""),
             fontSize: Math.max(6, Math.round(number(o.fontSize, 11))),
+            textBold: o.textBold === true,
+            textItalic: o.textItalic === true,
         };
         this.edges.push(edge);
         return edge;
@@ -327,9 +345,16 @@ export class Diagram {
                 text: text(raw.text, ""),
                 fill: text(raw.fill, DEFAULT_FILL),
                 stroke: text(raw.stroke, DEFAULT_STROKE),
+                strokeWidth: Math.max(0.5, number(raw.strokeWidth, 1.5)),
+                dash: raw.dash === "dash" || raw.dash === "dot"
+                    ? raw.dash : "solid",
                 textColor: text(raw.textColor, DEFAULT_TEXT),
                 fontSize: Math.max(6, Math.round(number(raw.fontSize, 12))),
                 radius: Math.max(0, Math.round(number(raw.radius, 12))),
+                textBold: raw.textBold === true,
+                textItalic: raw.textItalic === true,
+                textAlign: text(raw.textAlign, ""),
+                textVAlign: text(raw.textVAlign, ""),
             };
             diagram.shapes.push(shape);
         }
@@ -352,8 +377,15 @@ export class Diagram {
                     ? raw.layer : diagram.layers[0].id,
                 text: text(raw.text, ""),
                 stroke: text(raw.stroke, DEFAULT_EDGE),
-                dashed: raw.dashed === true,
+                strokeWidth: Math.max(0.5, number(raw.strokeWidth, 2)),
+                dash: raw.dash === "dash" || raw.dash === "dot"
+                    ? raw.dash : (raw.dashed === true ? "dash" : "solid"),
+                dashed: raw.dash === "dash" || raw.dash === "dot" ||
+                        raw.dashed === true,
+                textColor: text(raw.textColor, ""),
                 fontSize: Math.max(6, Math.round(number(raw.fontSize, 11))),
+                textBold: raw.textBold === true,
+                textItalic: raw.textItalic === true,
             };
             diagram.edges.push(edge);
         }

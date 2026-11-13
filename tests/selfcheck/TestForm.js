@@ -209,6 +209,8 @@ class TestForm extends Form {
         this.alignment(fm);
         this.guides(fm);
         this.drawio(fm);
+        this.format(fm);
+        this.zorder(fm);
         this.layers(fm);
         this.pages(fm);
 
@@ -330,10 +332,10 @@ class TestForm extends Form {
             <mxCell id="0"/>
             <mxCell id="1" parent="0"/>
             <mxCell id="2" value="Annotations" parent="0"/>
-            <mxCell id="a" value="&lt;b&gt;Start&lt;/b&gt;&lt;br&gt;now" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;" vertex="1" parent="1"><mxGeometry x="10" y="20" width="120" height="60" as="geometry"/></mxCell>
+            <mxCell id="a" value="&lt;b&gt;Start&lt;/b&gt;&lt;br&gt;now" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="10" y="20" width="120" height="60" as="geometry"/></mxCell>
             <mxCell id="b" value="Yes?" style="rhombus;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="200" y="10" width="100" height="80" as="geometry"/></mxCell>
             <mxCell id="c" value="Done" style="ellipse;" vertex="1" parent="1"><mxGeometry x="380" y="20" width="100" height="60" as="geometry"/></mxCell>
-            <mxCell id="e" value="ok" style="dashed=1;strokeColor=#ff0000;fontSize=13;" edge="1" source="a" target="b" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+            <mxCell id="e" value="ok" style="dashed=1;strokeColor=#ff0000;fontSize=13;fontStyle=2;" edge="1" source="a" target="b" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
             <mxCell id="e2" edge="1" source="b" target="c" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
             <mxCell id="n" value="On another layer" style="shape=note;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="2"><mxGeometry x="200" y="150" width="120" height="70" as="geometry"/></mxCell>
         </root></mxGraphModel></diagram></mxfile>`;
@@ -355,6 +357,10 @@ class TestForm extends Form {
                 parsed.diagram.shapes[0].fill, "#dae8fc");
         this.eq("draw.io: the font size survives",
                 parsed.diagram.shapes[0].fontSize, 14);
+        this.eq("draw.io: bold survives",
+                parsed.diagram.shapes[0].textBold, true);
+        this.eq("draw.io: italic survives",
+                parsed.diagram.edges[0].textItalic, true);
         this.eq("draw.io: rhombus becomes decision",
                 parsed.diagram.shapes[1].kind, "diamond");
         this.eq("draw.io: ellipse becomes ellipse",
@@ -643,6 +649,118 @@ class TestForm extends Form {
         this.eq("pages: its shape is on that page", old.pages[0].shapes.length, 1);
     }
 
+    format(fm) {
+        fm.resetDocument();
+        const a = fm.doc.addShape("rect", 0, 0, 100, 50, { text: "Hello" });
+        const b = fm.doc.addShape("rect", 200, 0, 100, 50, { text: "World" });
+        const edge = fm.doc.addEdge(a.id, b.id, { text: "link" });
+        fm.refreshAll();
+
+        fm.select([a.id]);
+        fm.SpnStrokeWidth.Value = 4;
+        fm.SpnStrokeWidth_Change();
+        this.eq("format: line width", fm.doc.shapeById(a.id).strokeWidth, 4);
+
+        fm.CmbDash.Index = 1;
+        fm.CmbDash_Select();
+        this.eq("format: line style", fm.doc.shapeById(a.id).dash, "dash");
+
+        fm.SpnFont.Value = 18;
+        fm.SpnFont_Change();
+        this.eq("format: font size", fm.doc.shapeById(a.id).fontSize, 18);
+
+        fm.BtnBold.Active = true;
+        fm.BtnBold_Click();
+        this.eq("format: bold", fm.doc.shapeById(a.id).textBold, true);
+
+        fm.BtnItalic.Active = true;
+        fm.BtnItalic_Click();
+        this.eq("format: italic", fm.doc.shapeById(a.id).textItalic, true);
+
+        fm.BtnAlignLeft.Active = true;
+        fm.BtnAlignLeft_Click();
+        this.eq("format: horizontal alignment",
+                fm.doc.shapeById(a.id).textAlign, "left");
+        this.check("format: the align buttons are exclusive",
+                   !fm.BtnAlignCenter.Active && !fm.BtnAlignRight.Active);
+
+        fm.CmbVAlign.Index = 0;
+        fm.CmbVAlign_Select();
+        this.eq("format: vertical alignment",
+                fm.doc.shapeById(a.id).textVAlign, "top");
+
+        fm.BtnTextColor.Value = "rgb(255,0,0)";
+        fm.BtnTextColor_Change();
+        this.eq("format: text colour",
+                fm.doc.shapeById(a.id).textColor, "rgb(255,0,0)");
+
+        /* The edge has its own width, dash and label style. */
+        fm.select([edge.id]);
+        fm.SpnStrokeWidth.Value = 3;
+        fm.SpnStrokeWidth_Change();
+        fm.CmbDash.Index = 2;
+        fm.CmbDash_Select();
+        fm.SpnFont.Value = 14;
+        fm.SpnFont_Change();
+        fm.BtnBold.Active = true;
+        fm.BtnBold_Click();
+        const styledEdge = fm.doc.edgeById(edge.id);
+        this.eq("format: edge width", styledEdge.strokeWidth, 3);
+        this.eq("format: edge dots", styledEdge.dash, "dot");
+        this.eq("format: edge font", styledEdge.fontSize, 14);
+        this.eq("format: edge bold", styledEdge.textBold, true);
+
+        /* The defaults are what the next shape gets. */
+        fm.select([]);
+        const options = fm.shapeOptions("rect");
+        this.eq("format: default width", options.strokeWidth, 3);
+        this.eq("format: default dash", options.dash, "dot");
+        this.eq("format: default font", options.fontSize, 14);
+
+        /* The file keeps the style, and undo takes one change back. */
+        const round = Diagram.fromJSON(JSON.parse(JSON.stringify(fm.doc.toJSON())));
+        this.eq("format: width round-trips",
+                round.shapeById(a.id).strokeWidth, 4);
+        this.eq("format: bold round-trips", round.shapeById(a.id).textBold, true);
+        this.eq("format: edge dots round-trip", round.edgeById(edge.id).dash, "dot");
+
+        fm.select([a.id]);
+        const before = fm.doc.shapeById(a.id).strokeWidth;
+        fm.SpnStrokeWidth.Value = 6;
+        fm.SpnStrokeWidth_Change();
+        this.eq("format: a new width", fm.doc.shapeById(a.id).strokeWidth, 6);
+        fm.ActUndo_Execute();
+        this.eq("format: undo restores the width",
+                fm.doc.shapeById(a.id).strokeWidth, before);
+    }
+
+    zorder(fm) {
+        fm.resetDocument();
+        const back = fm.doc.addShape("rect", 0, 0, 100, 50, { text: "Back" });
+        const front = fm.doc.addShape("rect", 20, 20, 100, 50, { text: "Front" });
+        fm.refreshAll();
+
+        fm.select([back.id]);
+        this.check("order: actions are enabled", fm.ActBringFront.Enabled);
+        fm.ActBringFront_Execute();
+        this.eq("order: bring to front",
+                fm.doc.shapes[fm.doc.shapes.length - 1].id, back.id);
+        fm.ActSendBack_Execute();
+        this.eq("order: send to back", fm.doc.shapes[0].id, back.id);
+        fm.ActBringForward_Execute();
+        this.eq("order: bring forward", fm.doc.shapes[1].id, back.id);
+        fm.ActSendBackward_Execute();
+        this.eq("order: send backward", fm.doc.shapes[0].id, back.id);
+
+        fm.ActUndo_Execute();
+        this.eq("order: undo takes the last move back",
+                fm.doc.shapes[1].id, back.id);
+
+        fm.select([]);
+        this.check("order: actions are disabled with no shape",
+                   !fm.ActBringFront.Enabled);
+    }
+
     confirmDialog() {
         let answer = "";
         let dialog = ConfirmForm.ask("Title", "Message", "Save",
@@ -684,6 +802,11 @@ class TestForm extends Form {
             BtnToolNote: ["Click"],
             BtnToolText: ["Click"], BtnToolConnect: ["Click"],
             BtnFill: ["Change"], BtnLine: ["Change"],
+            SpnStrokeWidth: ["Change"], CmbDash: ["Select"],
+            SpnFont: ["Change"], BtnBold: ["Click"], BtnItalic: ["Click"],
+            BtnAlignLeft: ["Click"], BtnAlignCenter: ["Click"],
+            BtnAlignRight: ["Click"], CmbVAlign: ["Select"],
+            BtnTextColor: ["Change"],
             LstLayers: ["Select", "Activate"],
             BtnLayerAdd: ["Click"], BtnLayerRemove: ["Click"],
             BtnLayerUp: ["Click"], BtnLayerDown: ["Click"],
@@ -706,6 +829,8 @@ class TestForm extends Form {
             ActAlignMiddle: ["Execute"], ActAlignBottom: ["Execute"],
             ActDistributeHorizontal: ["Execute"],
             ActDistributeVertical: ["Execute"],
+            ActBringFront: ["Execute"], ActSendBack: ["Execute"],
+            ActBringForward: ["Execute"], ActSendBackward: ["Execute"],
             ActZoomIn: ["Execute"], ActZoomOut: ["Execute"],
             ActZoomReset: ["Execute"], ActZoomFit: ["Execute"],
             MnuGrid: ["Click"], MnuShortcuts: ["Click"], MnuAbout: ["Click"],

@@ -197,14 +197,22 @@ function importModel(model) {
             Math.min(rect.w, rect.h) / 2,
             isNaN(arcSize) ? 12 : Math.min(rect.w, rect.h) * arcSize / 100));
 
+        const shapeWidth = parseFloat(map.strokeWidth || "1.5");
+        const fontStyle = parseInt(map.fontStyle || "0", 10);
         const shape = diagram.addShape(kind, rect.x, rect.y, rect.w, rect.h, {
             layer: layerMap.get(layerOf(cell, byId)) || diagram.layers[0].id,
             text: cleanText(node.Attr("value")),
             fill: fill,
             stroke: stroke,
+            strokeWidth: shapeWidth === shapeWidth ? shapeWidth : 1.5,
+            dash: map.dashed === "1" ? "dash" : "solid",
             textColor: textColor,
             fontSize: fontSize === fontSize ? Math.round(fontSize) : 12,
             radius: Math.round(radius),
+            textBold: (fontStyle & 1) !== 0,
+            textItalic: (fontStyle & 2) !== 0,
+            textAlign: map.align || "",
+            textVAlign: map.verticalAlign || "",
         });
         mapped.set(id, shape.id);
     }
@@ -222,14 +230,20 @@ function importModel(model) {
         const fontValue = parseFloat(map.fontSize || "11");
         const fontSize = (fontValue === fontValue) ? fontValue : 11;
         const edgeCell = byId.get(node.Attr("id"));
+        const edgeWidth = parseFloat(map.strokeWidth || "2");
+        const fontStyle = parseInt(map.fontStyle || "0", 10);
         diagram.addEdge(source, target, {
             layer: edgeCell
                 ? (layerMap.get(layerOf(edgeCell, byId)) || diagram.layers[0].id)
                 : diagram.layers[0].id,
             text: cleanText(node.Attr("value")),
             stroke: colour(map, "strokeColor", "#000000"),
-            dashed: map.dashed === "1",
+            strokeWidth: edgeWidth === edgeWidth ? edgeWidth : 2,
+            dash: map.dashed === "1" ? "dash" : "solid",
+            textColor: colour(map, "fontColor", ""),
             fontSize: fontSize === fontSize ? Math.round(fontSize) : 11,
+            textBold: (fontStyle & 1) !== 0,
+            textItalic: (fontStyle & 2) !== 0,
         });
     }
 

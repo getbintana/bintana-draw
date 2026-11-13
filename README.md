@@ -48,7 +48,12 @@ The window is started with a blank canvas and the shape palette on the left.
   shape to move the selection; drag a handle to resize the one shape selected.
   Shift constrains a move to one axis.
 - **Style** — fill and line colour apply to the selection, and set the default
-  for the next shape when nothing is selected.
+  for the next shape when nothing is selected. The format bar adds line width,
+  solid/dashed/dotted lines, font size, bold and italic, text alignment and
+  text colour.
+- **Order** — `Edit > Order` and the canvas context menu bring the selection to
+  the front or the back, or move it one step forward or backward inside its
+  layer.
 - **Alignment** — while a shape is moved or resized, its edges and centre snap
   to the other shapes and a dotted guide shows why. `Edit > Align` lines up a
   selection; `Edit > Distribute` spaces its centres.
@@ -103,11 +108,14 @@ One object, two arrays, and numbers in canvas units on an unbounded plane:
         { "id": "s1", "kind": "rect", "layer": "l1",
           "x": 40, "y": 40, "w": 160, "h": 70,
           "text": "Start", "fill": "#dae8fc", "stroke": "#6c8ebf",
-          "textColor": "#1f2937", "fontSize": 12, "radius": 12 }
+          "strokeWidth": 2, "dash": "solid", "textColor": "#1f2937",
+          "fontSize": 12, "radius": 12, "textBold": false,
+          "textItalic": false, "textAlign": "center", "textVAlign": "middle" }
       ],
       "edges": [
         { "id": "e1", "from": "s1", "to": "s2", "layer": "l1", "text": "yes",
-          "stroke": "#6c8ebf", "dashed": false, "fontSize": 11 }
+          "stroke": "#6c8ebf", "strokeWidth": 2, "dash": "solid",
+          "fontSize": 11, "textBold": false, "textItalic": false }
       ]
     }
   ]
@@ -162,9 +170,10 @@ handler whose control name is misspelled is silently dead.
 ## What it does not do yet
 
 This is a first editor, not a draw.io replacement. Missing, in the order they
-would change what a person can draw: custom shape libraries and stencils,
-curved connectors with movable waypoints, images and icons, system-clipboard
-interchange with other applications, SVG import/export, and collaboration.
+would change what a person can draw: rotation, grouping, custom shape libraries
+and stencils, curved connectors with movable waypoints, images and icons,
+system-clipboard interchange with other applications, SVG import/export, and
+collaboration.
 
 The draw.io import is deliberately the basic half: it reads every uncompressed
 page of a file, maps the common shapes by style (`rounded`, `ellipse`,

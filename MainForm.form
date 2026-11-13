@@ -28,6 +28,10 @@
     { "name": "ActDuplicate", "text": "Duplicate", "shortcut": "<Control>d", "enabled": false },
     { "name": "ActDelete", "text": "Delete", "shortcut": "Delete", "enabled": false },
     { "name": "ActSelectAll", "text": "Select All", "shortcut": "<Control>a" },
+    { "name": "ActBringFront", "text": "Bring to Front", "enabled": false },
+    { "name": "ActSendBack", "text": "Send to Back", "enabled": false },
+    { "name": "ActBringForward", "text": "Bring Forward", "enabled": false },
+    { "name": "ActSendBackward", "text": "Send Backward", "enabled": false },
     { "name": "ActAlignLeft", "text": "Align Left", "enabled": false },
     { "name": "ActAlignCenter", "text": "Align Center", "enabled": false },
     { "name": "ActAlignRight", "text": "Align Right", "enabled": false },
@@ -92,6 +96,17 @@
           "children": [
             { "action": "ActDistributeHorizontal" },
             { "action": "ActDistributeVertical" }
+          ]
+        },
+        { "separator": true },
+        {
+          "name": "MnuOrder",
+          "text": "Order",
+          "children": [
+            { "action": "ActBringFront" },
+            { "action": "ActSendBack" },
+            { "action": "ActBringForward" },
+            { "action": "ActSendBackward" }
           ]
         }
       ]
@@ -223,6 +238,131 @@
             "Action": "ActDelete",
             "Style": "flat",
             "Height": 34
+          }
+        }
+      ]
+    },
+    {
+      "type": "Panel",
+      "name": "FormatBar",
+      "properties": {
+        "Arrangement": "Horizontal",
+        "Spacing": 6,
+        "Padding": "4 10",
+        "Height": 40,
+        "Style": "draw-formatbar"
+      },
+      "children": [
+        {
+          "type": "Label",
+          "name": "LblStroke",
+          "properties": { "Text": "Line", "For": "SpnStrokeWidth" }
+        },
+        {
+          "type": "SpinBox",
+          "name": "SpnStrokeWidth",
+          "properties": {
+            "Min": 1, "Max": 8, "Step": 1, "Decimals": 0,
+            "Value": 2, "Numeric": true, "Width": 64, "Height": 30,
+            "AccessibleName": "Line width"
+          }
+        },
+        {
+          "type": "ComboBox",
+          "name": "CmbDash",
+          "properties": {
+            "Width": 110, "Height": 30, "AccessibleName": "Line style"
+          }
+        },
+        {
+          "type": "Separator",
+          "name": "FmtSep1",
+          "properties": { "Orientation": "Vertical", "Width": 14, "Height": 24 }
+        },
+        {
+          "type": "Label",
+          "name": "LblFont",
+          "properties": { "Text": "Text", "For": "SpnFont" }
+        },
+        {
+          "type": "SpinBox",
+          "name": "SpnFont",
+          "properties": {
+            "Min": 6, "Max": 72, "Step": 1, "Decimals": 0,
+            "Value": 12, "Numeric": true, "Width": 64, "Height": 30,
+            "AccessibleName": "Font size"
+          }
+        },
+        {
+          "type": "ToggleButton",
+          "name": "BtnBold",
+          "properties": {
+            "Text": "B", "Tooltip": "Bold", "AccessibleName": "Bold",
+            "Font": "Sans Bold 12", "Width": 34, "Height": 30
+          }
+        },
+        {
+          "type": "ToggleButton",
+          "name": "BtnItalic",
+          "properties": {
+            "Text": "I", "Tooltip": "Italic", "AccessibleName": "Italic",
+            "Font": "Sans Italic 12", "Width": 34, "Height": 30
+          }
+        },
+        {
+          "type": "Separator",
+          "name": "FmtSep2",
+          "properties": { "Orientation": "Vertical", "Width": 14, "Height": 24 }
+        },
+        {
+          "type": "Label",
+          "name": "LblAlign",
+          "properties": { "Text": "Align" }
+        },
+        {
+          "type": "ToggleButton",
+          "name": "BtnAlignLeft",
+          "properties": {
+            "Text": "L", "Tooltip": "Align left", "AccessibleName": "Align left",
+            "Width": 30, "Height": 30
+          }
+        },
+        {
+          "type": "ToggleButton",
+          "name": "BtnAlignCenter",
+          "properties": {
+            "Text": "C", "Tooltip": "Align center",
+            "AccessibleName": "Align center", "Active": true,
+            "Width": 30, "Height": 30
+          }
+        },
+        {
+          "type": "ToggleButton",
+          "name": "BtnAlignRight",
+          "properties": {
+            "Text": "R", "Tooltip": "Align right",
+            "AccessibleName": "Align right", "Width": 30, "Height": 30
+          }
+        },
+        {
+          "type": "ComboBox",
+          "name": "CmbVAlign",
+          "properties": {
+            "Width": 110, "Height": 30, "AccessibleName": "Vertical alignment"
+          }
+        },
+        {
+          "type": "Separator",
+          "name": "FmtSep3",
+          "properties": { "Orientation": "Vertical", "Width": 14, "Height": 24 }
+        },
+        {
+          "type": "ColorButton",
+          "name": "BtnTextColor",
+          "properties": {
+            "AccessibleName": "Text color", "Tooltip": "Text color",
+            "HAlign": "Start", "Width": 64, "Height": 28,
+            "Value": "rgb(31,41,55)"
           }
         }
       ]
@@ -453,7 +593,17 @@
                   { "action": "ActDuplicate" },
                   { "action": "ActDelete" },
                   { "separator": true },
-                  { "action": "ActSelectAll" }
+                  { "action": "ActSelectAll" },
+                  { "separator": true },
+                  {
+                    "text": "Order",
+                    "children": [
+                      { "action": "ActBringFront" },
+                      { "action": "ActSendBack" },
+                      { "action": "ActBringForward" },
+                      { "action": "ActSendBackward" }
+                    ]
+                  }
                 ]
               }
             },

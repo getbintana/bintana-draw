@@ -360,6 +360,89 @@ msgstr "Renombrar página"
 msgid "Imported {0} pages from {1}"
 msgstr "Se importaron {0} páginas de {1}"
 
+
+# --- format and order --------------------------------------------------------
+msgid "Solid"
+msgstr "Sólida"
+
+msgid "Dashed"
+msgstr "Discontinua"
+
+msgid "Dotted"
+msgstr "Punteada"
+
+msgid "Line width"
+msgstr "Grosor de línea"
+
+msgid "Line style"
+msgstr "Estilo de línea"
+
+msgid "Font size"
+msgstr "Tamaño del texto"
+
+msgid "Bold"
+msgstr "Negrita"
+
+msgid "Italic"
+msgstr "Cursiva"
+
+msgid "Align text"
+msgstr "Alinear el texto"
+
+msgid "Align left"
+msgstr "Alinear a la izquierda"
+
+msgid "Align center"
+msgstr "Centrar"
+
+msgid "Align right"
+msgstr "Alinear a la derecha"
+
+msgid "Vertical alignment"
+msgstr "Alineación vertical"
+
+msgid "Vertical align"
+msgstr "Alineación vertical"
+
+msgid "Top"
+msgstr "Arriba"
+
+msgid "Middle"
+msgstr "Centro"
+
+msgid "Bottom"
+msgstr "Abajo"
+
+msgid "Text color"
+msgstr "Color del texto"
+
+msgid "Order"
+msgstr "Orden"
+
+msgid "Bring to Front"
+msgstr "Traer al frente"
+
+msgid "Send to Back"
+msgstr "Enviar al fondo"
+
+msgid "Bring Forward"
+msgstr "Traer adelante"
+
+msgid "Send Backward"
+msgstr "Enviar atrás"
+
+msgid "Bring to front"
+msgstr "Traer al frente"
+
+msgid "Send to back"
+msgstr "Enviar al fondo"
+
+msgid "Bring forward"
+msgstr "Traer adelante"
+
+msgid "Send backward"
+msgstr "Enviar atrás"
+
 msgid "Not a draw.io diagram."
 msgstr "No es un diagrama de draw.io."
 

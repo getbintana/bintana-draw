@@ -83,6 +83,14 @@ export class MainForm extends Form {
 
     defaultFill   = DEFAULT_FILL_COLOR;
     defaultStroke = DEFAULT_STROKE_COLOR;
+    defaultStrokeWidth = 2;
+    defaultDash        = "solid";
+    defaultFontSize    = 12;
+    defaultTextBold    = false;
+    defaultTextItalic  = false;
+    defaultTextAlign   = "center";
+    defaultTextVAlign  = "middle";
+    defaultTextColor   = "#1f2937";
 
     statusText = "";
     syncingColors = false;
@@ -90,6 +98,7 @@ export class MainForm extends Form {
     syncingTools  = false;
     syncingLayers = false;
     syncingPages  = false;
+    syncingFormat = false;
     exporting     = false;
     forceClose    = false;
     pendingFit    = false;
@@ -121,6 +130,26 @@ export class MainForm extends Form {
         this.BtnFill.Value = colorButtonValue(this.defaultFill);
         this.BtnLine.Value = colorButtonValue(this.defaultStroke);
         this.syncingColors = false;
+
+        this.syncingFormat = true;
+        this.CmbDash.Add(Locale.Text("Solid"), "solid");
+        this.CmbDash.Add(Locale.Text("Dashed"), "dash");
+        this.CmbDash.Add(Locale.Text("Dotted"), "dot");
+        this.CmbVAlign.Add(Locale.Text("Top"), "top");
+        this.CmbVAlign.Add(Locale.Text("Middle"), "middle");
+        this.CmbVAlign.Add(Locale.Text("Bottom"), "bottom");
+
+        this.SpnStrokeWidth.Value = this.defaultStrokeWidth;
+        this.CmbDash.Index = 0;
+        this.SpnFont.Value = this.defaultFontSize;
+        this.BtnBold.Active = false;
+        this.BtnItalic.Active = false;
+        this.BtnAlignLeft.Active = false;
+        this.BtnAlignCenter.Active = true;
+        this.BtnAlignRight.Active = false;
+        this.CmbVAlign.Index = 1;
+        this.BtnTextColor.Value = colorButtonValue(this.defaultTextColor);
+        this.syncingFormat = false;
 
         this.syncingGrid = true;
         this.MnuGrid.Value = true;
@@ -552,6 +581,7 @@ export class MainForm extends Form {
     select(ids) {
         this.sel = ids.filter((id) => this.doc.canSelect(id));
         this.syncColors();
+        this.syncFormatControls();
         this.updateStatus();
         this.refreshActions();
         this.refreshLayerControls();
@@ -595,12 +625,23 @@ export class MainForm extends Form {
     }
 
     shapeOptions(kind) {
+        let options;
         if (kind === "note")
-            return { fill: "#fff2cc", stroke: "#d6b656", text: "" };
-        if (kind === "text")
-            return { fill: "rgba(0,0,0,0)", stroke: "rgba(0,0,0,0)",
-                     textColor: "#1f2937" };
-        return { fill: this.defaultFill, stroke: this.defaultStroke };
+            options = { fill: "#fff2cc", stroke: "#d6b656", text: "" };
+        else if (kind === "text")
+            options = { fill: "rgba(0,0,0,0)", stroke: "rgba(0,0,0,0)" };
+        else
+            options = { fill: this.defaultFill, stroke: this.defaultStroke };
+
+        options.strokeWidth = this.defaultStrokeWidth;
+        options.dash = this.defaultDash;
+        options.fontSize = this.defaultFontSize;
+        options.textColor = this.defaultTextColor;
+        options.textBold = this.defaultTextBold;
+        options.textItalic = this.defaultTextItalic;
+        options.textAlign = kind === "note" ? "left" : this.defaultTextAlign;
+        options.textVAlign = kind === "note" ? "top" : this.defaultTextVAlign;
+        return options;
     }
 
     /* ------------------------------------------------------------- pointers */
@@ -929,9 +970,16 @@ export class MainForm extends Form {
         }
 
         const before = this.snapshot();
-        const edge = this.doc.addEdge(d.from, d.target,
-                                      { stroke: this.defaultStroke,
-                                        layer: this.activeLayer });
+        const edge = this.doc.addEdge(d.from, d.target, {
+            stroke: this.defaultStroke,
+            layer: this.activeLayer,
+            strokeWidth: this.defaultStrokeWidth,
+            dash: this.defaultDash,
+            textColor: this.defaultTextColor,
+            fontSize: this.defaultFontSize,
+            textBold: this.defaultTextBold,
+            textItalic: this.defaultTextItalic,
+        });
         if (!edge) return;
 
         this.select([edge.id]);
@@ -1073,7 +1121,10 @@ export class MainForm extends Form {
             outShapes.push({
                 id: s.id, kind: s.kind, x: s.x, y: s.y, w: s.w, h: s.h,
                 text: s.text, fill: s.fill, stroke: s.stroke,
+                strokeWidth: s.strokeWidth, dash: s.dash,
                 textColor: s.textColor, fontSize: s.fontSize, radius: s.radius,
+                textBold: s.textBold, textItalic: s.textItalic,
+                textAlign: s.textAlign, textVAlign: s.textVAlign,
             });
         }
 
@@ -1083,7 +1134,10 @@ export class MainForm extends Form {
             if (!this.doc.canSelect(e)) continue;
             outEdges.push({
                 id: e.id, from: e.from, to: e.to, text: e.text,
-                stroke: e.stroke, dashed: e.dashed, fontSize: e.fontSize,
+                stroke: e.stroke, strokeWidth: e.strokeWidth,
+                dash: e.dash, dashed: e.dashed, textColor: e.textColor,
+                fontSize: e.fontSize, textBold: e.textBold,
+                textItalic: e.textItalic,
             });
         }
         return { shapes: outShapes, edges: outEdges };
@@ -1109,8 +1163,11 @@ export class MainForm extends Form {
             const shape = this.doc.addShape(
                 raw.kind, raw.x + dx, raw.y + dy, raw.w, raw.h,
                 { text: raw.text, fill: raw.fill, stroke: raw.stroke,
+                  strokeWidth: raw.strokeWidth, dash: raw.dash,
                   textColor: raw.textColor, fontSize: raw.fontSize,
-                  radius: raw.radius, layer: this.activeLayer });
+                  radius: raw.radius, textBold: raw.textBold,
+                  textItalic: raw.textItalic, textAlign: raw.textAlign,
+                  textVAlign: raw.textVAlign, layer: this.activeLayer });
             renamed.set(raw.id, shape.id);
             ids.push(shape.id);
         }
@@ -1121,8 +1178,10 @@ export class MainForm extends Form {
             if (!from || !to) continue;
             const edge = this.doc.addEdge(from, to,
                 { text: raw.text, stroke: raw.stroke,
-                  dashed: raw.dashed, fontSize: raw.fontSize,
-                  layer: this.activeLayer });
+                  strokeWidth: raw.strokeWidth, dash: raw.dash,
+                  dashed: raw.dashed, textColor: raw.textColor,
+                  fontSize: raw.fontSize, textBold: raw.textBold,
+                  textItalic: raw.textItalic, layer: this.activeLayer });
             if (edge) ids.push(edge.id);
         }
 
@@ -1394,6 +1453,7 @@ export class MainForm extends Form {
         this.refreshTitle();
         this.refreshActions();
         this.syncColors();
+        this.syncFormatControls();
         this.updateStatus();
         this.updateZoomLabel();
         if (this.Canvas) this.Canvas.Redraw();
@@ -1434,6 +1494,11 @@ export class MainForm extends Form {
         this.ActAlignBottom.Enabled = canAlign;
         this.ActDistributeHorizontal.Enabled = canDistribute;
         this.ActDistributeVertical.Enabled   = canDistribute;
+
+        this.ActBringFront.Enabled    = shapeCount > 0;
+        this.ActSendBack.Enabled      = shapeCount > 0;
+        this.ActBringForward.Enabled  = shapeCount > 0;
+        this.ActSendBackward.Enabled  = shapeCount > 0;
     }
 
     syncColors() {
@@ -1448,6 +1513,129 @@ export class MainForm extends Form {
         this.BtnFill.Value = colorButtonValue(fill);
         this.BtnLine.Value = colorButtonValue(line);
         this.syncingColors = false;
+    }
+
+    syncFormatControls() {
+        if (!this.SpnStrokeWidth) return;
+
+        const shapes = this.selectedShapes();
+        const edges = this.selectedEdges();
+        const object = shapes.length ? shapes[0] : (edges.length ? edges[0] : null);
+        const edge = !!object && object.from !== undefined;
+
+        const width = object
+            ? (object.strokeWidth || (edge ? 2 : 1.5))
+            : this.defaultStrokeWidth;
+        const dash = object
+            ? (object.dash || (object.dashed ? "dash" : "solid"))
+            : this.defaultDash;
+        const size = object
+            ? (object.fontSize || (edge ? 11 : 12))
+            : this.defaultFontSize;
+        const bold = object ? object.textBold === true : this.defaultTextBold;
+        const italic = object ? object.textItalic === true : this.defaultTextItalic;
+        const align = edge ? this.defaultTextAlign
+            : (object && object.textAlign ? object.textAlign : this.defaultTextAlign);
+        const vAlign = edge ? this.defaultTextVAlign
+            : (object && object.textVAlign
+                ? object.textVAlign : this.defaultTextVAlign);
+        const color = object
+            ? (object.textColor || (edge ? (object.stroke || this.defaultTextColor)
+                                         : this.defaultTextColor))
+            : this.defaultTextColor;
+
+        this.syncingFormat = true;
+        this.SpnStrokeWidth.Value = Math.max(1, Math.round(width));
+        this.CmbDash.Index = dash === "dot" ? 2 : (dash === "dash" ? 1 : 0);
+        this.SpnFont.Value = Math.max(6, Math.round(size));
+        this.BtnBold.Active = bold;
+        this.BtnItalic.Active = italic;
+        this.BtnAlignLeft.Active = align === "left";
+        this.BtnAlignCenter.Active = align === "center" || align === "";
+        this.BtnAlignRight.Active = align === "right";
+        this.CmbVAlign.Index = vAlign === "top" ? 0 : (vAlign === "bottom" ? 2 : 1);
+        this.BtnTextColor.Value = colorButtonValue(color);
+        this.syncingFormat = false;
+    }
+
+    applyFormat(text, apply) {
+        const before = this.snapshot();
+        for (const s of this.selectedShapes()) apply(s);
+        for (const e of this.selectedEdges()) apply(e);
+        this.pushUndo(text, before);
+        this.refreshAll();
+    }
+
+    SpnStrokeWidth_Change() {
+        if (this.syncingFormat) return;
+        const value = Math.max(1, Math.round(this.SpnStrokeWidth.Value));
+        this.defaultStrokeWidth = value;
+        this.applyFormat(Locale.Text("Line width"), (o) => { o.strokeWidth = value; });
+    }
+
+    CmbDash_Select() {
+        if (this.syncingFormat) return;
+        const value = this.CmbDash.Index === 2 ? "dot"
+                    : (this.CmbDash.Index === 1 ? "dash" : "solid");
+        this.defaultDash = value;
+        this.applyFormat(Locale.Text("Line style"), (o) => {
+            o.dash = value;
+            if (o.from !== undefined) o.dashed = value !== "solid";
+        });
+    }
+
+    SpnFont_Change() {
+        if (this.syncingFormat) return;
+        const value = Math.max(6, Math.round(this.SpnFont.Value));
+        this.defaultFontSize = value;
+        this.applyFormat(Locale.Text("Font size"), (o) => { o.fontSize = value; });
+    }
+
+    BtnBold_Click() {
+        if (this.syncingFormat) return;
+        const value = this.BtnBold.Active;
+        this.defaultTextBold = value;
+        this.applyFormat(Locale.Text("Bold"), (o) => { o.textBold = value; });
+    }
+
+    BtnItalic_Click() {
+        if (this.syncingFormat) return;
+        const value = this.BtnItalic.Active;
+        this.defaultTextItalic = value;
+        this.applyFormat(Locale.Text("Italic"), (o) => { o.textItalic = value; });
+    }
+
+    setTextAlign(value, button) {
+        if (this.syncingFormat) return;
+        this.syncingFormat = true;
+        for (const b of [this.BtnAlignLeft, this.BtnAlignCenter,
+                         this.BtnAlignRight]) b.Active = (b === button);
+        this.syncingFormat = false;
+        this.defaultTextAlign = value;
+        this.applyFormat(Locale.Text("Align text"), (o) => {
+            if (o.from === undefined) o.textAlign = value;
+        });
+    }
+
+    BtnAlignLeft_Click()   { this.setTextAlign("left", this.BtnAlignLeft); }
+    BtnAlignCenter_Click() { this.setTextAlign("center", this.BtnAlignCenter); }
+    BtnAlignRight_Click()  { this.setTextAlign("right", this.BtnAlignRight); }
+
+    CmbVAlign_Select() {
+        if (this.syncingFormat) return;
+        const value = this.CmbVAlign.Index === 0 ? "top"
+                    : (this.CmbVAlign.Index === 2 ? "bottom" : "middle");
+        this.defaultTextVAlign = value;
+        this.applyFormat(Locale.Text("Vertical align"), (o) => {
+            if (o.from === undefined) o.textVAlign = value;
+        });
+    }
+
+    BtnTextColor_Change() {
+        if (this.syncingFormat) return;
+        const value = this.BtnTextColor.Value;
+        this.defaultTextColor = value;
+        this.applyFormat(Locale.Text("Text color"), (o) => { o.textColor = value; });
     }
 
     updateStatus() {
@@ -1830,6 +2018,54 @@ export class MainForm extends Form {
         this.pushUndo(Locale.Text("Distribute"), before);
         this.refreshAll();
     }
+
+    zOrder(mode) {
+        const shapes = this.selectedShapes();
+        if (!shapes.length) return;
+
+        const before = this.snapshot();
+        const selected = new Set();
+        for (const s of shapes) selected.add(s.id);
+
+        if (mode === "front" || mode === "back") {
+            const chosen = this.doc.shapes.filter((s) => selected.has(s.id));
+            const rest = this.doc.shapes.filter((s) => !selected.has(s.id));
+            this.doc.shapes = mode === "front" ? rest.concat(chosen)
+                                               : chosen.concat(rest);
+        } else {
+            const ordered = shapes.slice().sort((a, b) =>
+                this.doc.shapes.indexOf(a) - this.doc.shapes.indexOf(b));
+            if (mode === "forward") ordered.reverse();
+
+            for (const shape of ordered) {
+                let at = this.doc.shapes.indexOf(shape);
+                if (at < 0) continue;
+                let to = at + (mode === "forward" ? 1 : -1);
+                while (to >= 0 && to < this.doc.shapes.length) {
+                    if (this.doc.shapes[to].layer === shape.layer) {
+                        const other = this.doc.shapes[to];
+                        this.doc.shapes[to] = shape;
+                        this.doc.shapes[at] = other;
+                        break;
+                    }
+                    to += mode === "forward" ? 1 : -1;
+                }
+            }
+        }
+
+        let step = Locale.Text("Bring to front");
+        if (mode === "back") step = Locale.Text("Send to back");
+        else if (mode === "forward") step = Locale.Text("Bring forward");
+        else if (mode === "backward") step = Locale.Text("Send backward");
+
+        this.pushUndo(step, before);
+        this.refreshAll();
+    }
+
+    ActBringFront_Execute()   { this.zOrder("front"); }
+    ActSendBack_Execute()     { this.zOrder("back"); }
+    ActBringForward_Execute() { this.zOrder("forward"); }
+    ActSendBackward_Execute() { this.zOrder("backward"); }
 
     ActAlignLeft_Execute()   { this.alignSelection("left"); }
     ActAlignCenter_Execute() { this.alignSelection("center"); }

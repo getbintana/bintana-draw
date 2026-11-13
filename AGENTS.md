@@ -61,6 +61,14 @@ BINTANA=/path/to/build/bintana tests/run.sh
   or an open. A hidden layer is out of the bounds and out of hit testing; a
   locked one is drawn but `canSelect` refuses it, and an edge whose endpoint
   hides hides with it.
+- **Text alignment is stored in lower case and the painter wants Title case.**
+  `s.textAlign` is `"left"`, `"center"` or `"right"`; `Painter.Text` wants
+  `"Left"`, `"Center"` or `"Right"`, and a wrong one is a `RangeError` from the
+  native call, not a silent fallback.
+- **The format bar writes defaults as well as the selection.** A change with
+  nothing selected is the style the next shape gets; a change with something
+  selected is one undo step and also becomes the default. `syncingFormat`
+  guards the round trip of every control.
 - **A snapshot is the whole book.** `snapshot()` serializes `Document`, not the
   active page: an undo of a page add, delete or rename has to put back every
   page. `applySnapshot` restores `book.active` and makes `this.doc` the page it

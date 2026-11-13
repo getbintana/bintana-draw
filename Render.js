@@ -13,6 +13,19 @@
 const KAPPA = 0.5522847498307936;
 const ACCENT = "#3584e4";
 
+function dashPattern(dash, dashed) {
+    if (dash === "dot") return [2, 3];
+    if (dash === "dash" || dashed) return [7, 5];
+    return [];
+}
+
+function fontDescription(size, bold, italic) {
+    let font = "Sans";
+    if (bold) font += " Bold";
+    if (italic) font += " Italic";
+    return font + " " + Math.max(6, Math.round(size || 12));
+}
+
 /* ------------------------------------------------------------------ paths */
 
 function roundRectPath(p, x, y, w, h, radius) {
@@ -106,43 +119,33 @@ function selectionOutline(p, s) {
 function labelInShape(p, s) {
     if (!s.text) return;
 
-    let x = s.x + 10;
-    let width = Math.max(10, s.w - 20);
-    let align = "Center";
-    let y = s.y + 10;
+    const wide = s.kind === "ellipse" || s.kind === "diamond";
+    const note = s.kind === "note";
+    const fold = note ? Math.min(24, s.w * 0.22, s.h * 0.32) : 0;
+    const padX = note ? 12 : (wide ? s.w * 0.18 : 10);
+    const width = Math.max(10, note ? s.w - fold - 18 : s.w - padX * 2);
+    const align = s.textAlign || (note ? "left" : "center");
+    const vAlign = s.textVAlign || (note ? "top" : "middle");
+    const x = s.x + padX;
 
-    if (s.kind === "ellipse" || s.kind === "diamond") {
-        const pad = s.w * 0.18;
-        x = s.x + pad;
-        width = Math.max(10, s.w - pad * 2);
-    } else if (s.kind === "cylinder") {
-        x = s.x + 16;
-        width = Math.max(10, s.w - 32);
-    }
-
-    p.Font = "Sans " + Math.max(6, Math.round(s.fontSize));
+    p.Font = fontDescription(s.fontSize, s.textBold, s.textItalic);
     p.Color = s.textColor || DEFAULT_TEXT;
 
-    const options = { Width: width, Align: align };
+    const pangoAlign = align === "left" ? "Left"
+                     : (align === "right" ? "Right" : "Center");
+    const options = { Width: width, Align: pangoAlign };
     const height = p.TextHeight(s.text, options);
-
-    if (s.kind === "note") {
-        /* A note reads from the top-left and stops before its fold. */
-        const fold = Math.min(24, s.w * 0.22, s.h * 0.32);
-        x = s.x + 12;
-        width = Math.max(10, s.w - fold - 18);
-        align = "Left";
-        y = s.y + 10;
-    } else {
-        y = s.y + (s.h - height) / 2;
-    }
+    let y;
+    if (vAlign === "top") y = s.y + (note ? 10 : 8);
+    else if (vAlign === "bottom") y = s.y + s.h - height - 8;
+    else y = s.y + (s.h - height) / 2;
 
     /* A long label must not paint outside the shape it belongs to. */
     p.Push();
     if (s.kind === "text") p.Rectangle(s.x, s.y, s.w, s.h);
     else shapePath(p, s);
     p.Clip();
-    p.Text(s.text, x, y, { Width: width, Align: align });
+    p.Text(s.text, x, y, options);
     p.Pop();
 }
 
@@ -151,7 +154,7 @@ function edgeLabel(p, e, points) {
     const at = edgeMidpoint(points);
     if (!at) return;
 
-    p.Font = "Sans " + Math.max(6, Math.round(e.fontSize));
+    p.Font = fontDescription(e.fontSize, e.textBold, e.textItalic);
     const tw = p.TextWidth(e.text);
     const th = p.TextHeight(e.text);
     const pad = 4;
@@ -160,7 +163,7 @@ function edgeLabel(p, e, points) {
     p.Color = "rgba(255,255,255,0.94)";
     p.Fill();
 
-    p.Color = e.stroke || DEFAULT_EDGE;
+    p.Color = e.textColor || e.stroke || DEFAULT_EDGE;
     p.Text(e.text, at.x - tw / 2, at.y - th / 2);
 }
 
@@ -178,33 +181,39 @@ function drawShape(p, s) {
 
     shapePath(p, s);
     p.Color = s.stroke || DEFAULT_STROKE;
-    p.LineWidth = 1.5;
+    p.LineWidth = s.strokeWidth || 1.5;
+    p.LineDash = dashPattern(s.dash, false);
     p.Stroke();
+    p.LineDash = [];
 
     if (s.kind === "cylinder") {
         cylinderTopPath(p, s);
         p.Color = s.stroke || DEFAULT_STROKE;
-        p.LineWidth = 1.5;
+        p.LineWidth = s.strokeWidth || 1.5;
+        p.LineDash = dashPattern(s.dash, false);
         p.Stroke();
+        p.LineDash = [];
     } else if (s.kind === "note") {
         const fold = Math.min(24, s.w * 0.22, s.h * 0.32);
         p.Color = s.stroke || DEFAULT_STROKE;
-        p.LineWidth = 1.5;
+        p.LineWidth = s.strokeWidth || 1.5;
+        p.LineDash = dashPattern(s.dash, false);
         p.MoveTo(s.x + s.w - fold, s.y);
         p.LineTo(s.x + s.w - fold, s.y + fold);
         p.LineTo(s.x + s.w, s.y + fold);
         p.Stroke();
+        p.LineDash = [];
     }
 
     labelInShape(p, s);
 }
 
-function arrowHead(p, points, color) {
+function arrowHead(p, points, color, width) {
     if (points.length < 4) return;
     const ex = points[points.length - 2], ey = points[points.length - 1];
     const px = points[points.length - 4], py = points[points.length - 3];
     const angle = Math.atan2(ey - py, ex - px);
-    const size = 11;
+    const size = 9 + (width || 2);
     const spread = 0.42;
     const ax = ex - size * Math.cos(angle - spread);
     const ay = ey - size * Math.sin(angle - spread);
@@ -218,13 +227,14 @@ function arrowHead(p, points, color) {
 function drawEdgeLine(p, e, points) {
     if (points.length < 4) return;
     const color = e.stroke || DEFAULT_EDGE;
+    const width = e.strokeWidth || 2;
     p.Color = color;
-    p.LineWidth = 2;
-    p.LineDash = e.dashed ? [7, 5] : [];
+    p.LineWidth = width;
+    p.LineDash = dashPattern(e.dash, e.dashed);
     p.Polyline(points);
     p.Stroke();
     p.LineDash = [];
-    arrowHead(p, points, color);
+    arrowHead(p, points, color, width);
 }
 
 /* ------------------------------------------------------------------ handles */
