@@ -430,6 +430,28 @@ msgstr "Dibujar línea"
 msgid "Draw arrow"
 msgstr "Dibujar flecha"
 
+
+msgid "Orthogonal"
+msgstr "Ortogonal"
+
+msgid "Straight"
+msgstr "Recta"
+
+msgid "Curved"
+msgstr "Curva"
+
+msgid "Connector route"
+msgstr "Recorrido del conector"
+
+msgid "Add bend"
+msgstr "Agregar quiebre"
+
+msgid "Move bend"
+msgstr "Mover quiebre"
+
+msgid "Remove bend"
+msgstr "Quitar quiebre"
+
 msgid "Rotate"
 msgstr "Rotar"
 

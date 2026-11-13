@@ -276,7 +276,7 @@
           "type": "ComboBox",
           "name": "CmbDash",
           "properties": {
-            "Width": 110, "Height": 30, "AccessibleName": "Line style"
+            "Width": 88, "Height": 30, "AccessibleName": "Line style"
           }
         },
         {
@@ -320,11 +320,6 @@
           "properties": { "Orientation": "Vertical", "Width": 14, "Height": 24 }
         },
         {
-          "type": "Label",
-          "name": "LblAlign",
-          "properties": { "Text": "Align" }
-        },
-        {
           "type": "ToggleButton",
           "name": "BtnAlignLeft",
           "properties": {
@@ -353,21 +348,23 @@
           "type": "ComboBox",
           "name": "CmbVAlign",
           "properties": {
-            "Width": 110, "Height": 30, "AccessibleName": "Vertical alignment"
+            "Width": 100, "Height": 30, "AccessibleName": "Vertical alignment"
           }
         },
         {
-          "type": "Label",
-          "name": "LblRotate",
-          "properties": { "Text": "Rotate", "For": "SpnRotation" }
+          "type": "ComboBox",
+          "name": "CmbRoute",
+          "properties": {
+            "Width": 95, "Height": 30, "AccessibleName": "Connector route", "Tooltip": "Connector route"
+          }
         },
         {
           "type": "SpinBox",
           "name": "SpnRotation",
           "properties": {
             "Min": -360, "Max": 360, "Step": 15, "Decimals": 0,
-            "Value": 0, "Numeric": true, "Width": 70, "Height": 30,
-            "AccessibleName": "Rotation"
+            "Value": 0, "Numeric": true, "Width": 56, "Height": 30,
+            "AccessibleName": "Rotation", "Tooltip": "Rotation"
           }
         },
         {
@@ -380,7 +377,7 @@
           "name": "BtnTextColor",
           "properties": {
             "AccessibleName": "Text color", "Tooltip": "Text color",
-            "HAlign": "Start", "Width": 64, "Height": 28,
+            "HAlign": "Start", "Width": 60, "Height": 28,
             "Value": "rgb(31,41,55)"
           }
         }

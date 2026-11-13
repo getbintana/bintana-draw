@@ -213,6 +213,7 @@ class TestForm extends Form {
         this.zorder(fm);
         this.groups(fm);
         this.freeLines(fm);
+        this.routing(fm);
         this.layers(fm);
         this.pages(fm);
 
@@ -922,6 +923,80 @@ class TestForm extends Form {
                 imported.diagram.edges[0].arrowEnd, false);
     }
 
+    routing(fm) {
+        fm.resetDocument();
+        fm.panX = 0;
+        fm.panY = 0;
+        fm.zoom = 1;
+        const a = fm.doc.addShape("rect", 0, 0, 100, 60, { text: "A" });
+        const b = fm.doc.addShape("rect", 300, 0, 100, 60, { text: "B" });
+        const edge = fm.doc.addEdge(a.id, b.id, { text: "edge" });
+        fm.refreshAll();
+        fm.select([edge.id]);
+
+        this.eq("routing: orthogonal by default",
+                fm.doc.edgeById(edge.id).route, "orthogonal");
+        fm.CmbRoute.Index = 2;
+        fm.CmbRoute_Select();
+        this.eq("routing: curved is set", fm.doc.edgeById(edge.id).route,
+                "curved");
+        this.check("routing: the curve has samples",
+                   edgeRoute(fm.doc, fm.doc.edgeById(edge.id)).length > 4);
+
+        fm.CmbRoute.Index = 1;
+        fm.CmbRoute_Select();
+        this.eq("routing: straight is set", fm.doc.edgeById(edge.id).route,
+                "straight");
+        this.eq("routing: a straight edge is two points",
+                edgeRoute(fm.doc, fm.doc.edgeById(edge.id)).length, 4);
+
+        fm.CmbRoute.Index = 0;
+        fm.CmbRoute_Select();
+        this.eq("routing: back to orthogonal",
+                fm.doc.edgeById(edge.id).route, "orthogonal");
+
+        /* Selecting the edge gives a hollow midpoint; dragging it adds a bend. */
+        fm.select([edge.id]);
+        let handles = edgeHandlePoints(fm.doc, fm.doc.edgeById(edge.id));
+        this.eq("routing: there is one add handle", handles.midpoints.length, 1);
+        const add = handles.midpoints[0];
+        fm.Canvas_MouseDown(add.x, add.y, 1, false, false);
+        fm.Canvas_MouseMove(add.x + 20, add.y + 30, 1, false, false);
+        fm.Canvas_MouseUp(add.x + 20, add.y + 30, 1, false, false);
+        this.eq("routing: the bend was added",
+                fm.doc.edgeById(edge.id).waypoints.length, 1);
+
+        const bend = fm.doc.edgeById(edge.id).waypoints[0];
+        this.eq("routing: and moved with the pointer",
+                fm.doc.edgeById(edge.id).waypoints[0].x, fm.snap(add.x + 20));
+
+        /* A second click on a bend removes it. */
+        fm.select([edge.id]);
+        const at = fm.doc.edgeById(edge.id).waypoints[0];
+        fm.Canvas_DblClick(at.x, at.y);
+        this.eq("routing: double-click removes the bend",
+                fm.doc.edgeById(edge.id).waypoints.length, 0);
+        fm.ActUndo_Execute();
+        this.eq("routing: undo brings the bend back",
+                fm.doc.edgeById(edge.id).waypoints.length, 1);
+
+        const round = Diagram.fromJSON(JSON.parse(JSON.stringify(fm.doc.toJSON())));
+        this.eq("routing: the route round-trips",
+                round.edgeById(edge.id).route, "orthogonal");
+        this.eq("routing: the bend round-trips",
+                round.edgeById(edge.id).waypoints.length, 1);
+
+        const imported = DrawioImport.parse(`<mxfile><diagram id="p"><mxGraphModel><root>
+            <mxCell id="0"/><mxCell id="1" parent="0"/>
+            <mxCell id="a" value="A" vertex="1" parent="1"><mxGeometry x="0" y="0" width="80" height="40" as="geometry"/></mxCell>
+            <mxCell id="b" value="B" vertex="1" parent="1"><mxGeometry x="200" y="0" width="80" height="40" as="geometry"/></mxCell>
+            <mxCell id="e" edge="1" source="a" target="b" parent="1" style="curved=1;edgeStyle=orthogonalEdgeStyle;"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="140" y="60"/></Array></mxGeometry></mxCell>
+        </root></mxGraphModel></diagram></mxfile>`);
+        this.eq("routing: draw.io curve", imported.diagram.edges[0].route,
+                "curved");
+        this.eq("routing: draw.io bend", imported.diagram.edges[0].waypoints.length, 1);
+    }
+
     confirmDialog() {
         let answer = "";
         let dialog = ConfirmForm.ask("Title", "Message", "Save",
@@ -968,6 +1043,7 @@ class TestForm extends Form {
             BtnAlignLeft: ["Click"], BtnAlignCenter: ["Click"],
             BtnAlignRight: ["Click"], CmbVAlign: ["Select"],
             SpnRotation: ["Change"], BtnTextColor: ["Change"],
+            CmbRoute: ["Select"],
             LstLayers: ["Select", "Activate"],
             BtnLayerAdd: ["Click"], BtnLayerRemove: ["Click"],
             BtnLayerUp: ["Click"], BtnLayerDown: ["Click"],

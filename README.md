@@ -66,6 +66,12 @@ The window is started with a blank canvas and the shape palette on the left.
   with the arrows, labelled, styled, copied, pasted, and it is included in the
   bounds and the export. The endpoint handles are not there yet: to change just
   one end, draw it again.
+- **Connector routes** — a selected connector has a `Route` choice:
+  orthogonal (the automatic right-angled path), straight, or curved. Select a
+  connector and drag the hollow circle at its middle to add a bend; drag a bend
+  to move it and double-click it to remove it. A connector with bends follows
+  them, and the curved route is sampled into a smooth line for the painter, the
+  hit test and the export.
 - **Alignment** — while a shape is moved or resized, its edges and centre snap
   to the other shapes and a dotted guide shows why. `Edit > Align` lines up a
   selection; `Edit > Distribute` spaces its centres.
@@ -128,6 +134,7 @@ One object, two arrays, and numbers in canvas units on an unbounded plane:
       ],
       "edges": [
         { "id": "e1", "from": "s1", "to": "s2", "layer": "l1", "text": "yes",
+          "route": "orthogonal", "waypoints": [],
           "stroke": "#6c8ebf", "strokeWidth": 2, "dash": "solid",
           "fontSize": 11, "textBold": false, "textItalic": false }
       ]
@@ -185,9 +192,8 @@ handler whose control name is misspelled is silently dead.
 
 This is a first editor, not a draw.io replacement. Missing, in the order they
 would change what a person can draw: custom shape libraries and stencils,
-curved connectors with movable waypoints, endpoint editing on free lines,
-images and icons, system-clipboard interchange with other applications, SVG
-import/export, and collaboration.
+endpoint editing on free lines, images and icons, system-clipboard interchange
+with other applications, SVG import/export, and collaboration.
 
 The draw.io import is deliberately the basic half: it reads every uncompressed
 page of a file, maps the common shapes by style (`rounded`, `ellipse`,

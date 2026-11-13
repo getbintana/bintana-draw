@@ -71,6 +71,12 @@ BINTANA=/path/to/build/bintana tests/run.sh
   holds every member; resizing does not, because more than one shape is
   selected and handles only appear for one. A paste must remap group ids, or
   the copy joins the original group.
+- **An edge route is one of three things.** With no waypoints and
+  `route === "orthogonal"` it is the automatic right-angled path; otherwise the
+  control points are the anchors plus the waypoints, `straight` joins them and
+  `curved` samples a Catmull-Rom through them. The hollow midpoint handle adds a
+  bend only when dragged (`addBend` waits for 3 px), so a double-click at the
+  middle still reaches the label editor.
 - **A free line is an edge with no shapes.** `from` and `to` are empty and the
   geometry is `x1/y1/x2/y2`; `edgeRoute` returns those two points, `layerVisible`
   does not look for endpoints, and `bounds` includes them. Copy/paste has to

@@ -264,6 +264,25 @@ export function shapeHandles(s) {
     ];
 }
 
+export function edgeHandlePoints(diagram, edge) {
+    const waypoints = edge.waypoints || [];
+    const midpoints = [];
+
+    if (waypoints.length) {
+        const control = edgeControlPoints(diagram, edge);
+        for (let i = 2; i < control.length; i += 2) {
+            midpoints.push({
+                x: (control[i - 2] + control[i]) / 2,
+                y: (control[i - 1] + control[i + 1]) / 2,
+            });
+        }
+    } else if (edge.from || edge.to) {
+        const middle = edgeMidpoint(edgeRoute(diagram, edge));
+        if (middle) midpoints.push(middle);
+    }
+    return { waypoints: waypoints, midpoints: midpoints };
+}
+
 function drawSelection(p, diagram, selected, zoom) {
     const ids = new Set(selected);
 
@@ -341,6 +360,27 @@ function drawSelection(p, diagram, selected, zoom) {
         p.Polyline(points);
         p.Stroke();
         p.LineDash = [];
+
+        const handles = edgeHandlePoints(diagram, e);
+        const size = 7 / zoom;
+        for (const point of handles.waypoints) {
+            p.Rectangle(point.x - size / 2, point.y - size / 2, size, size);
+            p.Color = "#ffffff";
+            p.Fill();
+            p.Rectangle(point.x - size / 2, point.y - size / 2, size, size);
+            p.Color = ACCENT;
+            p.LineWidth = 1.3 / zoom;
+            p.Stroke();
+        }
+        for (const point of handles.midpoints) {
+            p.Arc(point.x, point.y, 3.5 / zoom, 0, 360);
+            p.Color = "#ffffff";
+            p.Fill();
+            p.Arc(point.x, point.y, 3.5 / zoom, 0, 360);
+            p.Color = ACCENT;
+            p.LineWidth = 1.2 / zoom;
+            p.Stroke();
+        }
     }
 }
 

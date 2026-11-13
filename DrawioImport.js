@@ -263,8 +263,25 @@ function importModel(model) {
             : diagram.layers[0].id;
         const edgeWidth = parseFloat(map.strokeWidth || "2");
         const fontStyle = parseInt(map.fontStyle || "0", 10);
+        const geometry = node.Find("mxGeometry");
+        const waypoints = [];
+        if (geometry) {
+            const array = geometry.Find("Array");
+            if (array) {
+                for (const point of array.FindAll("mxPoint")) {
+                    waypoints.push({
+                        x: attrNumber(point, "x", 0),
+                        y: attrNumber(point, "y", 0),
+                    });
+                }
+            }
+        }
+        const route = map.curved === "1" ? "curved"
+                    : (map.edgeStyle === "none" ? "straight" : "orthogonal");
         const common = {
             layer: layer,
+            route: route,
+            waypoints: waypoints,
             text: cleanText(node.Attr("value")),
             stroke: colour(map, "strokeColor", "#000000"),
             strokeWidth: edgeWidth === edgeWidth ? edgeWidth : 2,
@@ -281,7 +298,6 @@ function importModel(model) {
         }
 
         /* A line with no shapes has its two ends in sourcePoint/targetPoint. */
-        const geometry = node.Find("mxGeometry");
         let sx = null, sy = null, tx = null, ty = null;
         if (geometry) {
             for (const point of geometry.FindAll("mxPoint")) {

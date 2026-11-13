@@ -49,11 +49,30 @@ function copyShape(s) {
     };
 }
 
+function copyWaypoints(points) {
+    const out = [];
+    for (const point of points || [])
+        out.push({ x: point.x, y: point.y });
+    return out;
+}
+
+function readWaypoints(points) {
+    const out = [];
+    if (!Array.isArray(points)) return out;
+    for (const point of points) {
+        if (!point || typeof point !== "object") continue;
+        out.push({ x: number(point.x, 0), y: number(point.y, 0) });
+    }
+    return out;
+}
+
 function copyEdge(e) {
     return {
         id: e.id, from: e.from, to: e.to, layer: e.layer, text: e.text,
         x1: e.x1, y1: e.y1, x2: e.x2, y2: e.y2,
         arrowEnd: e.arrowEnd !== false,
+        route: e.route || "orthogonal",
+        waypoints: copyWaypoints(e.waypoints),
         stroke: e.stroke, strokeWidth: e.strokeWidth, dash: e.dash,
         dashed: e.dash !== "solid", textColor: e.textColor,
         fontSize: e.fontSize, textBold: e.textBold, textItalic: e.textItalic,
@@ -219,6 +238,9 @@ export class Diagram {
             from: from,
             to: to,
             layer: layer,
+            route: o.route === "straight" || o.route === "curved"
+                ? o.route : "orthogonal",
+            waypoints: copyWaypoints(o.waypoints),
             text: text(o.text, ""),
             stroke: text(o.stroke, DEFAULT_EDGE),
             strokeWidth: Math.max(0.5, number(o.strokeWidth, 2)),
@@ -250,6 +272,9 @@ export class Diagram {
             x2: number(x2, 0),
             y2: number(y2, 0),
             arrowEnd: o.arrowEnd !== false,
+            route: o.route === "straight" || o.route === "curved"
+                ? o.route : "orthogonal",
+            waypoints: copyWaypoints(o.waypoints),
             text: text(o.text, ""),
             stroke: text(o.stroke, DEFAULT_EDGE),
             strokeWidth: Math.max(0.5, number(o.strokeWidth, 2)),
@@ -334,12 +359,14 @@ export class Diagram {
             y1 = Math.max(y1, box.y + box.h);
         }
         for (const edge of this.edges) {
-            if (edge.from || edge.to || !this.layerVisible(edge)) continue;
-            if (edge.x1 === undefined) continue;
-            x0 = Math.min(x0, edge.x1, edge.x2);
-            y0 = Math.min(y0, edge.y1, edge.y2);
-            x1 = Math.max(x1, edge.x1, edge.x2);
-            y1 = Math.max(y1, edge.y1, edge.y2);
+            if (!this.layerVisible(edge)) continue;
+            const points = edgeRoute(this, edge);
+            for (let i = 0; i < points.length; i += 2) {
+                x0 = Math.min(x0, points[i]);
+                y0 = Math.min(y0, points[i + 1]);
+                x1 = Math.max(x1, points[i]);
+                y1 = Math.max(y1, points[i + 1]);
+            }
         }
         if (x0 === Infinity) return null;
         return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
@@ -450,6 +477,9 @@ export class Diagram {
                 x2: free ? number(raw.x2, 0) : undefined,
                 y2: free ? number(raw.y2, 0) : undefined,
                 arrowEnd: raw.arrowEnd !== false,
+                route: raw.route === "straight" || raw.route === "curved"
+                    ? raw.route : "orthogonal",
+                waypoints: readWaypoints(raw.waypoints),
                 text: text(raw.text, ""),
                 stroke: text(raw.stroke, DEFAULT_EDGE),
                 strokeWidth: Math.max(0.5, number(raw.strokeWidth, 2)),
@@ -698,61 +728,144 @@ function dedupe(points) {
  * two directions allow. Opposite sides meet halfway, the same side takes a
  * corridor outside both, and perpendicular sides turn once.
  */
-export function edgeRoute(diagram, edge) {
+function controlPoints(diagram, edge) {
+    const points = [];
     if (!edge.from && !edge.to) {
-        if (edge.x1 === undefined || edge.x2 === undefined) return [];
-        return [edge.x1, edge.y1, edge.x2, edge.y2];
-    }
-    const a = diagram.shapeById(edge.from);
-    const b = diagram.shapeById(edge.to);
-    if (!a || !b) return [];
-
-    const sides = chooseSides(a, b);
-    const outSide = sides[0], inSide = sides[1];
-    const p0 = sideAnchor(a, outSide);
-    const p1 = sideAnchor(b, inSide);
-    const v0 = sideVector(outSide);
-    const v1 = sideVector(inSide);
-
-    const A = { x: p0.x + v0.x * STUB, y: p0.y + v0.y * STUB };
-    const B = { x: p1.x + v1.x * STUB, y: p1.y + v1.y * STUB };
-    const points = [p0, A];
-    const horizontal0 = outSide === "left" || outSide === "right";
-    const horizontal1 = inSide === "left" || inSide === "right";
-
-    if (horizontal0 && horizontal1) {
-        let x;
-        if ((outSide === "right" && inSide === "left") ||
-            (outSide === "left" && inSide === "right")) {
-            x = (A.x + B.x) / 2;
-        } else if (outSide === "right") {
-            x = Math.max(A.x, B.x);
-        } else {
-            x = Math.min(A.x, B.x);
-        }
-        points.push({ x: x, y: A.y }, { x: x, y: B.y });
-    } else if (!horizontal0 && !horizontal1) {
-        let y;
-        if ((outSide === "bottom" && inSide === "top") ||
-            (outSide === "top" && inSide === "bottom")) {
-            y = (A.y + B.y) / 2;
-        } else if (outSide === "bottom") {
-            y = Math.max(A.y, B.y);
-        } else {
-            y = Math.min(A.y, B.y);
-        }
-        points.push({ x: A.x, y: y }, { x: B.x, y: y });
-    } else if (horizontal0) {
-        points.push({ x: B.x, y: A.y });
+        if (edge.x1 === undefined || edge.x2 === undefined) return points;
+        points.push({ x: edge.x1, y: edge.y1 });
     } else {
-        points.push({ x: A.x, y: B.y });
+        const a = diagram.shapeById(edge.from);
+        const b = diagram.shapeById(edge.to);
+        if (!a || !b) return [];
+        const sides = chooseSides(a, b);
+        points.push(sideAnchor(a, sides[0]));
     }
 
-    points.push(B, p1);
-    const clean = dedupe(points);
+    for (const point of edge.waypoints || [])
+        points.push({ x: point.x, y: point.y });
+
+    if (edge.from || edge.to) {
+        const b = diagram.shapeById(edge.to);
+        const a = diagram.shapeById(edge.from);
+        if (!a || !b) return [];
+        const sides = chooseSides(a, b);
+        points.push(sideAnchor(b, sides[1]));
+    } else {
+        points.push({ x: edge.x2, y: edge.y2 });
+    }
+
     const flat = [];
-    for (const p of clean) flat.push(p.x, p.y);
+    for (const point of points) flat.push(point.x, point.y);
     return flat;
+}
+
+export function edgeControlPoints(diagram, edge) {
+    return controlPoints(diagram, edge);
+}
+
+/* Catmull-Rom through the control points, sampled into a polyline: the
+ * painter, the hit test and the arrow all keep working on one shape of data. */
+function smoothPath(flat) {
+    if (flat.length < 4) return flat;
+    if (flat.length === 4) {
+        const x1 = flat[0], y1 = flat[1], x2 = flat[2], y2 = flat[3];
+        const dx = x2 - x1, dy = y2 - y1;
+        const length = Math.hypot(dx, dy) || 1;
+        const bow = length * 0.18;
+        flat = [x1, y1,
+                (x1 + x2) / 2 - dy / length * bow,
+                (y1 + y2) / 2 + dx / length * bow,
+                x2, y2];
+    }
+    const points = [];
+    for (let i = 0; i < flat.length; i += 2)
+        points.push({ x: flat[i], y: flat[i + 1] });
+
+    const out = [points[0].x, points[0].y];
+    for (let i = 0; i < points.length - 1; i++) {
+        const p0 = points[i - 1] || points[i];
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        const p3 = points[i + 2] || p2;
+        for (let step = 1; step <= 10; step++) {
+            const t = step / 10;
+            const t2 = t * t, t3 = t2 * t;
+            const x = 0.5 * ((2 * p1.x) +
+                (-p0.x + p2.x) * t +
+                (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 +
+                (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3);
+            const y = 0.5 * ((2 * p1.y) +
+                (-p0.y + p2.y) * t +
+                (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
+                (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3);
+            out.push(x, y);
+        }
+    }
+    return out;
+}
+
+export function edgeRoute(diagram, edge) {
+    const route = edge.route || "orthogonal";
+    const hasWaypoints = edge.waypoints && edge.waypoints.length > 0;
+
+    /* The automatic orthogonal route is only for the no-waypoint case; once a
+     * person has put a bend down, the line goes through it. */
+    if (edge.from && edge.to && route === "orthogonal" && !hasWaypoints) {
+        const a = diagram.shapeById(edge.from);
+        const b = diagram.shapeById(edge.to);
+        if (!a || !b) return [];
+
+        const sides = chooseSides(a, b);
+        const outSide = sides[0], inSide = sides[1];
+        const p0 = sideAnchor(a, outSide);
+        const p1 = sideAnchor(b, inSide);
+        const v0 = sideVector(outSide);
+        const v1 = sideVector(inSide);
+
+        const A = { x: p0.x + v0.x * STUB, y: p0.y + v0.y * STUB };
+        const B = { x: p1.x + v1.x * STUB, y: p1.y + v1.y * STUB };
+        const points = [p0, A];
+        const horizontal0 = outSide === "left" || outSide === "right";
+        const horizontal1 = inSide === "left" || inSide === "right";
+
+        if (horizontal0 && horizontal1) {
+            let x;
+            if ((outSide === "right" && inSide === "left") ||
+                (outSide === "left" && inSide === "right")) {
+                x = (A.x + B.x) / 2;
+            } else if (outSide === "right") {
+                x = Math.max(A.x, B.x);
+            } else {
+                x = Math.min(A.x, B.x);
+            }
+            points.push({ x: x, y: A.y }, { x: x, y: B.y });
+        } else if (!horizontal0 && !horizontal1) {
+            let y;
+            if ((outSide === "bottom" && inSide === "top") ||
+                (outSide === "top" && inSide === "bottom")) {
+                y = (A.y + B.y) / 2;
+            } else if (outSide === "bottom") {
+                y = Math.max(A.y, B.y);
+            } else {
+                y = Math.min(A.y, B.y);
+            }
+            points.push({ x: A.x, y: y }, { x: B.x, y: y });
+        } else if (horizontal0) {
+            points.push({ x: B.x, y: A.y });
+        } else {
+            points.push({ x: A.x, y: B.y });
+        }
+
+        points.push(B, p1);
+        const clean = dedupe(points);
+        const flat = [];
+        for (const p of clean) flat.push(p.x, p.y);
+        return flat;
+    }
+
+    const control = controlPoints(diagram, edge);
+    if (route === "curved") return smoothPath(control);
+    return control;
 }
 
 export function polylineLength(points) {

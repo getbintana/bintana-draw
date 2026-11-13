@@ -92,6 +92,7 @@ export class MainForm extends Form {
     defaultTextVAlign  = "middle";
     defaultTextColor   = "#1f2937";
     defaultRotation    = 0;
+    defaultRoute       = "orthogonal";
 
     statusText = "";
     syncingColors = false;
@@ -139,6 +140,9 @@ export class MainForm extends Form {
         this.CmbVAlign.Add(Locale.Text("Top"), "top");
         this.CmbVAlign.Add(Locale.Text("Middle"), "middle");
         this.CmbVAlign.Add(Locale.Text("Bottom"), "bottom");
+        this.CmbRoute.Add(Locale.Text("Orthogonal"), "orthogonal");
+        this.CmbRoute.Add(Locale.Text("Straight"), "straight");
+        this.CmbRoute.Add(Locale.Text("Curved"), "curved");
 
         this.SpnStrokeWidth.Value = this.defaultStrokeWidth;
         this.CmbDash.Index = 0;
@@ -150,6 +154,7 @@ export class MainForm extends Form {
         this.BtnAlignRight.Active = false;
         this.CmbVAlign.Index = 1;
         this.SpnRotation.Value = this.defaultRotation;
+        this.CmbRoute.Index = 0;
         this.BtnTextColor.Value = colorButtonValue(this.defaultTextColor);
         this.syncingFormat = false;
 
@@ -659,6 +664,28 @@ export class MainForm extends Form {
         return "";
     }
 
+    edgeHandleAt(x, y) {
+        for (const edge of this.selectedEdges()) {
+            const handles = edgeHandlePoints(this.doc, edge);
+            for (let i = 0; i < handles.waypoints.length; i++) {
+                const point = handles.waypoints[i];
+                const sx = this.panX + point.x * this.zoom;
+                const sy = this.panY + point.y * this.zoom;
+                if (Math.abs(x - sx) <= HANDLE_HIT &&
+                    Math.abs(y - sy) <= HANDLE_HIT)
+                    return { kind: "waypoint", id: edge.id, index: i };
+            }
+            for (const point of handles.midpoints) {
+                const sx = this.panX + point.x * this.zoom;
+                const sy = this.panY + point.y * this.zoom;
+                if (Math.abs(x - sx) <= HANDLE_HIT &&
+                    Math.abs(y - sy) <= HANDLE_HIT)
+                    return { kind: "addBend", id: edge.id, point: point };
+            }
+        }
+        return null;
+    }
+
     defaultSize(kind) {
         switch (kind) {
         case "ellipse":    return { w: 140, h: 90 };
@@ -757,6 +784,23 @@ export class MainForm extends Form {
             return;
         }
 
+        const bend = this.edgeHandleAt(x, y);
+        if (bend) {
+            const edge = this.doc.edgeById(bend.id);
+            if (!edge) return;
+            const before = this.snapshot();
+            if (bend.kind === "addBend") {
+                this.drag = { kind: "addBend", id: edge.id,
+                              point: bend.point, before: before,
+                              inserted: false };
+            } else {
+                this.drag = { kind: "bend", id: edge.id,
+                              index: bend.index, before: before };
+            }
+            this.Canvas.Redraw();
+            return;
+        }
+
         const shape = this.doc.shapeAt(world.x, world.y);
         if (shape) {
             if (shift) {
@@ -785,6 +829,8 @@ export class MainForm extends Form {
                     this.drag = {
                         kind: "moveLine", id: edge.id, start: world,
                         x1: edge.x1, y1: edge.y1, x2: edge.x2, y2: edge.y2,
+                        waypoints: (edge.waypoints || []).map(
+                            (p) => ({ x: p.x, y: p.y })),
                         before: this.snapshot(),
                     };
                 }
@@ -866,6 +912,35 @@ export class MainForm extends Form {
             return;
         }
 
+        if (d.kind === "addBend") {
+            const edge = this.doc.edgeById(d.id);
+            if (!edge) return;
+            const far = Math.hypot(world.x - d.point.x, world.y - d.point.y);
+            if (!d.inserted && far < 3) return;
+            if (!d.inserted) {
+                if (!edge.waypoints) edge.waypoints = [];
+                edge.waypoints.push({ x: d.point.x, y: d.point.y });
+                d.inserted = true;
+                d.index = edge.waypoints.length - 1;
+            }
+            edge.waypoints[d.index] = {
+                x: this.snap(world.x), y: this.snap(world.y),
+            };
+            this.Canvas.Redraw();
+            return;
+        }
+
+        if (d.kind === "bend") {
+            const edge = this.doc.edgeById(d.id);
+            if (edge && edge.waypoints && edge.waypoints[d.index]) {
+                edge.waypoints[d.index] = {
+                    x: this.snap(world.x), y: this.snap(world.y),
+                };
+            }
+            this.Canvas.Redraw();
+            return;
+        }
+
         if (d.kind === "moveLine") {
             let dx = this.snap(world.x - d.start.x);
             let dy = this.snap(world.y - d.start.y);
@@ -879,6 +954,13 @@ export class MainForm extends Form {
                 edge.y1 = d.y1 + dy;
                 edge.x2 = d.x2 + dx;
                 edge.y2 = d.y2 + dy;
+                for (let i = 0; i < (edge.waypoints || []).length; i++) {
+                    const original = d.waypoints[i];
+                    if (!original) continue;
+                    edge.waypoints[i] = {
+                        x: original.x + dx, y: original.y + dy,
+                    };
+                }
             }
             this.Canvas.Redraw();
             return;
@@ -915,11 +997,22 @@ export class MainForm extends Form {
             return;
         }
 
-        if (d.kind === "move" || d.kind === "resize" || d.kind === "moveLine") {
+        if (d.kind === "addBend" && !d.inserted) {
+            this.refreshAll();
+            return;
+        }
+
+        if (d.kind === "move" || d.kind === "resize" ||
+            d.kind === "moveLine" || d.kind === "bend" ||
+            d.kind === "addBend") {
             const after = this.snapshot();
-            if (d.before !== after)
-                this.pushUndo(d.kind === "resize" ? Locale.Text("Resize")
-                                                  : Locale.Text("Move"), d.before);
+            if (d.before !== after) {
+                let step = Locale.Text("Move");
+                if (d.kind === "resize") step = Locale.Text("Resize");
+                else if (d.kind === "bend") step = Locale.Text("Move bend");
+                else if (d.kind === "addBend") step = Locale.Text("Add bend");
+                this.pushUndo(step, d.before);
+            }
             this.refreshAll();
             return;
         }
@@ -960,6 +1053,18 @@ export class MainForm extends Form {
     }
 
     Canvas_DblClick(x, y) {
+        const handle = this.edgeHandleAt(x, y);
+        if (handle && handle.kind === "waypoint") {
+            const edge = this.doc.edgeById(handle.id);
+            if (edge && edge.waypoints) {
+                const before = this.snapshot();
+                edge.waypoints.splice(handle.index, 1);
+                this.pushUndo(Locale.Text("Remove bend"), before);
+                this.refreshAll();
+            }
+            return;
+        }
+
         const world = this.toWorld(x, y);
         const shape = this.doc.shapeAt(world.x, world.y);
         if (shape) {
@@ -1067,6 +1172,7 @@ export class MainForm extends Form {
             stroke: this.defaultStroke,
             strokeWidth: this.defaultStrokeWidth,
             dash: this.defaultDash,
+            route: this.defaultRoute,
             textColor: this.defaultTextColor,
             fontSize: this.defaultFontSize,
             textBold: this.defaultTextBold,
@@ -1095,6 +1201,7 @@ export class MainForm extends Form {
             layer: this.activeLayer,
             strokeWidth: this.defaultStrokeWidth,
             dash: this.defaultDash,
+            route: this.defaultRoute,
             textColor: this.defaultTextColor,
             fontSize: this.defaultFontSize,
             textBold: this.defaultTextBold,
@@ -1232,6 +1339,9 @@ export class MainForm extends Form {
         for (const e of lines) {
             e.x1 += dx; e.y1 += dy;
             e.x2 += dx; e.y2 += dy;
+            for (const point of e.waypoints || []) {
+                point.x += dx; point.y += dy;
+            }
         }
         this.pushUndo(Locale.Text("Move"), before);
         this.refreshAll();
@@ -1269,6 +1379,8 @@ export class MainForm extends Form {
                 id: e.id, from: e.from, to: e.to, text: e.text,
                 x1: e.x1, y1: e.y1, x2: e.x2, y2: e.y2,
                 arrowEnd: e.arrowEnd !== false,
+                route: e.route || "orthogonal",
+                waypoints: (e.waypoints || []).map((p) => ({ x: p.x, y: p.y })),
                 stroke: e.stroke, strokeWidth: e.strokeWidth,
                 dash: e.dash, dashed: e.dashed, textColor: e.textColor,
                 fontSize: e.fontSize, textBold: e.textBold,
@@ -1323,6 +1435,8 @@ export class MainForm extends Form {
                     { arrowEnd: raw.arrowEnd !== false,
                       text: raw.text, stroke: raw.stroke,
                       strokeWidth: raw.strokeWidth, dash: raw.dash,
+                      route: raw.route, waypoints: (raw.waypoints || []).map(
+                          (p) => ({ x: p.x + dx, y: p.y + dy })),
                       textColor: raw.textColor, fontSize: raw.fontSize,
                       textBold: raw.textBold, textItalic: raw.textItalic,
                       layer: this.activeLayer });
@@ -1333,7 +1447,10 @@ export class MainForm extends Form {
                 edge = this.doc.addEdge(from, to,
                     { text: raw.text, stroke: raw.stroke,
                       strokeWidth: raw.strokeWidth, dash: raw.dash,
-                      dashed: raw.dashed, textColor: raw.textColor,
+                      dashed: raw.dashed, route: raw.route,
+                      waypoints: (raw.waypoints || []).map(
+                          (p) => ({ x: p.x + dx, y: p.y + dy })),
+                      textColor: raw.textColor,
                       fontSize: raw.fontSize, textBold: raw.textBold,
                       textItalic: raw.textItalic, layer: this.activeLayer });
             }
@@ -1714,6 +1831,9 @@ export class MainForm extends Form {
         this.CmbVAlign.Index = vAlign === "top" ? 0 : (vAlign === "bottom" ? 2 : 1);
         this.SpnRotation.Value = object && object.from === undefined
             ? Math.round(object.rotation || 0) : this.defaultRotation;
+        const route = edge ? (object.route || "orthogonal") : this.defaultRoute;
+        this.CmbRoute.Index = route === "curved" ? 2
+            : (route === "straight" ? 1 : 0);
         this.BtnTextColor.Value = colorButtonValue(color);
         this.syncingFormat = false;
     }
@@ -1788,6 +1908,16 @@ export class MainForm extends Form {
         this.defaultTextVAlign = value;
         this.applyFormat(Locale.Text("Vertical align"), (o) => {
             if (o.from === undefined) o.textVAlign = value;
+        });
+    }
+
+    CmbRoute_Select() {
+        if (this.syncingFormat) return;
+        const value = this.CmbRoute.Index === 2 ? "curved"
+                    : (this.CmbRoute.Index === 1 ? "straight" : "orthogonal");
+        this.defaultRoute = value;
+        this.applyFormat(Locale.Text("Connector route"), (o) => {
+            if (o.from !== undefined) o.route = value;
         });
     }
 
