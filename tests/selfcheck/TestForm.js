@@ -1025,11 +1025,13 @@ class TestForm extends Form {
             <mxCell id="0"/><mxCell id="1" parent="0"/>
             <mxCell id="a" value="A" vertex="1" parent="1"><mxGeometry x="0" y="0" width="80" height="40" as="geometry"/></mxCell>
             <mxCell id="b" value="B" vertex="1" parent="1"><mxGeometry x="200" y="0" width="80" height="40" as="geometry"/></mxCell>
-            <mxCell id="e" edge="1" source="a" target="b" parent="1" style="curved=1;edgeStyle=orthogonalEdgeStyle;"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="140" y="60"/></Array></mxGeometry></mxCell>
+            <mxCell id="e" edge="1" source="a" target="b" parent="1" style="curved=1;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="140" y="60"/></Array></mxGeometry></mxCell>
         </root></mxGraphModel></diagram></mxfile>`);
         this.eq("routing: draw.io curve", imported.diagram.edges[0].route,
                 "curved");
         this.eq("routing: draw.io bend", imported.diagram.edges[0].waypoints.length, 1);
+        this.eq("routing: draw.io exit port", imported.diagram.edges[0].fromPort.x, 1);
+        this.eq("routing: draw.io entry port", imported.diagram.edges[0].toPort.x, 0);
     }
 
     moreShapes(fm) {
@@ -1093,6 +1095,8 @@ class TestForm extends Form {
         const half = fm.doc.edgeById(line.id);
         this.eq("ends: the start attached to A", half.from, a.id);
         this.check("ends: and remembered a side", half.fromSide !== "");
+        this.eq("ends: it snapped to the top midpoint", half.fromPort.y, 0);
+        this.eq("ends: at x 0.5", half.fromPort.x, 0.5);
         this.eq("ends: the free end is still free", half.x2, 600);
 
         /* Drag the other end onto B: now it is a full connector. */
@@ -1117,6 +1121,7 @@ class TestForm extends Form {
         fm.Canvas_MouseUp(200, 200, 1, false, false);
         const loose = fm.doc.edgeById(line.id);
         this.eq("ends: the start detached", loose.from, "");
+        this.eq("ends: the port was cleared", loose.fromPort, null);
         this.eq("ends: the other end stayed", loose.to, b.id);
         this.eq("ends: the loose point is where it was dropped", loose.x1, 200);
 
@@ -1128,9 +1133,11 @@ class TestForm extends Form {
         fm.Canvas_MouseUp(50, 350, 1, false, false);
         const re = fm.doc.edgeById(line.id);
         this.eq("ends: the start attached to C", re.from, c.id);
-        this.check("ends: a half edge survives a round trip",
-                   Diagram.fromJSON(JSON.parse(JSON.stringify(fm.doc.toJSON())))
-                       .edgeById(line.id).from === c.id);
+        const round = Diagram.fromJSON(JSON.parse(JSON.stringify(fm.doc.toJSON())));
+        this.eq("ends: a half edge survives a round trip",
+                round.edgeById(line.id).from, c.id);
+        this.eq("ends: and its port too",
+                round.edgeById(line.id).fromPort.x, 0.5);
 
         /* Deleting a shape must not sweep away a free line. */
         const spare = fm.doc.addLine(500, 400, 600, 400, {});

@@ -52,6 +52,15 @@ function copyShape(s) {
     };
 }
 
+function copyPort(port) {
+    return port ? { x: port.x, y: port.y } : null;
+}
+
+function readPort(port) {
+    if (!port || typeof port !== "object") return null;
+    return { x: number(port.x, 0.5), y: number(port.y, 0.5) };
+}
+
 function copyWaypoints(points) {
     const out = [];
     for (const point of points || [])
@@ -73,6 +82,7 @@ function copyEdge(e) {
     return {
         id: e.id, from: e.from, to: e.to, layer: e.layer, text: e.text,
         fromSide: e.fromSide || "", toSide: e.toSide || "",
+        fromPort: copyPort(e.fromPort), toPort: copyPort(e.toPort),
         x1: e.x1, y1: e.y1, x2: e.x2, y2: e.y2,
         arrowStart: e.arrowStart === true,
         arrowEnd: e.arrowEnd !== false,
@@ -250,6 +260,8 @@ export class Diagram {
             to: hasTo ? to : "",
             fromSide: hasFrom ? text(o.fromSide, "") : "",
             toSide: hasTo ? text(o.toSide, "") : "",
+            fromPort: hasFrom ? readPort(o.fromPort) : null,
+            toPort: hasTo ? readPort(o.toPort) : null,
             layer: layer,
             x1: hasFrom ? undefined : number(o.x1, 0),
             y1: hasFrom ? undefined : number(o.y1, 0),
@@ -500,6 +512,8 @@ export class Diagram {
                 to: to,
                 fromSide: hasFrom ? text(raw.fromSide, "") : "",
                 toSide: hasTo ? text(raw.toSide, "") : "",
+                fromPort: hasFrom ? readPort(raw.fromPort) : null,
+                toPort: hasTo ? readPort(raw.toPort) : null,
                 layer: diagram.layerById(text(raw.layer, ""))
                     ? raw.layer : diagram.layers[0].id,
                 x1: hasFrom ? undefined : number(raw.x1, 0),
@@ -751,12 +765,97 @@ export function sideFacing(shape, point) {
     return "bottom";
 }
 
+export function shapePortPoint(shape, port) {
+    let x = shape.x + port.x * shape.w;
+    let y = shape.y + port.y * shape.h;
+    if (shape.rotation) {
+        const c = shapeCenter(shape);
+        const p = rotatePoint(x, y, c.x, c.y, shape.rotation);
+        x = p.x; y = p.y;
+    }
+    return { x: x, y: y };
+}
+
+const PORT_LIST = [
+    { x: 0.5, y: 0,   side: "top" },
+    { x: 1,   y: 0.5, side: "right" },
+    { x: 0.5, y: 1,   side: "bottom" },
+    { x: 0,   y: 0.5, side: "left" },
+    { x: 0,   y: 0,   side: "" },
+    { x: 1,   y: 0,   side: "" },
+    { x: 1,   y: 1,   side: "" },
+    { x: 0,   y: 1,   side: "" },
+];
+
+function cornerSide(shape, point) {
+    const c = shapeCenter(shape);
+    const dx = point.x - c.x, dy = point.y - c.y;
+    if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? "right" : "left";
+    return dy >= 0 ? "bottom" : "top";
+}
+
+export function shapePorts(shape) {
+    return PORT_LIST.map((item) => ({
+        port: { x: item.x, y: item.y },
+        side: item.side,
+        point: shapePortPoint(shape, item),
+    }));
+}
+
+export function nearestPort(shape, point) {
+    let best = null;
+    for (const item of shapePorts(shape)) {
+        const dx = item.point.x - point.x;
+        const dy = item.point.y - point.y;
+        const distance = dx * dx + dy * dy;
+        if (!best || distance < best.distance) {
+            best = {
+                port: item.port,
+                side: item.side || cornerSide(shape, point),
+                point: item.point,
+                distance: distance,
+            };
+        }
+    }
+    return best;
+}
+
+function otherEndpoint(diagram, edge, end) {
+    if (end === "start") {
+        if (edge.to) {
+            const shape = diagram.shapeById(edge.to);
+            if (shape) return shapeCenter(shape);
+        }
+        if (edge.x2 !== undefined) return { x: edge.x2, y: edge.y2 };
+    } else {
+        if (edge.from) {
+            const shape = diagram.shapeById(edge.from);
+            if (shape) return shapeCenter(shape);
+        }
+        if (edge.x1 !== undefined) return { x: edge.x1, y: edge.y1 };
+    }
+    return { x: 0, y: 0 };
+}
+
+function portSide(shape, port, other) {
+    if (port.x === 0 && port.y > 0 && port.y < 1) return "left";
+    if (port.x === 1 && port.y > 0 && port.y < 1) return "right";
+    if (port.y === 0 && port.x > 0 && port.x < 1) return "top";
+    if (port.y === 1 && port.x > 0 && port.x < 1) return "bottom";
+    return cornerSide(shape, other);
+}
+
 function endSide(diagram, edge, end) {
     if (end === "start" && edge.fromSide) return edge.fromSide;
     if (end === "end" && edge.toSide) return edge.toSide;
 
     const a = diagram.shapeById(edge.from);
     const b = diagram.shapeById(edge.to);
+    const shape = end === "start" ? a : b;
+    const port = end === "start" ? edge.fromPort : edge.toPort;
+    if (shape && port)
+        return portSide(shape, port, otherEndpoint(diagram, edge, end));
+
     if (a && b) return chooseSides(a, b)[end === "start" ? 0 : 1];
 
     if (end === "start" && a) {
@@ -775,6 +874,7 @@ export function edgeEndpoint(diagram, edge, end) {
         if (edge.from) {
             const shape = diagram.shapeById(edge.from);
             if (!shape) return null;
+            if (edge.fromPort) return shapePortPoint(shape, edge.fromPort);
             return sideAnchor(shape, endSide(diagram, edge, "start"));
         }
         return { x: edge.x1, y: edge.y1 };
@@ -782,6 +882,7 @@ export function edgeEndpoint(diagram, edge, end) {
     if (edge.to) {
         const shape = diagram.shapeById(edge.to);
         if (!shape) return null;
+        if (edge.toPort) return shapePortPoint(shape, edge.toPort);
         return sideAnchor(shape, endSide(diagram, edge, "end"));
     }
     return { x: edge.x2, y: edge.y2 };
@@ -877,8 +978,8 @@ export function edgeRoute(diagram, edge) {
     /* The automatic orthogonal route is only for two shapes with no bends. */
     if (hasFrom && hasTo && route === "orthogonal" && !hasWaypoints) {
         const auto = chooseSides(a, b);
-        const outSide = edge.fromSide || auto[0];
-        const inSide = edge.toSide || auto[1];
+        const outSide = edge.fromSide || endSide(diagram, edge, "start") || auto[0];
+        const inSide = edge.toSide || endSide(diagram, edge, "end") || auto[1];
         const p0 = sideAnchor(a, outSide);
         const p1 = sideAnchor(b, inSide);
         const v0 = sideVector(outSide);

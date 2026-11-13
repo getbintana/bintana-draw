@@ -282,6 +282,8 @@ function importModel(model) {
             layer: layer,
             route: route,
             waypoints: waypoints,
+            fromPort: stylePort(map, "exitX", "exitY"),
+            toPort: stylePort(map, "entryX", "entryY"),
             arrowStart: map.startArrow && map.startArrow !== "none",
             arrowEnd: map.endArrow !== "none",
             text: cleanText(node.Attr("value")),
@@ -319,6 +321,13 @@ function importModel(model) {
     }
 
     return diagram;
+}
+
+function stylePort(map, xKey, yKey) {
+    const x = parseFloat(map[xKey]);
+    const y = parseFloat(map[yKey]);
+    if (x !== x || y !== y) return null;
+    return { x: Math.max(0, Math.min(1, x)), y: Math.max(0, Math.min(1, y)) };
 }
 
 export class DrawioImport {

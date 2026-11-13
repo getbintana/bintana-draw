@@ -271,6 +271,7 @@ export class MainForm extends Form {
         let createPreview = null;
         let connectPreview = null;
         let linePreview = null;
+        let connectionTarget = null;
         let band = null;
 
         if (this.drag) {
@@ -293,6 +294,13 @@ export class MainForm extends Form {
                     x2: this.drag.at.x, y2: this.drag.at.y,
                     arrow: this.drag.tool === "arrow",
                 };
+            } else if (this.drag.kind === "endpoint" &&
+                       this.drag.targetId) {
+                const shape = this.doc.shapeById(this.drag.targetId);
+                if (shape) connectionTarget = {
+                    shape: shape,
+                    chosen: this.drag.port ? this.drag.port.point : null,
+                };
             } else if (this.drag.kind === "band") {
                 band = rectOf(this.drag.start, this.drag.at);
             }
@@ -307,6 +315,7 @@ export class MainForm extends Form {
             createPreview: createPreview,
             connectPreview: connectPreview,
             linePreview: linePreview,
+            connectionTarget: connectionTarget,
             band: band,
             guides: this.guides,
         }, width, height);
@@ -843,6 +852,7 @@ export class MainForm extends Form {
                     kind: "endpoint", id: edge.id, end: bend.end,
                     anchor: edgeEndpoint(this.doc, edge, bend.end),
                     wasAttached: bend.end === "start" ? !!edge.from : !!edge.to,
+                    targetId: "", port: null,
                     moved: false, before: before,
                 };
             } else if (bend.kind === "addBend") {
@@ -979,11 +989,13 @@ export class MainForm extends Form {
                 if (d.end === "start") {
                     edge.from = "";
                     edge.fromSide = "";
+                    edge.fromPort = null;
                     edge.x1 = d.anchor.x;
                     edge.y1 = d.anchor.y;
                 } else {
                     edge.to = "";
                     edge.toSide = "";
+                    edge.toPort = null;
                     edge.x2 = d.anchor.x;
                     edge.y2 = d.anchor.y;
                 }
@@ -993,6 +1005,10 @@ export class MainForm extends Form {
             const x = this.snap(world.x), y = this.snap(world.y);
             if (d.end === "start") { edge.x1 = x; edge.y1 = y; }
             else { edge.x2 = x; edge.y2 = y; }
+
+            const target = this.doc.shapeAt(world.x, world.y);
+            d.targetId = target ? target.id : "";
+            d.port = target ? nearestPort(target, world) : null;
             this.Canvas.Redraw();
             return;
         }
@@ -1268,17 +1284,20 @@ export class MainForm extends Form {
         if (!edge) return;
 
         const target = this.doc.shapeAt(world.x, world.y);
-        const side = target ? sideFacing(target, world) : "";
+        const port = target ? nearestPort(target, world) : null;
+        const side = port ? port.side : "";
 
-        if (target) {
+        if (target && port) {
             if (d.end === "start") {
                 edge.from = target.id;
                 edge.fromSide = side;
+                edge.fromPort = { x: port.port.x, y: port.port.y };
                 edge.x1 = undefined;
                 edge.y1 = undefined;
             } else {
                 edge.to = target.id;
                 edge.toSide = side;
+                edge.toPort = { x: port.port.x, y: port.port.y };
                 edge.x2 = undefined;
                 edge.y2 = undefined;
             }
@@ -1513,6 +1532,8 @@ export class MainForm extends Form {
             outEdges.push({
                 id: e.id, from: e.from, to: e.to, text: e.text,
                 fromSide: e.fromSide, toSide: e.toSide,
+                fromPort: e.fromPort ? { x: e.fromPort.x, y: e.fromPort.y } : null,
+                toPort: e.toPort ? { x: e.toPort.x, y: e.toPort.y } : null,
                 x1: e.x1, y1: e.y1, x2: e.x2, y2: e.y2,
                 arrowStart: e.arrowStart === true,
                 arrowEnd: e.arrowEnd !== false,
@@ -1591,6 +1612,7 @@ export class MainForm extends Form {
                       strokeWidth: raw.strokeWidth, dash: raw.dash,
                       dashed: raw.dashed, route: raw.route,
                       fromSide: raw.fromSide, toSide: raw.toSide,
+                      fromPort: raw.fromPort, toPort: raw.toPort,
                       x1: from ? undefined : (raw.x1 || 0) + dx,
                       y1: from ? undefined : (raw.y1 || 0) + dy,
                       x2: to ? undefined : (raw.x2 || 0) + dx,

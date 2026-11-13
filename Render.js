@@ -612,6 +612,30 @@ function drawGuides(p, guides, view, width, height) {
     p.LineDash = [];
 }
 
+function drawConnectionTarget(p, target, zoom) {
+    const box = shapeRectBounds(target.shape);
+    p.Color = "rgba(53,132,228,0.55)";
+    p.LineWidth = 1.2 / zoom;
+    p.LineDash = [5 / zoom, 4 / zoom];
+    p.Rectangle(box.x - 4 / zoom, box.y - 4 / zoom,
+                box.w + 8 / zoom, box.h + 8 / zoom);
+    p.Stroke();
+    p.LineDash = [];
+
+    for (const port of shapePorts(target.shape)) {
+        const chosen = target.chosen &&
+            Math.abs(port.point.x - target.chosen.x) < 0.1 &&
+            Math.abs(port.point.y - target.chosen.y) < 0.1;
+        p.Arc(port.point.x, port.point.y, (chosen ? 4.5 : 2.8) / zoom, 0, 360);
+        p.Color = chosen ? ACCENT : "#ffffff";
+        p.Fill();
+        p.Arc(port.point.x, port.point.y, (chosen ? 4.5 : 2.8) / zoom, 0, 360);
+        p.Color = ACCENT;
+        p.LineWidth = 1.2 / zoom;
+        p.Stroke();
+    }
+}
+
 function drawBand(p, band) {
     p.Color = "rgba(53,132,228,0.12)";
     p.Rectangle(band.x, band.y, band.w, band.h);
@@ -640,6 +664,8 @@ export function drawCanvas(p, diagram, view, width, height) {
     if (view.createPreview) drawCreatePreview(p, view.createPreview);
     if (view.connectPreview) drawConnectPreview(p, view.connectPreview);
     if (view.linePreview) drawLinePreview(p, view.linePreview);
+    if (view.connectionTarget)
+        drawConnectionTarget(p, view.connectionTarget, view.zoom);
     if (view.band) drawBand(p, view.band);
 
     p.Pop();

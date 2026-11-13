@@ -90,6 +90,12 @@ BINTANA=/path/to/build/bintana tests/run.sh
   `sideFacing`. Dropping on empty space leaves a half edge. Deleting a shape
   must keep free lines and only cut the edges whose attached end went:
   `Diagram.remove` checks each non-empty end.
+- **A connected end may name a port, not only a side.** `fromPort`/`toPort` are
+  normalized `{x,y}` points in the shape's box; `shapePorts` returns the eight
+  the preview offers, `nearestPort` picks one, and `shapePortPoint` rotates it
+  with the shape. `fromSide`/`toSide` still decide the outward stub; a corner
+  port derives its side from the other end. draw.io's `exitX/exitY` and
+  `entryX/entryY` become ports on import.
 - **Double-clicking an endpoint flips that end's arrowhead.** Connected ends
   are handles too, so this works on a connector as well as on a free line; the
   Edit/context `Arrowheads` actions are the explicit version for a selection.

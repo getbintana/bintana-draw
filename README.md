@@ -67,9 +67,10 @@ The window is started with a blank canvas and the shape palette on the left.
 - **Free lines and arrows** — the `Line` and `Arrow` tools draw a segment with
   no shapes attached. A selected line shows a handle at each end: drag one to
   move just that end, drag the body to move both, and double-click an end to
-  put or take away its arrowhead. Drop an end on a shape to attach it to that
-  side; drag an attached end into empty space to detach it. A connector may
-  have one end attached and one loose. `Edit > Arrowheads` and the context menu
+  put or take away its arrowhead. Dragging an end over a shape shows its eight
+  connection points; the nearest one lights up and the end attaches there.
+  Drag an attached end into empty space to detach it. A connector may have one
+  end attached and one loose. `Edit > Arrowheads` and the context menu
   set none, start, end or both on any selected connector. Lines can be
   labelled, styled, copied, pasted, and are included in the bounds and the
   export.
