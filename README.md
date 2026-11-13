@@ -243,6 +243,10 @@ whole of the safety net.
 
 ## Third-party stencils
 
+No stencil XML, icon set or vendor artwork is stored in this repository.
+`Get stencils…` fetches a set from its public source when the person asks for
+it.
+
 The downloader is deliberately curated. It offers the generic draw.io sets,
 Kubernetes (Apache 2.0 or CC BY 4.0) and IBM Cloud (Apache 2.0), with the
 license and source beside each one. AWS, Azure and Google Cloud sets are not
@@ -250,6 +254,10 @@ offered: their terms allow architecture diagrams and documentation, not
 redistribution as an application's asset library. The draw.io stencil terms are
 not Apache 2.0 and carry an Atlassian-product restriction; they travel in
 `StencilCatalog.js` and are shown in the window.
+
+Exporting a `.btlib` that contains downloaded shapes hands those assets to
+whoever receives it. That is the person's copy to share or not, and the license
+of each set still applies.
 
 The catalog points at the public draw.io endpoint:
 

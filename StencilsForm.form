@@ -15,9 +15,9 @@
         "X": 18,
         "Y": 14,
         "Width": 644,
-        "Height": 34,
+        "Height": 46,
         "Wrap": true,
-        "Text": "Download a set into the library. Only sets whose license allows it are listed."
+        "Text": "Download a set into the library. Bintana Draw does not bundle these files; each one is fetched from its public source. Only sets whose license allows it are listed."
       }
     },
     {
@@ -25,9 +25,9 @@
       "name": "Scroller",
       "properties": {
         "X": 18,
-        "Y": 56,
+        "Y": 68,
         "Width": 644,
-        "Height": 250,
+        "Height": 238,
         "Arrangement": "Vertical",
         "Scrollbars": "Vertical"
       },

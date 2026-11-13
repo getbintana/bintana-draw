@@ -515,8 +515,8 @@ msgstr "Esténcil"
 msgid "Stencil libraries"
 msgstr "Bibliotecas de esténciles"
 
-msgid "Download a set into the library. Only sets whose license allows it are listed."
-msgstr "Descargá un conjunto a la biblioteca. Solo aparecen los conjuntos cuya licencia lo permite."
+msgid "Download a set into the library. Bintana Draw does not bundle these files; each one is fetched from its public source. Only sets whose license allows it are listed."
+msgstr "Descargá un conjunto a la biblioteca. Bintana Draw no incluye estos archivos: cada uno se baja de su fuente pública. Solo aparecen los conjuntos cuya licencia lo permite."
 
 msgid "Get stencils…"
 msgstr "Obtener esténciles…"
