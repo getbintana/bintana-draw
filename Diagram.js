@@ -820,29 +820,221 @@ export function andGateLayout(shape) {
     };
 }
 
+function rectangleOutline(shape) {
+    return [
+        { x: shape.x, y: shape.y },
+        { x: shape.x + shape.w, y: shape.y },
+        { x: shape.x + shape.w, y: shape.y + shape.h },
+        { x: shape.x, y: shape.y + shape.h },
+    ];
+}
+
+function ellipseOutline(shape) {
+    const cx = shape.x + shape.w / 2;
+    const cy = shape.y + shape.h / 2;
+    const rx = shape.w / 2, ry = shape.h / 2;
+    const points = [];
+    for (let i = 0; i < 48; i++) {
+        const a = i * Math.PI * 2 / 48;
+        points.push({ x: cx + rx * Math.cos(a), y: cy + ry * Math.sin(a) });
+    }
+    return points;
+}
+
+function roundedOutline(shape, radius) {
+    const r = Math.max(0, Math.min(radius, shape.w / 2, shape.h / 2));
+    if (r === 0) return rectangleOutline(shape);
+    const points = [];
+    const arc = (cx, cy, from, to) => {
+        for (let i = 0; i <= 8; i++) {
+            const a = (from + (to - from) * i / 8) * Math.PI / 180;
+            points.push({ x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) });
+        }
+    };
+    points.push({ x: shape.x + r, y: shape.y });
+    points.push({ x: shape.x + shape.w - r, y: shape.y });
+    arc(shape.x + shape.w - r, shape.y + r, -90, 0);
+    points.push({ x: shape.x + shape.w, y: shape.y + shape.h - r });
+    arc(shape.x + shape.w - r, shape.y + shape.h - r, 0, 90);
+    points.push({ x: shape.x + r, y: shape.y + shape.h });
+    arc(shape.x + r, shape.y + shape.h - r, 90, 180);
+    points.push({ x: shape.x, y: shape.y + r });
+    arc(shape.x + r, shape.y + r, 180, 270);
+    return points;
+}
+
+function appendCubic(points, p0, c1, c2, p1, steps) {
+    for (let i = 1; i <= steps; i++) {
+        const t = i / steps, u = 1 - t;
+        points.push({
+            x: u * u * u * p0.x + 3 * u * u * t * c1.x +
+               3 * u * t * t * c2.x + t * t * t * p1.x,
+            y: u * u * u * p0.y + 3 * u * u * t * c1.y +
+               3 * u * t * t * c2.y + t * t * t * p1.y,
+        });
+    }
+}
+
+function andGateOutline(shape) {
+    const g = andGateLayout(shape);
+    const points = [{ x: shape.x, y: shape.y },
+                    { x: g.cx, y: shape.y }];
+    for (let i = 1; i <= 12; i++) {
+        const a = -Math.PI / 2 + Math.PI * i / 12;
+        points.push({ x: g.cx + g.r * Math.cos(a),
+                      y: g.cy + g.ry * Math.sin(a) });
+    }
+    points.push({ x: shape.x, y: shape.y + shape.h });
+    return points;
+}
+
+function orGateOutline(shape) {
+    const bubble = gateBubble(shape);
+    const w = shape.w - bubble * 2;
+    const x = shape.x, y = shape.y;
+    const right = x + w;
+    const cy = y + shape.h / 2;
+    const top = x + w * 0.35;
+    const left = x + w * 0.12;
+    const p0 = { x: top, y: y };
+    const p1 = { x: right, y: cy };
+    const p2 = { x: top, y: y + shape.h };
+    const p3 = { x: left, y: y + shape.h };
+    const p4 = { x: left, y: y };
+    const points = [{ x: p0.x, y: p0.y }];
+    appendCubic(points, p0,
+        { x: x + w * 0.62, y: y + shape.h * 0.1 },
+        { x: right - w * 0.1, y: y + shape.h * 0.35 }, p1, 12);
+    appendCubic(points, p1,
+        { x: right - w * 0.1, y: y + shape.h * 0.65 },
+        { x: x + w * 0.62, y: y + shape.h * 0.9 }, p2, 12);
+    points.push({ x: p3.x, y: p3.y });
+    appendCubic(points, p3,
+        { x: x + w * 0.32, y: y + shape.h * 0.7 },
+        { x: x + w * 0.32, y: y + shape.h * 0.3 }, p4, 12);
+    return points;
+}
+
+function delayOutline(shape) {
+    const r = Math.min(shape.h / 2, shape.w * 0.5);
+    const right = shape.x + shape.w - r;
+    const cy = shape.y + shape.h / 2;
+    const points = [{ x: shape.x, y: shape.y },
+                    { x: right, y: shape.y }];
+    for (let i = 1; i <= 12; i++) {
+        const a = -Math.PI / 2 + Math.PI * i / 12;
+        points.push({ x: right + r * Math.cos(a),
+                      y: cy + r * Math.sin(a) });
+    }
+    points.push({ x: shape.x, y: shape.y + shape.h });
+    return points;
+}
+
+function shapeOutlinePoints(shape) {
+    switch (shape.kind) {
+    case "ellipse":
+    case "onpage":   return ellipseOutline(shape);
+    case "round":    return roundedOutline(shape, shape.radius);
+    case "terminator": return roundedOutline(shape, shape.h / 2);
+    case "diamond":
+        return [{ x: shape.x + shape.w / 2, y: shape.y },
+                { x: shape.x + shape.w, y: shape.y + shape.h / 2 },
+                { x: shape.x + shape.w / 2, y: shape.y + shape.h },
+                { x: shape.x, y: shape.y + shape.h / 2 }];
+    case "data":
+        return [{ x: shape.x + shape.w * 0.18, y: shape.y },
+                { x: shape.x + shape.w, y: shape.y },
+                { x: shape.x + shape.w * 0.82, y: shape.y + shape.h },
+                { x: shape.x, y: shape.y + shape.h }];
+    case "note": {
+        const fold = Math.min(24, shape.w * 0.22, shape.h * 0.32);
+        return [{ x: shape.x, y: shape.y },
+                { x: shape.x + shape.w - fold, y: shape.y },
+                { x: shape.x + shape.w, y: shape.y + fold },
+                { x: shape.x + shape.w, y: shape.y + shape.h },
+                { x: shape.x, y: shape.y + shape.h }];
+    }
+    case "triangle":
+        return [{ x: shape.x + shape.w / 2, y: shape.y },
+                { x: shape.x + shape.w, y: shape.y + shape.h },
+                { x: shape.x, y: shape.y + shape.h }];
+    case "hexagon":
+        return [{ x: shape.x + shape.w * 0.22, y: shape.y },
+                { x: shape.x + shape.w * 0.78, y: shape.y },
+                { x: shape.x + shape.w, y: shape.y + shape.h / 2 },
+                { x: shape.x + shape.w * 0.78, y: shape.y + shape.h },
+                { x: shape.x + shape.w * 0.22, y: shape.y + shape.h },
+                { x: shape.x, y: shape.y + shape.h / 2 }];
+    case "manualinput":
+        return [{ x: shape.x, y: shape.y + shape.h * 0.22 },
+                { x: shape.x + shape.w, y: shape.y },
+                { x: shape.x + shape.w, y: shape.y + shape.h },
+                { x: shape.x, y: shape.y + shape.h }];
+    case "offpage":
+        return [{ x: shape.x, y: shape.y },
+                { x: shape.x + shape.w, y: shape.y },
+                { x: shape.x + shape.w, y: shape.y + shape.h * 0.72 },
+                { x: shape.x + shape.w / 2, y: shape.y + shape.h },
+                { x: shape.x, y: shape.y + shape.h * 0.72 }];
+    case "looplimit": {
+        const cut = Math.min(20, shape.w * 0.18, shape.h * 0.25);
+        return [{ x: shape.x + cut, y: shape.y },
+                { x: shape.x + shape.w - cut, y: shape.y },
+                { x: shape.x + shape.w, y: shape.y + cut },
+                { x: shape.x + shape.w, y: shape.y + shape.h },
+                { x: shape.x, y: shape.y + shape.h },
+                { x: shape.x, y: shape.y + cut }];
+    }
+    case "manualop":
+        return [{ x: shape.x, y: shape.y },
+                { x: shape.x + shape.w, y: shape.y },
+                { x: shape.x + shape.w * 0.8, y: shape.y + shape.h },
+                { x: shape.x + shape.w * 0.2, y: shape.y + shape.h }];
+    case "delay":    return delayOutline(shape);
+    case "and":
+    case "nand":     return andGateOutline(shape);
+    case "or":
+    case "nor":
+    case "xor":      return orGateOutline(shape);
+    default:         return rectangleOutline(shape);
+    }
+}
+
+/* The nearest point on the outline, not on the rectangle around it. Segment
+ * projection is enough for every shape here, and unlike the ray from the
+ * centre it still has an answer when the pointer is exactly in the middle. */
+function perimeterPoint(shape, x, y) {
+    const points = shapeOutlinePoints(shape);
+    let best = null, bestDistance = Infinity;
+    for (let i = 0; i < points.length; i++) {
+        const a = points[i], b = points[(i + 1) % points.length];
+        const ex = b.x - a.x, ey = b.y - a.y;
+        const length2 = ex * ex + ey * ey;
+        const u = length2
+            ? Math.max(0, Math.min(1,
+                ((x - a.x) * ex + (y - a.y) * ey) / length2))
+            : 0;
+        const px = a.x + ex * u, py = a.y + ey * u;
+        const dx = px - x, dy = py - y;
+        const distance = dx * dx + dy * dy;
+        if (distance < bestDistance) {
+            bestDistance = distance;
+            best = { x: px, y: py };
+        }
+    }
+    return best || shapeCenter(shape);
+}
+
 export function shapePortPoint(shape, port) {
     let x = shape.x + port.x * shape.w;
     let y = shape.y + port.y * shape.h;
-
-    /* The right side of an AND/NAND is a semicircle, not the bounding
-     * rectangle: a port stored at any x past the cap's centre is put back on
-     * the curve, so resizing the gate keeps the arrow on its edge. */
-    if (shape.kind === "and" || shape.kind === "nand") {
-        const g = andGateLayout(shape);
-        if (x >= g.cx) {
-            const dx = (x - g.cx) / Math.max(0.001, g.r);
-            const dy = (y - g.cy) / Math.max(0.001, g.ry);
-            const angle = Math.max(-Math.PI / 2,
-                          Math.min(Math.PI / 2, Math.atan2(dy, dx)));
-            x = g.cx + g.r * Math.cos(angle);
-            y = g.cy + g.ry * Math.sin(angle);
-        }
-    }
+    const p = perimeterPoint(shape, x, y);
+    x = p.x; y = p.y;
 
     if (shape.rotation) {
         const c = shapeCenter(shape);
-        const p = rotatePoint(x, y, c.x, c.y, shape.rotation);
-        x = p.x; y = p.y;
+        const rotated = rotatePoint(x, y, c.x, c.y, shape.rotation);
+        x = rotated.x; y = rotated.y;
     }
     return { x: x, y: y };
 }
@@ -887,40 +1079,6 @@ function andGatePorts(shape) {
     }));
 }
 
-function nearestAndPort(shape, point) {
-    const g = andGateLayout(shape);
-    let best = null;
-    const consider = (x, y, side) => {
-        const dx = x - point.x, dy = y - point.y;
-        const distance = dx * dx + dy * dy;
-        if (!best || distance < best.distance) {
-            best = {
-                port: { x: (x - shape.x) / shape.w,
-                        y: (y - shape.y) / shape.h },
-                side: side,
-                point: { x: x, y: y },
-                distance: distance,
-            };
-        }
-    };
-
-    consider(shape.x, Math.max(shape.y,
-             Math.min(shape.y + shape.h, point.y)), "left");
-    consider(Math.max(shape.x, Math.min(g.cx, point.x)), shape.y, "top");
-    consider(Math.max(shape.x, Math.min(g.cx, point.x)),
-             shape.y + shape.h, "bottom");
-
-    for (let degrees = -90; degrees <= 90; degrees += 2) {
-        const a = degrees * Math.PI / 180;
-        const x = g.cx + g.r * Math.cos(a);
-        const y = g.cy + g.ry * Math.sin(a);
-        const side = y < g.cy - g.ry * 0.35 ? "top"
-                   : (y > g.cy + g.ry * 0.35 ? "bottom" : "right");
-        consider(x, y, side);
-    }
-    return best;
-}
-
 export function shapePorts(shape) {
     if (shape.kind === "and" || shape.kind === "nand")
         return andGatePorts(shape);
@@ -932,24 +1090,27 @@ export function shapePorts(shape) {
 }
 
 export function nearestPort(shape, point) {
-    if (shape.kind === "and" || shape.kind === "nand")
-        return nearestAndPort(shape, point);
+    const c = shapeCenter(shape);
+    let target = point;
+    if (shape.rotation)
+        target = rotatePoint(point.x, point.y, c.x, c.y, -shape.rotation);
 
-    let best = null;
-    for (const item of shapePorts(shape)) {
-        const dx = item.point.x - point.x;
-        const dy = item.point.y - point.y;
-        const distance = dx * dx + dy * dy;
-        if (!best || distance < best.distance) {
-            best = {
-                port: item.port,
-                side: item.side || cornerSide(shape, point),
-                point: item.point,
-                distance: distance,
-            };
-        }
-    }
-    return best;
+    const at = perimeterPoint(shape, target.x, target.y);
+    const world = shape.rotation
+        ? rotatePoint(at.x, at.y, c.x, c.y, shape.rotation) : at;
+    const dx = world.x - c.x, dy = world.y - c.y;
+    const side = Math.abs(dx) >= Math.abs(dy)
+        ? (dx >= 0 ? "right" : "left")
+        : (dy >= 0 ? "bottom" : "top");
+
+    return {
+        port: { x: (at.x - shape.x) / shape.w,
+                y: (at.y - shape.y) / shape.h },
+        side: side,
+        point: world,
+        distance: (world.x - point.x) * (world.x - point.x) +
+                  (world.y - point.y) * (world.y - point.y),
+    };
 }
 
 function otherEndpoint(diagram, edge, end) {

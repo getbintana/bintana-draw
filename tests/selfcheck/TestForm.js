@@ -1077,6 +1077,22 @@ class TestForm extends Form {
                 route[0], start.x);
         this.eq("gates: and stays on its height", route[1], start.y);
 
+        /* The same outline rule covers the other polygons and the ellipse. */
+        const hex = fm.doc.addShape("hexagon", 0, 0, 120, 80);
+        const hexCorner = shapePortPoint(hex, { x: 0, y: 0 });
+        this.check("shapes: the hexagon corner port is on its slanted edge",
+                   hexCorner.x > 0 && hexCorner.y > 0 &&
+                   hexCorner.x < 60);
+        const hexDrop = nearestPort(hex, { x: 10, y: 10 });
+        this.check("shapes: a drop near the hexagon corner reaches its edge",
+                   hexDrop.point.x > 0 && hexDrop.point.y > 0);
+        const circle = fm.doc.addShape("ellipse", 0, 0, 120, 80);
+        const circleCorner = shapePortPoint(circle, { x: 0, y: 0 });
+        const cx = (circleCorner.x - 60) / 60;
+        const cy = (circleCorner.y - 40) / 40;
+        this.check("shapes: the circle corner port is on the ellipse",
+                   Math.abs(cx * cx + cy * cy - 1) < 0.05);
+
         /* All of them paint without a throw. */
         const png = File.Join(Application.Directory, "shapes.png");
         fm.exporting = true;
