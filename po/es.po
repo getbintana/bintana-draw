@@ -487,6 +487,13 @@ msgstr "Puntas de flecha"
 msgid "Arrowhead"
 msgstr "Punta de flecha"
 
+
+msgid "Connect endpoint"
+msgstr "Conectar extremo"
+
+msgid "Detach endpoint"
+msgstr "Desconectar extremo"
+
 msgid "Move endpoint"
 msgstr "Mover extremo"
 

@@ -213,6 +213,7 @@ class TestForm extends Form {
         this.zorder(fm);
         this.groups(fm);
         this.freeLines(fm);
+        this.endpoints(fm);
         this.routing(fm);
         this.moreShapes(fm);
         this.layers(fm);
@@ -1071,6 +1072,71 @@ class TestForm extends Form {
         this.eq("shapes: the file keeps a triangle",
                 round.shapes.find((s) => s.kind === "triangle") !== undefined,
                 true);
+    }
+
+    endpoints(fm) {
+        fm.resetDocument();
+        fm.panX = 0;
+        fm.panY = 0;
+        fm.zoom = 1;
+        const a = fm.doc.addShape("rect", 0, 0, 100, 100, { text: "A" });
+        const b = fm.doc.addShape("rect", 300, 0, 100, 100, { text: "B" });
+        const c = fm.doc.addShape("rect", 0, 300, 100, 100, { text: "C" });
+        const line = fm.doc.addLine(500, 100, 600, 100, {});
+        fm.refreshAll();
+        fm.select([line.id]);
+
+        /* Drag the start end onto A. */
+        fm.Canvas_MouseDown(500, 100, 1, false, false);
+        fm.Canvas_MouseMove(50, 50, 1, false, false);
+        fm.Canvas_MouseUp(50, 50, 1, false, false);
+        const half = fm.doc.edgeById(line.id);
+        this.eq("ends: the start attached to A", half.from, a.id);
+        this.check("ends: and remembered a side", half.fromSide !== "");
+        this.eq("ends: the free end is still free", half.x2, 600);
+
+        /* Drag the other end onto B: now it is a full connector. */
+        fm.select([line.id]);
+        const ends = edgeHandlePoints(fm.doc, half).ends;
+        const free = ends.find((point) => point.x === 600);
+        fm.Canvas_MouseDown(free.x, free.y, 1, false, false);
+        fm.Canvas_MouseMove(350, 50, 1, false, false);
+        fm.Canvas_MouseUp(350, 50, 1, false, false);
+        const full = fm.doc.edgeById(line.id);
+        this.eq("ends: the end attached to B", full.to, b.id);
+        this.check("ends: both ends are on shapes",
+                   !!full.from && !!full.to);
+        this.check("ends: it still has two endpoint handles",
+                   edgeHandlePoints(fm.doc, full).ends.length === 2);
+
+        /* Drag the A end into empty space: it detaches, the other stays. */
+        fm.select([line.id]);
+        const start = edgeHandlePoints(fm.doc, full).ends.find((p) => p.end === "start");
+        fm.Canvas_MouseDown(start.x, start.y, 1, false, false);
+        fm.Canvas_MouseMove(200, 200, 1, false, false);
+        fm.Canvas_MouseUp(200, 200, 1, false, false);
+        const loose = fm.doc.edgeById(line.id);
+        this.eq("ends: the start detached", loose.from, "");
+        this.eq("ends: the other end stayed", loose.to, b.id);
+        this.eq("ends: the loose point is where it was dropped", loose.x1, 200);
+
+        /* And attach it again, this time to C. */
+        fm.select([line.id]);
+        const looseEnd = edgeHandlePoints(fm.doc, loose).ends.find((p) => p.end === "start");
+        fm.Canvas_MouseDown(looseEnd.x, looseEnd.y, 1, false, false);
+        fm.Canvas_MouseMove(50, 350, 1, false, false);
+        fm.Canvas_MouseUp(50, 350, 1, false, false);
+        const re = fm.doc.edgeById(line.id);
+        this.eq("ends: the start attached to C", re.from, c.id);
+        this.check("ends: a half edge survives a round trip",
+                   Diagram.fromJSON(JSON.parse(JSON.stringify(fm.doc.toJSON())))
+                       .edgeById(line.id).from === c.id);
+
+        /* Deleting a shape must not sweep away a free line. */
+        const spare = fm.doc.addLine(500, 400, 600, 400, {});
+        fm.doc.remove([a.id]);
+        this.check("ends: a free line survives an unrelated delete",
+                   !!fm.doc.edgeById(spare.id));
     }
 
     confirmDialog() {

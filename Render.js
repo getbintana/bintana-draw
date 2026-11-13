@@ -359,10 +359,10 @@ export function edgeHandlePoints(diagram, edge) {
     }
 
     const ends = [];
-    if (!edge.from && !edge.to && edge.x1 !== undefined) {
-        ends.push({ x: edge.x1, y: edge.y1, end: "start" });
-        ends.push({ x: edge.x2, y: edge.y2, end: "end" });
-    }
+    const start = edgeEndpoint(diagram, edge, "start");
+    const end = edgeEndpoint(diagram, edge, "end");
+    if (start) ends.push({ x: start.x, y: start.y, end: "start" });
+    if (end) ends.push({ x: end.x, y: end.y, end: "end" });
     return { waypoints: waypoints, midpoints: midpoints, ends: ends };
 }
 

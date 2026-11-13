@@ -83,11 +83,16 @@ BINTANA=/path/to/build/bintana tests/run.sh
   `curved` samples a Catmull-Rom through them. The hollow midpoint handle adds a
   bend only when dragged (`addBend` waits for 3 px), so a double-click at the
   middle still reaches the label editor.
-- **Free-line ends are handles; connected ends are not.** `edgeHandlePoints`
-  returns `ends` only when `from` and `to` are empty. Dragging an end writes
-  `x1/y1` or `x2/y2`; double-clicking one flips `arrowStart` or `arrowEnd`.
-  The arrow toggles for a connected edge are the Edit/context menu actions,
-  because its ends sit on a shape and cannot be dragged.
+- **Every edge end is a handle and an edge may be half-attached.** `from` and
+  `to` can be empty independently; the free side lives in `x1/y1` or `x2/y2`.
+  Dragging an attached end first detaches it, then follows the pointer, and
+  dropping it on a shape reattaches it with `fromSide`/`toSide` picked by
+  `sideFacing`. Dropping on empty space leaves a half edge. Deleting a shape
+  must keep free lines and only cut the edges whose attached end went:
+  `Diagram.remove` checks each non-empty end.
+- **Double-clicking an endpoint flips that end's arrowhead.** Connected ends
+  are handles too, so this works on a connector as well as on a free line; the
+  Edit/context `Arrowheads` actions are the explicit version for a selection.
 - **A free line is an edge with no shapes.** `from` and `to` are empty and the
   geometry is `x1/y1/x2/y2`; `edgeRoute` returns those two points, `layerVisible`
   does not look for endpoints, and `bounds` includes them. Copy/paste has to

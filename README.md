@@ -65,11 +65,14 @@ The window is started with a blank canvas and the shape palette on the left.
   its text, hit-test, bounds and connector anchors follow. A rotated shape has
   no resize handles: set `Rotate` back to 0 to resize it.
 - **Free lines and arrows** — the `Line` and `Arrow` tools draw a segment with
-  no shapes attached. A selected free line shows a handle at each end: drag one
-  to move just that end, drag the body to move both, and double-click an end to
-  put or take away its arrowhead. `Edit > Arrowheads` and the context menu set
-  none, start, end or both on any selected connector. Lines can be labelled,
-  styled, copied, pasted, and are included in the bounds and the export.
+  no shapes attached. A selected line shows a handle at each end: drag one to
+  move just that end, drag the body to move both, and double-click an end to
+  put or take away its arrowhead. Drop an end on a shape to attach it to that
+  side; drag an attached end into empty space to detach it. A connector may
+  have one end attached and one loose. `Edit > Arrowheads` and the context menu
+  set none, start, end or both on any selected connector. Lines can be
+  labelled, styled, copied, pasted, and are included in the bounds and the
+  export.
 - **Connector routes** — a selected connector has a `Route` choice:
   orthogonal (the automatic right-angled path), straight, or curved. Select a
   connector and drag the hollow circle at its middle to add a bend; drag a bend
@@ -198,8 +201,8 @@ handler whose control name is misspelled is silently dead.
 
 This is a first editor, not a draw.io replacement. Missing, in the order they
 would change what a person can draw: custom shape libraries and stencils,
-attaching a free line's ends to shapes, images and icons, system-clipboard
-interchange with other applications, SVG import/export, and collaboration.
+images and icons, system-clipboard interchange with other applications, SVG
+import/export, and collaboration.
 
 The draw.io import is deliberately the basic half: it reads every uncompressed
 page of a file, maps the common shapes by style (`rounded`, `ellipse`,

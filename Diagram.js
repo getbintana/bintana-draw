@@ -72,6 +72,7 @@ function readWaypoints(points) {
 function copyEdge(e) {
     return {
         id: e.id, from: e.from, to: e.to, layer: e.layer, text: e.text,
+        fromSide: e.fromSide || "", toSide: e.toSide || "",
         x1: e.x1, y1: e.y1, x2: e.x2, y2: e.y2,
         arrowStart: e.arrowStart === true,
         arrowEnd: e.arrowEnd !== false,
@@ -235,13 +236,25 @@ export class Diagram {
 
     addEdge(from, to, options) {
         const o = options || {};
-        if (!this.shapeById(from) || !this.shapeById(to)) return null;
+        const hasFrom = !!this.shapeById(from);
+        const hasTo = !!this.shapeById(to);
+        if ((from && !hasFrom) || (to && !hasTo)) return null;
+        if (!hasFrom && !hasTo)
+            return this.addLine(number(o.x1, 0), number(o.y1, 0),
+                                number(o.x2, 0), number(o.y2, 0), o);
+
         const layer = this.layerById(o.layer) ? o.layer : this.layers[0].id;
         const edge = {
             id: "e" + (this.nextEdge++),
-            from: from,
-            to: to,
+            from: hasFrom ? from : "",
+            to: hasTo ? to : "",
+            fromSide: hasFrom ? text(o.fromSide, "") : "",
+            toSide: hasTo ? text(o.toSide, "") : "",
             layer: layer,
+            x1: hasFrom ? undefined : number(o.x1, 0),
+            y1: hasFrom ? undefined : number(o.y1, 0),
+            x2: hasTo ? undefined : number(o.x2, 0),
+            y2: hasTo ? undefined : number(o.y2, 0),
             route: o.route === "straight" || o.route === "curved"
                 ? o.route : "orthogonal",
             waypoints: copyWaypoints(o.waypoints),
@@ -350,8 +363,12 @@ export class Diagram {
         this.shapes = this.shapes.filter((s) => !gone.has(s.id));
         const remains = new Set();
         for (const s of this.shapes) remains.add(s.id);
-        this.edges = this.edges.filter((e) =>
-            !gone.has(e.id) && remains.has(e.from) && remains.has(e.to));
+        this.edges = this.edges.filter((e) => {
+            if (gone.has(e.id)) return false;
+            if (e.from && !remains.has(e.from)) return false;
+            if (e.to && !remains.has(e.to)) return false;
+            return true;
+        });
     }
 
     bounds() {
@@ -460,16 +477,20 @@ export class Diagram {
 
             const rawFrom = text(raw.from, "");
             const rawTo   = text(raw.to, "");
-            const free = !rawFrom && !rawTo && raw.x1 !== undefined &&
-                         raw.x2 !== undefined;
-            let from = "", to = "";
+            const from = rawFrom
+                ? (renamed.has(rawFrom) ? renamed.get(rawFrom) : rawFrom) : "";
+            const to = rawTo
+                ? (renamed.has(rawTo) ? renamed.get(rawTo) : rawTo) : "";
 
-            if (!free) {
-                from = renamed.has(rawFrom) ? renamed.get(rawFrom) : rawFrom;
-                to   = renamed.has(rawTo) ? renamed.get(rawTo) : rawTo;
-                if (!from || !to || from === to) continue;
-                if (!diagram.shapeById(from) || !diagram.shapeById(to)) continue;
-            }
+            if (rawFrom && !diagram.shapeById(from)) continue;
+            if (rawTo && !diagram.shapeById(to)) continue;
+            if (from && to && from === to) continue;
+
+            const hasFrom = !!from, hasTo = !!to;
+            if (!hasFrom && !hasTo &&
+                (raw.x1 === undefined || raw.x2 === undefined)) continue;
+            if (hasFrom && !hasTo && raw.x2 === undefined) continue;
+            if (!hasFrom && hasTo && raw.x1 === undefined) continue;
 
             let id = text(raw.id, "");
             if (!id || diagram.edgeById(id)) id = "e" + (diagram.nextEdge++);
@@ -477,12 +498,14 @@ export class Diagram {
                 id: id,
                 from: from,
                 to: to,
+                fromSide: hasFrom ? text(raw.fromSide, "") : "",
+                toSide: hasTo ? text(raw.toSide, "") : "",
                 layer: diagram.layerById(text(raw.layer, ""))
                     ? raw.layer : diagram.layers[0].id,
-                x1: free ? number(raw.x1, 0) : undefined,
-                y1: free ? number(raw.y1, 0) : undefined,
-                x2: free ? number(raw.x2, 0) : undefined,
-                y2: free ? number(raw.y2, 0) : undefined,
+                x1: hasFrom ? undefined : number(raw.x1, 0),
+                y1: hasFrom ? undefined : number(raw.y1, 0),
+                x2: hasTo ? undefined : number(raw.x2, 0),
+                y2: hasTo ? undefined : number(raw.y2, 0),
                 arrowStart: raw.arrowStart === true,
                 arrowEnd: raw.arrowEnd !== false,
                 route: raw.route === "straight" || raw.route === "curved"
@@ -716,6 +739,54 @@ function chooseSides(a, b) {
     return [best.from, best.to];
 }
 
+export function sideFacing(shape, point) {
+    const left = Math.abs(point.x - shape.x);
+    const right = Math.abs(point.x - (shape.x + shape.w));
+    const top = Math.abs(point.y - shape.y);
+    const bottom = Math.abs(point.y - (shape.y + shape.h));
+    const least = Math.min(left, right, top, bottom);
+    if (least === left) return "left";
+    if (least === right) return "right";
+    if (least === top) return "top";
+    return "bottom";
+}
+
+function endSide(diagram, edge, end) {
+    if (end === "start" && edge.fromSide) return edge.fromSide;
+    if (end === "end" && edge.toSide) return edge.toSide;
+
+    const a = diagram.shapeById(edge.from);
+    const b = diagram.shapeById(edge.to);
+    if (a && b) return chooseSides(a, b)[end === "start" ? 0 : 1];
+
+    if (end === "start" && a) {
+        if (edge.fromSide) return edge.fromSide;
+        return sideFacing(a, { x: edge.x2, y: edge.y2 });
+    }
+    if (end === "end" && b) {
+        if (edge.toSide) return edge.toSide;
+        return sideFacing(b, { x: edge.x1, y: edge.y1 });
+    }
+    return "";
+}
+
+export function edgeEndpoint(diagram, edge, end) {
+    if (end === "start") {
+        if (edge.from) {
+            const shape = diagram.shapeById(edge.from);
+            if (!shape) return null;
+            return sideAnchor(shape, endSide(diagram, edge, "start"));
+        }
+        return { x: edge.x1, y: edge.y1 };
+    }
+    if (edge.to) {
+        const shape = diagram.shapeById(edge.to);
+        if (!shape) return null;
+        return sideAnchor(shape, endSide(diagram, edge, "end"));
+    }
+    return { x: edge.x2, y: edge.y2 };
+}
+
 function dedupe(points) {
     const out = [];
     for (const p of points) {
@@ -737,30 +808,14 @@ function dedupe(points) {
  * corridor outside both, and perpendicular sides turn once.
  */
 function controlPoints(diagram, edge) {
-    const points = [];
-    if (!edge.from && !edge.to) {
-        if (edge.x1 === undefined || edge.x2 === undefined) return points;
-        points.push({ x: edge.x1, y: edge.y1 });
-    } else {
-        const a = diagram.shapeById(edge.from);
-        const b = diagram.shapeById(edge.to);
-        if (!a || !b) return [];
-        const sides = chooseSides(a, b);
-        points.push(sideAnchor(a, sides[0]));
-    }
+    const start = edgeEndpoint(diagram, edge, "start");
+    const end = edgeEndpoint(diagram, edge, "end");
+    if (!start || !end) return [];
 
+    const points = [start];
     for (const point of edge.waypoints || [])
         points.push({ x: point.x, y: point.y });
-
-    if (edge.from || edge.to) {
-        const b = diagram.shapeById(edge.to);
-        const a = diagram.shapeById(edge.from);
-        if (!a || !b) return [];
-        const sides = chooseSides(a, b);
-        points.push(sideAnchor(b, sides[1]));
-    } else {
-        points.push({ x: edge.x2, y: edge.y2 });
-    }
+    points.push(end);
 
     const flat = [];
     for (const point of points) flat.push(point.x, point.y);
@@ -815,16 +870,15 @@ function smoothPath(flat) {
 export function edgeRoute(diagram, edge) {
     const route = edge.route || "orthogonal";
     const hasWaypoints = edge.waypoints && edge.waypoints.length > 0;
+    const a = diagram.shapeById(edge.from);
+    const b = diagram.shapeById(edge.to);
+    const hasFrom = !!a, hasTo = !!b;
 
-    /* The automatic orthogonal route is only for the no-waypoint case; once a
-     * person has put a bend down, the line goes through it. */
-    if (edge.from && edge.to && route === "orthogonal" && !hasWaypoints) {
-        const a = diagram.shapeById(edge.from);
-        const b = diagram.shapeById(edge.to);
-        if (!a || !b) return [];
-
-        const sides = chooseSides(a, b);
-        const outSide = sides[0], inSide = sides[1];
+    /* The automatic orthogonal route is only for two shapes with no bends. */
+    if (hasFrom && hasTo && route === "orthogonal" && !hasWaypoints) {
+        const auto = chooseSides(a, b);
+        const outSide = edge.fromSide || auto[0];
+        const inSide = edge.toSide || auto[1];
         const p0 = sideAnchor(a, outSide);
         const p1 = sideAnchor(b, inSide);
         const v0 = sideVector(outSide);
@@ -871,11 +925,42 @@ export function edgeRoute(diagram, edge) {
         return flat;
     }
 
+    /* One end on a shape and the other loose: a stub out of the shape, then
+     * one right angle to the loose point. */
+    if (hasFrom !== hasTo) {
+        if (route === "curved") return smoothPath(controlPoints(diagram, edge));
+        if (route === "straight" || hasWaypoints)
+            return controlPoints(diagram, edge);
+
+        const fromAnchor = hasFrom
+            ? edgeEndpoint(diagram, edge, "start")
+            : edgeEndpoint(diagram, edge, "end");
+        const free = hasFrom
+            ? { x: edge.x2, y: edge.y2 }
+            : { x: edge.x1, y: edge.y1 };
+        const side = hasFrom
+            ? endSide(diagram, edge, "start")
+            : endSide(diagram, edge, "end");
+        const v = sideVector(side);
+        const stub = { x: fromAnchor.x + v.x * STUB,
+                       y: fromAnchor.y + v.y * STUB };
+        const horizontal = side === "left" || side === "right";
+        const corner = horizontal
+            ? { x: stub.x, y: free.y }
+            : { x: free.x, y: stub.y };
+
+        if (hasFrom) {
+            return [fromAnchor.x, fromAnchor.y, stub.x, stub.y,
+                    corner.x, corner.y, free.x, free.y];
+        }
+        return [free.x, free.y, corner.x, corner.y,
+                stub.x, stub.y, fromAnchor.x, fromAnchor.y];
+    }
+
     const control = controlPoints(diagram, edge);
     if (route === "curved") return smoothPath(control);
     return control;
 }
-
 export function polylineLength(points) {
     let total = 0;
     for (let i = 2; i < points.length; i += 2) {

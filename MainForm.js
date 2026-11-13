@@ -839,8 +839,12 @@ export class MainForm extends Form {
             if (!edge) return;
             const before = this.snapshot();
             if (bend.kind === "endpoint") {
-                this.drag = { kind: "endpoint", id: edge.id,
-                              end: bend.end, before: before };
+                this.drag = {
+                    kind: "endpoint", id: edge.id, end: bend.end,
+                    anchor: edgeEndpoint(this.doc, edge, bend.end),
+                    wasAttached: bend.end === "start" ? !!edge.from : !!edge.to,
+                    moved: false, before: before,
+                };
             } else if (bend.kind === "addBend") {
                 this.drag = { kind: "addBend", id: edge.id,
                               point: bend.point, before: before,
@@ -966,11 +970,29 @@ export class MainForm extends Form {
 
         if (d.kind === "endpoint") {
             const edge = this.doc.edgeById(d.id);
-            if (edge) {
-                const x = this.snap(world.x), y = this.snap(world.y);
-                if (d.end === "start") { edge.x1 = x; edge.y1 = y; }
-                else { edge.x2 = x; edge.y2 = y; }
+            if (!edge) return;
+            if (!d.moved &&
+                Math.hypot(world.x - d.anchor.x, world.y - d.anchor.y) < 2)
+                return;
+
+            if (!d.moved && d.wasAttached) {
+                if (d.end === "start") {
+                    edge.from = "";
+                    edge.fromSide = "";
+                    edge.x1 = d.anchor.x;
+                    edge.y1 = d.anchor.y;
+                } else {
+                    edge.to = "";
+                    edge.toSide = "";
+                    edge.x2 = d.anchor.x;
+                    edge.y2 = d.anchor.y;
+                }
             }
+            d.moved = true;
+
+            const x = this.snap(world.x), y = this.snap(world.y);
+            if (d.end === "start") { edge.x1 = x; edge.y1 = y; }
+            else { edge.x2 = x; edge.y2 = y; }
             this.Canvas.Redraw();
             return;
         }
@@ -1065,16 +1087,20 @@ export class MainForm extends Form {
             return;
         }
 
+        if (d.kind === "endpoint") {
+            this.finishEndpoint(d, this.toWorld(x, y));
+            return;
+        }
+
         if (d.kind === "move" || d.kind === "resize" ||
             d.kind === "moveLine" || d.kind === "bend" ||
-            d.kind === "addBend" || d.kind === "endpoint") {
+            d.kind === "addBend") {
             const after = this.snapshot();
             if (d.before !== after) {
                 let step = Locale.Text("Move");
                 if (d.kind === "resize") step = Locale.Text("Resize");
                 else if (d.kind === "bend") step = Locale.Text("Move bend");
                 else if (d.kind === "addBend") step = Locale.Text("Add bend");
-                else if (d.kind === "endpoint") step = Locale.Text("Move endpoint");
                 this.pushUndo(step, d.before);
             }
             this.refreshAll();
@@ -1233,6 +1259,36 @@ export class MainForm extends Form {
         this.chooseTool("select", this.BtnToolSelect);
 
         if (d.tool === "text") this.beginEdit(shape);
+        this.refreshAll();
+    }
+
+    finishEndpoint(d, world) {
+        if (!d.moved) return;
+        const edge = this.doc.edgeById(d.id);
+        if (!edge) return;
+
+        const target = this.doc.shapeAt(world.x, world.y);
+        const side = target ? sideFacing(target, world) : "";
+
+        if (target) {
+            if (d.end === "start") {
+                edge.from = target.id;
+                edge.fromSide = side;
+                edge.x1 = undefined;
+                edge.y1 = undefined;
+            } else {
+                edge.to = target.id;
+                edge.toSide = side;
+                edge.x2 = undefined;
+                edge.y2 = undefined;
+            }
+        }
+
+        let step = Locale.Text("Move endpoint");
+        if (target) step = Locale.Text("Connect endpoint");
+        else if (d.wasAttached) step = Locale.Text("Detach endpoint");
+
+        this.pushUndo(step, d.before);
         this.refreshAll();
     }
 
@@ -1445,16 +1501,20 @@ export class MainForm extends Form {
 
         const outEdges = [];
         for (const e of this.doc.edges) {
-            const free = !e.from && !e.to;
-            if (free) {
+            const loose = !e.from || !e.to;
+            if (loose) {
                 if (this.sel.indexOf(e.id) < 0) continue;
+                if (e.from && !ids.has(e.from)) continue;
+                if (e.to && !ids.has(e.to)) continue;
             } else if (!ids.has(e.from) || !ids.has(e.to)) {
                 continue;
             }
             if (!this.doc.canSelect(e)) continue;
             outEdges.push({
                 id: e.id, from: e.from, to: e.to, text: e.text,
+                fromSide: e.fromSide, toSide: e.toSide,
                 x1: e.x1, y1: e.y1, x2: e.x2, y2: e.y2,
+                arrowStart: e.arrowStart === true,
                 arrowEnd: e.arrowEnd !== false,
                 route: e.route || "orthogonal",
                 waypoints: (e.waypoints || []).map((p) => ({ x: p.x, y: p.y })),
@@ -1505,11 +1565,19 @@ export class MainForm extends Form {
         }
 
         for (const raw of data.edges || []) {
+            const from = raw.from ? renamed.get(raw.from) : "";
+            const to = raw.to ? renamed.get(raw.to) : "";
+            if (raw.from && !from) continue;
+            if (raw.to && !to) continue;
+
             let edge;
-            if (!raw.from && !raw.to) {
-                edge = this.doc.addLine(raw.x1 + dx, raw.y1 + dy,
-                                        raw.x2 + dx, raw.y2 + dy,
-                    { arrowEnd: raw.arrowEnd !== false,
+            if (!from && !to) {
+                edge = this.doc.addLine((raw.x1 || 0) + dx,
+                                        (raw.y1 || 0) + dy,
+                                        (raw.x2 || 0) + dx,
+                                        (raw.y2 || 0) + dy,
+                    { arrowStart: raw.arrowStart === true,
+                      arrowEnd: raw.arrowEnd !== false,
                       text: raw.text, stroke: raw.stroke,
                       strokeWidth: raw.strokeWidth, dash: raw.dash,
                       route: raw.route, waypoints: (raw.waypoints || []).map(
@@ -1518,13 +1586,17 @@ export class MainForm extends Form {
                       textBold: raw.textBold, textItalic: raw.textItalic,
                       layer: this.activeLayer });
             } else {
-                const from = renamed.get(raw.from);
-                const to = renamed.get(raw.to);
-                if (!from || !to) continue;
                 edge = this.doc.addEdge(from, to,
                     { text: raw.text, stroke: raw.stroke,
                       strokeWidth: raw.strokeWidth, dash: raw.dash,
                       dashed: raw.dashed, route: raw.route,
+                      fromSide: raw.fromSide, toSide: raw.toSide,
+                      x1: from ? undefined : (raw.x1 || 0) + dx,
+                      y1: from ? undefined : (raw.y1 || 0) + dy,
+                      x2: to ? undefined : (raw.x2 || 0) + dx,
+                      y2: to ? undefined : (raw.y2 || 0) + dy,
+                      arrowStart: raw.arrowStart === true,
+                      arrowEnd: raw.arrowEnd !== false,
                       waypoints: (raw.waypoints || []).map(
                           (p) => ({ x: p.x + dx, y: p.y + dy })),
                       textColor: raw.textColor,
