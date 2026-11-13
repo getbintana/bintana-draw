@@ -413,6 +413,13 @@ msgstr "Centro"
 msgid "Bottom"
 msgstr "Abajo"
 
+
+msgid "Rotate"
+msgstr "Rotar"
+
+msgid "Rotation"
+msgstr "Rotación"
+
 msgid "Text color"
 msgstr "Color del texto"
 

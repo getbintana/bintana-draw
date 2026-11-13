@@ -357,6 +357,20 @@
           }
         },
         {
+          "type": "Label",
+          "name": "LblRotate",
+          "properties": { "Text": "Rotate", "For": "SpnRotation" }
+        },
+        {
+          "type": "SpinBox",
+          "name": "SpnRotation",
+          "properties": {
+            "Min": -360, "Max": 360, "Step": 15, "Decimals": 0,
+            "Value": 0, "Numeric": true, "Width": 70, "Height": 30,
+            "AccessibleName": "Rotation"
+          }
+        },
+        {
           "type": "Separator",
           "name": "FmtSep3",
           "properties": { "Orientation": "Vertical", "Width": 14, "Height": 24 }

@@ -333,7 +333,7 @@ class TestForm extends Form {
             <mxCell id="0"/>
             <mxCell id="1" parent="0"/>
             <mxCell id="2" value="Annotations" parent="0"/>
-            <mxCell id="a" value="&lt;b&gt;Start&lt;/b&gt;&lt;br&gt;now" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="10" y="20" width="120" height="60" as="geometry"/></mxCell>
+            <mxCell id="a" value="&lt;b&gt;Start&lt;/b&gt;&lt;br&gt;now" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;rotation=30;" vertex="1" parent="1"><mxGeometry x="10" y="20" width="120" height="60" as="geometry"/></mxCell>
             <mxCell id="b" value="Yes?" style="rhombus;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="200" y="10" width="100" height="80" as="geometry"/></mxCell>
             <mxCell id="c" value="Done" style="ellipse;" vertex="1" parent="1"><mxGeometry x="380" y="20" width="100" height="60" as="geometry"/></mxCell>
             <mxCell id="e" value="ok" style="dashed=1;strokeColor=#ff0000;fontSize=13;fontStyle=2;" edge="1" source="a" target="b" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
@@ -360,6 +360,8 @@ class TestForm extends Form {
                 parsed.diagram.shapes[0].fontSize, 14);
         this.eq("draw.io: bold survives",
                 parsed.diagram.shapes[0].textBold, true);
+        this.eq("draw.io: rotation survives",
+                parsed.diagram.shapes[0].rotation, 30);
         this.eq("draw.io: italic survives",
                 parsed.diagram.edges[0].textItalic, true);
         this.eq("draw.io: rhombus becomes decision",
@@ -695,6 +697,19 @@ class TestForm extends Form {
         this.eq("format: text colour",
                 fm.doc.shapeById(a.id).textColor, "rgb(255,0,0)");
 
+        fm.SpnRotation.Value = 45;
+        fm.SpnRotation_Change();
+        this.eq("format: rotation", fm.doc.shapeById(a.id).rotation, 45);
+        const rotated = fm.doc.shapeById(a.id);
+        const rotatedBox = shapeRectBounds(rotated);
+        this.check("format: the bounds follow the rotation",
+                   Math.round(rotatedBox.w) > 100);
+        const centre = shapeCenter(rotated);
+        this.check("format: the centre still hits",
+                   pointInShape(rotated, centre.x, centre.y));
+        this.check("format: the old corner does not",
+                   !pointInShape(rotated, rotated.x + 1, rotated.y + 1));
+
         /* The edge has its own width, dash and label style. */
         fm.select([edge.id]);
         fm.SpnStrokeWidth.Value = 3;
@@ -723,6 +738,8 @@ class TestForm extends Form {
         this.eq("format: width round-trips",
                 round.shapeById(a.id).strokeWidth, 4);
         this.eq("format: bold round-trips", round.shapeById(a.id).textBold, true);
+        this.eq("format: rotation round-trips",
+                round.shapeById(a.id).rotation, 45);
         this.eq("format: edge dots round-trip", round.edgeById(edge.id).dash, "dot");
 
         fm.select([a.id]);
@@ -873,7 +890,7 @@ class TestForm extends Form {
             SpnFont: ["Change"], BtnBold: ["Click"], BtnItalic: ["Click"],
             BtnAlignLeft: ["Click"], BtnAlignCenter: ["Click"],
             BtnAlignRight: ["Click"], CmbVAlign: ["Select"],
-            BtnTextColor: ["Change"],
+            SpnRotation: ["Change"], BtnTextColor: ["Change"],
             LstLayers: ["Select", "Activate"],
             BtnLayerAdd: ["Click"], BtnLayerRemove: ["Click"],
             BtnLayerUp: ["Click"], BtnLayerDown: ["Click"],

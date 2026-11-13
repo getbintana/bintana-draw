@@ -170,8 +170,18 @@ function edgeLabel(p, e, points) {
 /* ------------------------------------------------------------------ pieces */
 
 function drawShape(p, s) {
+    const turn = s.rotation ? true : false;
+    if (turn) {
+        const c = shapeCenter(s);
+        p.Push();
+        p.Translate(c.x, c.y);
+        p.Rotate(s.rotation);
+        p.Translate(-c.x, -c.y);
+    }
+
     if (s.kind === "text") {
         labelInShape(p, s);
+        if (turn) p.Pop();
         return;
     }
 
@@ -206,6 +216,7 @@ function drawShape(p, s) {
     }
 
     labelInShape(p, s);
+    if (turn) p.Pop();
 }
 
 function arrowHead(p, points, color, width) {
@@ -258,12 +269,20 @@ function drawSelection(p, diagram, selected, zoom) {
 
     for (const s of diagram.shapes) {
         if (!ids.has(s.id) || !diagram.layerVisible(s)) continue;
+        if (s.rotation) {
+            const c = shapeCenter(s);
+            p.Push();
+            p.Translate(c.x, c.y);
+            p.Rotate(s.rotation);
+            p.Translate(-c.x, -c.y);
+        }
         selectionOutline(p, s);
         p.Color = ACCENT;
         p.LineWidth = 1.5 / zoom;
         p.LineDash = [4 / zoom, 3 / zoom];
         p.Stroke();
         p.LineDash = [];
+        if (s.rotation) p.Pop();
     }
 
     /* A group gets one dashed box around its selected members, so a click
@@ -278,10 +297,11 @@ function drawSelection(p, diagram, selected, zoom) {
         if (members.length < 2) continue;
         let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
         for (const s of members) {
-            x0 = Math.min(x0, s.x);
-            y0 = Math.min(y0, s.y);
-            x1 = Math.max(x1, s.x + s.w);
-            y1 = Math.max(y1, s.y + s.h);
+            const box = shapeRectBounds(s);
+            x0 = Math.min(x0, box.x);
+            y0 = Math.min(y0, box.y);
+            x1 = Math.max(x1, box.x + box.w);
+            y1 = Math.max(y1, box.y + box.h);
         }
         p.Color = "rgba(53,132,228,0.5)";
         p.LineWidth = 1 / zoom;
@@ -294,7 +314,7 @@ function drawSelection(p, diagram, selected, zoom) {
 
     /* Handles only when one shape and nothing else is selected. */
     const shapes = diagram.shapes.filter((s) => ids.has(s.id));
-    if (shapes.length === 1 && selected.length === 1) {
+    if (shapes.length === 1 && selected.length === 1 && !shapes[0].rotation) {
         const size = 8 / zoom;
         for (const h of shapeHandles(shapes[0])) {
             p.Rectangle(h.x - size / 2, h.y - size / 2, size, size);

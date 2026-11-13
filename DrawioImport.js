@@ -216,6 +216,9 @@ function importModel(model) {
 
         const shapeWidth = parseFloat(map.strokeWidth || "1.5");
         const fontStyle = parseInt(map.fontStyle || "0", 10);
+        const geometry = cell.node.Find("mxGeometry");
+        const rotationValue = parseFloat(
+            map.rotation || (geometry && geometry.Attr("rotation")) || "0");
         const oldGroup = groupOf(cell, byId);
         let group = "";
         if (oldGroup) {
@@ -238,6 +241,7 @@ function importModel(model) {
             textItalic: (fontStyle & 2) !== 0,
             textAlign: map.align || "",
             textVAlign: map.verticalAlign || "",
+            rotation: rotationValue === rotationValue ? rotationValue : 0,
         });
         mapped.set(id, shape.id);
     }

@@ -91,6 +91,7 @@ export class MainForm extends Form {
     defaultTextAlign   = "center";
     defaultTextVAlign  = "middle";
     defaultTextColor   = "#1f2937";
+    defaultRotation    = 0;
 
     statusText = "";
     syncingColors = false;
@@ -148,6 +149,7 @@ export class MainForm extends Form {
         this.BtnAlignCenter.Active = true;
         this.BtnAlignRight.Active = false;
         this.CmbVAlign.Index = 1;
+        this.SpnRotation.Value = this.defaultRotation;
         this.BtnTextColor.Value = colorButtonValue(this.defaultTextColor);
         this.syncingFormat = false;
 
@@ -635,6 +637,7 @@ export class MainForm extends Form {
     handleAt(x, y) {
         const shapes = this.selectedShapes();
         if (shapes.length !== 1 || this.sel.length !== 1) return "";
+        if (shapes[0].rotation) return "";
         for (const h of shapeHandles(shapes[0])) {
             const sx = this.panX + h.x * this.zoom;
             const sy = this.panY + h.y * this.zoom;
@@ -673,6 +676,7 @@ export class MainForm extends Form {
         options.textItalic = this.defaultTextItalic;
         options.textAlign = kind === "note" ? "left" : this.defaultTextAlign;
         options.textVAlign = kind === "note" ? "top" : this.defaultTextVAlign;
+        options.rotation = this.defaultRotation;
         return options;
     }
 
@@ -1050,10 +1054,11 @@ export class MainForm extends Form {
             y = this.panY + at.y * this.zoom - h / 2;
             this.editing = { kind: "edge", id: object.id };
         } else {
-            w = Math.max(140, object.w * this.zoom);
+            const box = shapeRectBounds(object);
+            w = Math.max(140, box.w * this.zoom);
             h = 38;
-            x = this.panX + object.x * this.zoom;
-            y = this.panY + (object.y + object.h / 2) * this.zoom - h / 2;
+            x = this.panX + (box.x + box.w / 2) * this.zoom - w / 2;
+            y = this.panY + (box.y + box.h / 2) * this.zoom - h / 2;
             this.editing = { kind: "shape", id: object.id };
         }
 
@@ -1152,7 +1157,7 @@ export class MainForm extends Form {
             if (!ids.has(s.id)) continue;
             outShapes.push({
                 id: s.id, kind: s.kind, group: s.group,
-                x: s.x, y: s.y, w: s.w, h: s.h,
+                x: s.x, y: s.y, w: s.w, h: s.h, rotation: s.rotation,
                 text: s.text, fill: s.fill, stroke: s.stroke,
                 strokeWidth: s.strokeWidth, dash: s.dash,
                 textColor: s.textColor, fontSize: s.fontSize, radius: s.radius,
@@ -1208,7 +1213,7 @@ export class MainForm extends Form {
                   radius: raw.radius, textBold: raw.textBold,
                   textItalic: raw.textItalic, textAlign: raw.textAlign,
                   textVAlign: raw.textVAlign, group: group,
-                  layer: this.activeLayer });
+                  rotation: raw.rotation, layer: this.activeLayer });
             renamed.set(raw.id, shape.id);
             ids.push(shape.id);
         }
@@ -1598,6 +1603,8 @@ export class MainForm extends Form {
         this.BtnAlignCenter.Active = align === "center" || align === "";
         this.BtnAlignRight.Active = align === "right";
         this.CmbVAlign.Index = vAlign === "top" ? 0 : (vAlign === "bottom" ? 2 : 1);
+        this.SpnRotation.Value = object && object.from === undefined
+            ? Math.round(object.rotation || 0) : this.defaultRotation;
         this.BtnTextColor.Value = colorButtonValue(color);
         this.syncingFormat = false;
     }
@@ -1672,6 +1679,15 @@ export class MainForm extends Form {
         this.defaultTextVAlign = value;
         this.applyFormat(Locale.Text("Vertical align"), (o) => {
             if (o.from === undefined) o.textVAlign = value;
+        });
+    }
+
+    SpnRotation_Change() {
+        if (this.syncingFormat) return;
+        const value = Math.round(this.SpnRotation.Value);
+        this.defaultRotation = value;
+        this.applyFormat(Locale.Text("Rotate"), (o) => {
+            if (o.from === undefined) o.rotation = value;
         });
     }
 

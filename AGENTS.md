@@ -71,6 +71,11 @@ BINTANA=/path/to/build/bintana tests/run.sh
   holds every member; resizing does not, because more than one shape is
   selected and handles only appear for one. A paste must remap group ids, or
   the copy joins the original group.
+- **A rotated shape is drawn, hit-tested and bounded through its centre.** The
+  model keeps `x/y/w/h` unrotated; `shapeRectBounds` is the axis-aligned box the
+  canvas and the export use, `pointInShape` inverse-rotates the pointer, and
+  `sideAnchor` rotates the connector anchor. Resize handles are hidden while a
+  shape is rotated (`handleAt` refuses), so the geometry stays honest.
 - **The format bar writes defaults as well as the selection.** A change with
   nothing selected is the style the next shape gets; a change with something
   selected is one undo step and also becomes the default. `syncingFormat`

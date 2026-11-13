@@ -40,7 +40,7 @@ function kind(value) {
 function copyShape(s) {
     return {
         id: s.id, kind: s.kind, layer: s.layer, group: s.group,
-        x: s.x, y: s.y, w: s.w, h: s.h,
+        x: s.x, y: s.y, w: s.w, h: s.h, rotation: s.rotation,
         text: s.text, fill: s.fill, stroke: s.stroke,
         strokeWidth: s.strokeWidth, dash: s.dash,
         textColor: s.textColor, fontSize: s.fontSize, radius: s.radius,
@@ -186,6 +186,7 @@ export class Diagram {
             kind: kind(kindName),
             layer: layer,
             group: text(o.group, ""),
+            rotation: number(o.rotation, 0),
             x: Math.round(number(x, 0)),
             y: Math.round(number(y, 0)),
             w: Math.max(MIN_SIZE, Math.round(number(w, 140))),
@@ -293,12 +294,13 @@ export class Diagram {
     bounds() {
         if (!this.shapes.length) return null;
         let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-        for (const s of this.shapes) {
-            if (!this.layerVisible(s)) continue;
-            x0 = Math.min(x0, s.x);
-            y0 = Math.min(y0, s.y);
-            x1 = Math.max(x1, s.x + s.w);
-            y1 = Math.max(y1, s.y + s.h);
+        for (const shape of this.shapes) {
+            if (!this.layerVisible(shape)) continue;
+            const box = shapeRectBounds(shape);
+            x0 = Math.min(x0, box.x);
+            y0 = Math.min(y0, box.y);
+            x1 = Math.max(x1, box.x + box.w);
+            y1 = Math.max(y1, box.y + box.h);
         }
         if (x0 === Infinity) return null;
         return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
@@ -357,6 +359,7 @@ export class Diagram {
                 layer: diagram.layerById(text(raw.layer, ""))
                     ? raw.layer : diagram.layers[0].id,
                 group: text(raw.group, ""),
+                rotation: number(raw.rotation, 0),
                 x: Math.round(number(raw.x, 0)),
                 y: Math.round(number(raw.y, 0)),
                 w: Math.max(MIN_SIZE, Math.round(number(raw.w, 140))),
@@ -532,7 +535,39 @@ export class Document {
 
 /* ------------------------------------------------------------------ shapes */
 
+function rotatePoint(x, y, cx, cy, degrees) {
+    if (!degrees) return { x: x, y: y };
+    const radians = degrees * Math.PI / 180;
+    const cos = Math.cos(radians), sin = Math.sin(radians);
+    const dx = x - cx, dy = y - cy;
+    return { x: cx + dx * cos - dy * sin,
+             y: cy + dx * sin + dy * cos };
+}
+
+export function shapeRectBounds(s) {
+    if (!s.rotation) return { x: s.x, y: s.y, w: s.w, h: s.h };
+    const c = shapeCenter(s);
+    const corners = [
+        rotatePoint(s.x, s.y, c.x, c.y, s.rotation),
+        rotatePoint(s.x + s.w, s.y, c.x, c.y, s.rotation),
+        rotatePoint(s.x + s.w, s.y + s.h, c.x, c.y, s.rotation),
+        rotatePoint(s.x, s.y + s.h, c.x, c.y, s.rotation),
+    ];
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const p of corners) {
+        x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y);
+        x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y);
+    }
+    return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+}
+
 export function pointInShape(s, x, y) {
+    if (s.rotation) {
+        const c = shapeCenter(s);
+        const p = rotatePoint(x, y, c.x, c.y, -s.rotation);
+        x = p.x;
+        y = p.y;
+    }
     if (x < s.x || y < s.y || x > s.x + s.w || y > s.y + s.h) return false;
     if (s.kind === "ellipse") {
         const rx = s.w / 2, ry = s.h / 2;
@@ -553,12 +588,16 @@ export function shapeCenter(s) {
 }
 
 function sideAnchor(s, side) {
+    let point;
     switch (side) {
-    case "left":   return { x: s.x,           y: s.y + s.h / 2 };
-    case "right":  return { x: s.x + s.w,     y: s.y + s.h / 2 };
-    case "top":    return { x: s.x + s.w / 2, y: s.y };
-    default:       return { x: s.x + s.w / 2, y: s.y + s.h };
+    case "left":   point = { x: s.x,           y: s.y + s.h / 2 }; break;
+    case "right":  point = { x: s.x + s.w,     y: s.y + s.h / 2 }; break;
+    case "top":    point = { x: s.x + s.w / 2, y: s.y }; break;
+    default:       point = { x: s.x + s.w / 2, y: s.y + s.h }; break;
     }
+    if (!s.rotation) return point;
+    const c = shapeCenter(s);
+    return rotatePoint(point.x, point.y, c.x, c.y, s.rotation);
 }
 
 function sideVector(side) {
@@ -571,19 +610,19 @@ function sideVector(side) {
 }
 
 function chooseSides(a, b) {
-    const ca = shapeCenter(a), cb = shapeCenter(b);
-    const dx = cb.x - ca.x, dy = cb.y - ca.y;
-
-    /* Which way the two rectangles are actually apart, not where their
-     * centres are: a target below and to one side takes the vertical route
-     * when the vertical gap is the larger one, which is the line a person
-     * draws between stacked boxes. */
-    const gapX = Math.max(0, Math.max(a.x, b.x) - Math.min(a.x + a.w, b.x + b.w));
-    const gapY = Math.max(0, Math.max(a.y, b.y) - Math.min(a.y + a.h, b.y + b.h));
-
-    if (gapX >= gapY)
-        return dx >= 0 ? ["right", "left"] : ["left", "right"];
-    return dy >= 0 ? ["bottom", "top"] : ["top", "bottom"];
+    const sides = ["left", "right", "top", "bottom"];
+    let best = null;
+    for (const sa of sides) {
+        const pa = sideAnchor(a, sa);
+        for (const sb of sides) {
+            const pb = sideAnchor(b, sb);
+            const dx = pa.x - pb.x, dy = pa.y - pb.y;
+            const distance = dx * dx + dy * dy;
+            if (!best || distance < best.distance)
+                best = { from: sa, to: sb, distance: distance };
+        }
+    }
+    return [best.from, best.to];
 }
 
 function dedupe(points) {
