@@ -71,6 +71,12 @@ BINTANA=/path/to/build/bintana tests/run.sh
   holds every member; resizing does not, because more than one shape is
   selected and handles only appear for one. A paste must remap group ids, or
   the copy joins the original group.
+- **A shape kind is one case in `shapePath`.** There are no per-shape classes:
+  add the name to `SHAPE_KINDS` in `Diagram.js`, a case in `Render.js`
+  (`shapePath`, plus any inner lines in `drawShape`), a default size in
+  `MainForm.defaultSize`, and either a toggle button or an entry in the
+  `CmbMoreShapes` list. The long tail lives in that combo so the palette stays
+  one screen tall.
 - **An edge route is one of three things.** With no waypoints and
   `route === "orthogonal"` it is the automatic right-angled path; otherwise the
   control points are the anchors plus the waypoints, `straight` joins them and

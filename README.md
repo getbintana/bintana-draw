@@ -29,8 +29,11 @@ The window is started with a blank canvas and the shape palette on the left.
 ## What it does
 
 - **Shapes** — rectangle, rounded rectangle, ellipse, decision diamond,
-  terminator, data parallelogram, database cylinder, note and free text. Pick
-  one and click for the default size or drag to size it.
+  terminator, data parallelogram, database cylinder, note and free text in the
+  palette, plus a **More shapes** list: triangle, hexagon, document, manual
+  input, predefined process, internal storage, delay, on-page and off-page
+  references, loop limit and manual operation. Pick one and click for the
+  default size or drag to size it.
 - **Connectors** — the connector tool, dragged from one shape to another,
   produces an orthogonal route that follows both shapes when they move or
   resize. Connectors can be labelled and can be dashed.

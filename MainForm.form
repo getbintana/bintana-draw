@@ -397,7 +397,7 @@
           "name": "Palette",
           "properties": {
             "Arrangement": "Vertical",
-            "Spacing": 4,
+            "Spacing": 2,
             "Padding": "10",
             "Width": 184,
             "Style": "draw-sidebar"
@@ -419,7 +419,7 @@
                 "Text": "Select",
                 "Active": true,
                 "HAlign": "Fill",
-                "Height": 28
+                "Height": 25
               }
             },
             {
@@ -428,7 +428,7 @@
               "properties": {
                 "Text": "Rectangle",
                 "HAlign": "Fill",
-                "Height": 28
+                "Height": 25
               }
             },
             {
@@ -437,7 +437,7 @@
               "properties": {
                 "Text": "Rounded rectangle",
                 "HAlign": "Fill",
-                "Height": 28
+                "Height": 25
               }
             },
             {
@@ -446,7 +446,7 @@
               "properties": {
                 "Text": "Ellipse",
                 "HAlign": "Fill",
-                "Height": 28
+                "Height": 25
               }
             },
             {
@@ -455,7 +455,7 @@
               "properties": {
                 "Text": "Decision",
                 "HAlign": "Fill",
-                "Height": 28
+                "Height": 25
               }
             },
             {
@@ -464,7 +464,7 @@
               "properties": {
                 "Text": "Terminator",
                 "HAlign": "Fill",
-                "Height": 28
+                "Height": 25
               }
             },
             {
@@ -473,7 +473,7 @@
               "properties": {
                 "Text": "Data",
                 "HAlign": "Fill",
-                "Height": 28
+                "Height": 25
               }
             },
             {
@@ -482,7 +482,7 @@
               "properties": {
                 "Text": "Database",
                 "HAlign": "Fill",
-                "Height": 28
+                "Height": 25
               }
             },
             {
@@ -491,7 +491,7 @@
               "properties": {
                 "Text": "Note",
                 "HAlign": "Fill",
-                "Height": 28
+                "Height": 25
               }
             },
             {
@@ -500,7 +500,7 @@
               "properties": {
                 "Text": "Text",
                 "HAlign": "Fill",
-                "Height": 28
+                "Height": 25
               }
             },
             {
@@ -509,7 +509,7 @@
               "properties": {
                 "Text": "Connector",
                 "HAlign": "Fill",
-                "Height": 28
+                "Height": 25
               }
             },
             {
@@ -518,7 +518,7 @@
               "properties": {
                 "Text": "Line",
                 "HAlign": "Fill",
-                "Height": 28
+                "Height": 25
               }
             },
             {
@@ -527,7 +527,17 @@
               "properties": {
                 "Text": "Arrow",
                 "HAlign": "Fill",
-                "Height": 28
+                "Height": 25
+              }
+            },
+            {
+              "type": "ComboBox",
+              "name": "CmbMoreShapes",
+              "properties": {
+                "HAlign": "Fill",
+                "Height": 25,
+                "AllowEmpty": true,
+                "AccessibleName": "More shapes"
               }
             },
             {
@@ -556,7 +566,7 @@
                 "AccessibleName": "Fill color",
                 "HAlign": "Start",
                 "Width": 70,
-                "Height": 28
+                "Height": 25
               }
             },
             {
@@ -576,7 +586,7 @@
                 "AccessibleName": "Line color",
                 "HAlign": "Start",
                 "Width": 70,
-                "Height": 28
+                "Height": 25
               }
             }
           ]

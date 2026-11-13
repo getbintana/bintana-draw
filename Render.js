@@ -105,6 +105,54 @@ function shapePath(p, s) {
         break;
     case "cylinder":   cylinderPath(p, s); break;
     case "note":       notePath(p, s); break;
+    case "triangle":
+        p.Polygon([s.x + s.w / 2, s.y, s.x + s.w, s.y + s.h, s.x, s.y + s.h]);
+        break;
+    case "hexagon":
+        p.Polygon([s.x + s.w * 0.22, s.y, s.x + s.w * 0.78, s.y,
+                   s.x + s.w, s.y + s.h / 2, s.x + s.w * 0.78, s.y + s.h,
+                   s.x + s.w * 0.22, s.y + s.h, s.x, s.y + s.h / 2]);
+        break;
+    case "document": {
+        const wave = Math.min(18, s.h * 0.14);
+        p.MoveTo(s.x, s.y);
+        p.LineTo(s.x + s.w, s.y);
+        p.LineTo(s.x + s.w, s.y + s.h - wave);
+        p.CurveTo(s.x + s.w * 0.72, s.y + s.h - wave * 2.2,
+                  s.x + s.w * 0.28, s.y + s.h + wave * 0.2,
+                  s.x, s.y + s.h - wave);
+        p.ClosePath();
+        break;
+    }
+    case "manualinput":
+        p.Polygon([s.x, s.y + s.h * 0.22, s.x + s.w, s.y,
+                   s.x + s.w, s.y + s.h, s.x, s.y + s.h]);
+        break;
+    case "delay": {
+        const radius = s.h / 2;
+        p.MoveTo(s.x, s.y);
+        p.LineTo(s.x + s.w - radius, s.y);
+        p.Arc(s.x + s.w - radius, s.y + radius, radius, -90, 90);
+        p.LineTo(s.x, s.y + s.h);
+        p.ClosePath();
+        break;
+    }
+    case "onpage":     ellipsePath(p, s.x, s.y, s.w, s.h); break;
+    case "offpage":
+        p.Polygon([s.x, s.y, s.x + s.w, s.y, s.x + s.w, s.y + s.h * 0.72,
+                   s.x + s.w / 2, s.y + s.h, s.x, s.y + s.h * 0.72]);
+        break;
+    case "looplimit": {
+        const cut = Math.min(20, s.w * 0.18, s.h * 0.25);
+        p.Polygon([s.x + cut, s.y, s.x + s.w - cut, s.y,
+                   s.x + s.w, s.y + cut, s.x + s.w, s.y + s.h,
+                   s.x, s.y + s.h, s.x, s.y + cut]);
+        break;
+    }
+    case "manualop":
+        p.Polygon([s.x, s.y, s.x + s.w, s.y,
+                   s.x + s.w * 0.8, s.y + s.h, s.x + s.w * 0.2, s.y + s.h]);
+        break;
     default:           p.Rectangle(s.x, s.y, s.w, s.h); break;
     }
 }
@@ -119,7 +167,8 @@ function selectionOutline(p, s) {
 function labelInShape(p, s) {
     if (!s.text) return;
 
-    const wide = s.kind === "ellipse" || s.kind === "diamond";
+    const wide = s.kind === "ellipse" || s.kind === "diamond" ||
+                 s.kind === "onpage";
     const note = s.kind === "note";
     const fold = note ? Math.min(24, s.w * 0.22, s.h * 0.32) : 0;
     const padX = note ? 12 : (wide ? s.w * 0.18 : 10);
@@ -201,6 +250,28 @@ function drawShape(p, s) {
         p.Color = s.stroke || DEFAULT_STROKE;
         p.LineWidth = s.strokeWidth || 1.5;
         p.LineDash = dashPattern(s.dash, false);
+        p.Stroke();
+        p.LineDash = [];
+    } else if (s.kind === "predefined") {
+        const inset = Math.min(16, s.w * 0.12);
+        p.Color = s.stroke || DEFAULT_STROKE;
+        p.LineWidth = s.strokeWidth || 1.5;
+        p.LineDash = dashPattern(s.dash, false);
+        p.MoveTo(s.x + inset, s.y);
+        p.LineTo(s.x + inset, s.y + s.h);
+        p.MoveTo(s.x + s.w - inset, s.y);
+        p.LineTo(s.x + s.w - inset, s.y + s.h);
+        p.Stroke();
+        p.LineDash = [];
+    } else if (s.kind === "storage") {
+        const inset = Math.min(16, s.h * 0.25);
+        p.Color = s.stroke || DEFAULT_STROKE;
+        p.LineWidth = s.strokeWidth || 1.5;
+        p.LineDash = dashPattern(s.dash, false);
+        p.MoveTo(s.x, s.y + inset);
+        p.LineTo(s.x + s.w, s.y + inset);
+        p.MoveTo(s.x + inset, s.y);
+        p.LineTo(s.x + inset, s.y + s.h);
         p.Stroke();
         p.LineDash = [];
     } else if (s.kind === "note") {

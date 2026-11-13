@@ -214,6 +214,7 @@ class TestForm extends Form {
         this.groups(fm);
         this.freeLines(fm);
         this.routing(fm);
+        this.moreShapes(fm);
         this.layers(fm);
         this.pages(fm);
 
@@ -997,6 +998,48 @@ class TestForm extends Form {
         this.eq("routing: draw.io bend", imported.diagram.edges[0].waypoints.length, 1);
     }
 
+    moreShapes(fm) {
+        fm.resetDocument();
+        const kinds = ["triangle", "hexagon", "document", "manualinput",
+                       "predefined", "storage", "delay", "onpage", "offpage",
+                       "looplimit", "manualop"];
+        let x = 0, y = 0;
+        for (const kind of kinds) {
+            const shape = fm.doc.addShape(kind, x, y, 150, 80, {
+                text: kind,
+            });
+            this.eq("shapes: " + kind + " is kept", shape.kind, kind);
+            x += 190;
+            if (x > 900) { x = 0; y += 130; }
+        }
+        fm.refreshAll();
+
+        /* All of them paint without a throw. */
+        const png = File.Join(Application.Directory, "shapes.png");
+        fm.exporting = true;
+        fm.Canvas.Save(png, 1100, 700);
+        fm.exporting = false;
+        this.check("shapes: the sheet was drawn", File.Exists(png));
+        File.Delete(png);
+
+        /* The combo selects one and the canvas creates it. */
+        fm.CmbMoreShapes.Key = "triangle";
+        fm.CmbMoreShapes_Select();
+        this.eq("shapes: the combo chose a triangle", fm.tool, "triangle");
+        fm.Canvas_MouseDown(100, 100, 1, false, false);
+        fm.Canvas_MouseUp(100, 100, 1, false, false);
+        const last = fm.doc.shapes[fm.doc.shapes.length - 1];
+        this.eq("shapes: the canvas made a triangle", last.kind, "triangle");
+        this.eq("shapes: the tool went back to select", fm.tool, "select");
+        this.eq("shapes: the combo went back to its title",
+                fm.CmbMoreShapes.Index, 0);
+
+        const round = Diagram.fromJSON(JSON.parse(JSON.stringify(fm.doc.toJSON())));
+        this.eq("shapes: the file keeps a triangle",
+                round.shapes.find((s) => s.kind === "triangle") !== undefined,
+                true);
+    }
+
     confirmDialog() {
         let answer = "";
         let dialog = ConfirmForm.ask("Title", "Message", "Save",
@@ -1050,6 +1093,7 @@ class TestForm extends Form {
             BtnLayerVisible: ["Click"], BtnLayerLocked: ["Click"],
             BtnLayerAssign: ["Click"],
             TxtLayerName: ["Activate", "LostFocus"],
+            CmbMoreShapes: ["Select"],
             CmbPage: ["Select"], BtnPageAdd: ["Click"],
             BtnPageRemove: ["Click"], BtnPageUp: ["Click"],
             BtnPageDown: ["Click"],

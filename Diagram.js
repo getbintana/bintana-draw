@@ -13,7 +13,10 @@
 "use strict";
 
 export const SHAPE_KINDS = ["rect", "round", "ellipse", "diamond",
-                            "terminator", "data", "cylinder", "note", "text"];
+                            "terminator", "data", "cylinder", "note", "text",
+                            "triangle", "hexagon", "document", "manualinput",
+                            "predefined", "storage", "delay", "onpage",
+                            "offpage", "looplimit", "manualop"];
 
 export const DEFAULT_FILL   = "#dae8fc";
 export const DEFAULT_STROKE = "#6c8ebf";

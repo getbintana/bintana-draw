@@ -29,6 +29,10 @@ const PASTE_OFFSET = 20;
 const DEFAULT_FILL_COLOR   = "#dae8fc";
 const DEFAULT_STROKE_COLOR = "#6c8ebf";
 
+const MORE_KINDS = ["triangle", "hexagon", "document", "manualinput",
+                    "predefined", "storage", "delay", "onpage", "offpage",
+                    "looplimit", "manualop"];
+
 function clamp(value, low, high) {
     return Math.max(low, Math.min(high, value));
 }
@@ -143,6 +147,22 @@ export class MainForm extends Form {
         this.CmbRoute.Add(Locale.Text("Orthogonal"), "orthogonal");
         this.CmbRoute.Add(Locale.Text("Straight"), "straight");
         this.CmbRoute.Add(Locale.Text("Curved"), "curved");
+
+        this.syncingTools = true;
+        this.CmbMoreShapes.Add(Locale.Text("More shapes"), "");
+        this.CmbMoreShapes.Add(Locale.Text("Triangle"), "triangle");
+        this.CmbMoreShapes.Add(Locale.Text("Hexagon"), "hexagon");
+        this.CmbMoreShapes.Add(Locale.Text("Document"), "document");
+        this.CmbMoreShapes.Add(Locale.Text("Manual input"), "manualinput");
+        this.CmbMoreShapes.Add(Locale.Text("Predefined process"), "predefined");
+        this.CmbMoreShapes.Add(Locale.Text("Internal storage"), "storage");
+        this.CmbMoreShapes.Add(Locale.Text("Delay"), "delay");
+        this.CmbMoreShapes.Add(Locale.Text("On-page reference"), "onpage");
+        this.CmbMoreShapes.Add(Locale.Text("Off-page reference"), "offpage");
+        this.CmbMoreShapes.Add(Locale.Text("Loop limit"), "looplimit");
+        this.CmbMoreShapes.Add(Locale.Text("Manual operation"), "manualop");
+        this.CmbMoreShapes.Index = 0;
+        this.syncingTools = false;
 
         this.SpnStrokeWidth.Value = this.defaultStrokeWidth;
         this.CmbDash.Index = 0;
@@ -310,6 +330,10 @@ export class MainForm extends Form {
          * to this same choice; the guard is what stops that being a loop. */
         this.syncingTools = true;
         for (const b of this.toolButtons()) b.Active = (b === button);
+        if (MORE_KINDS.indexOf(tool) >= 0 && button === null)
+            this.CmbMoreShapes.Key = tool;
+        else
+            this.CmbMoreShapes.Index = 0;
         this.syncingTools = false;
         this.Canvas.Cursor = tool === "select" ? "Arrow" : "Crosshair";
         this.statusText = this.toolHint(tool);
@@ -342,6 +366,13 @@ export class MainForm extends Form {
     BtnToolConnect_Click()    { this.toolButtonClicked("connect", this.BtnToolConnect); }
     BtnToolLine_Click()       { this.toolButtonClicked("line", this.BtnToolLine); }
     BtnToolArrow_Click()      { this.toolButtonClicked("arrow", this.BtnToolArrow); }
+
+    CmbMoreShapes_Select() {
+        if (this.syncingTools) return;
+        const kind = this.CmbMoreShapes.Key;
+        if (!kind) return;
+        this.chooseTool(kind, null);
+    }
 
     toolHint(tool) {
         switch (tool) {
@@ -694,6 +725,17 @@ export class MainForm extends Form {
         case "cylinder":   return { w: 130, h: 100 };
         case "note":       return { w: 150, h: 90 };
         case "text":       return { w: 180, h: 44 };
+        case "triangle":   return { w: 140, h: 110 };
+        case "hexagon":    return { w: 150, h: 80 };
+        case "document":   return { w: 150, h: 90 };
+        case "manualinput": return { w: 150, h: 80 };
+        case "predefined": return { w: 160, h: 80 };
+        case "storage":    return { w: 150, h: 80 };
+        case "delay":      return { w: 140, h: 70 };
+        case "onpage":     return { w: 80, h: 80 };
+        case "offpage":    return { w: 140, h: 90 };
+        case "looplimit":  return { w: 150, h: 90 };
+        case "manualop":   return { w: 150, h: 80 };
         default:           return { w: 150, h: 80 };
         }
     }

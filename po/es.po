@@ -431,6 +431,43 @@ msgid "Draw arrow"
 msgstr "Dibujar flecha"
 
 
+
+msgid "More shapes"
+msgstr "Más formas"
+
+msgid "Triangle"
+msgstr "Triángulo"
+
+msgid "Hexagon"
+msgstr "Hexágono"
+
+msgid "Document"
+msgstr "Documento"
+
+msgid "Manual input"
+msgstr "Entrada manual"
+
+msgid "Predefined process"
+msgstr "Proceso predefinido"
+
+msgid "Internal storage"
+msgstr "Almacenamiento interno"
+
+msgid "Delay"
+msgstr "Demora"
+
+msgid "On-page reference"
+msgstr "Referencia en página"
+
+msgid "Off-page reference"
+msgstr "Referencia fuera de página"
+
+msgid "Loop limit"
+msgstr "Límite de bucle"
+
+msgid "Manual operation"
+msgstr "Operación manual"
+
 msgid "Orthogonal"
 msgstr "Ortogonal"
 
