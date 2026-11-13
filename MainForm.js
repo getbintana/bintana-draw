@@ -67,6 +67,7 @@ function rectsIntersect(a, b) {
 export class MainForm extends Form {
 
     book   = null;
+    library = null;
     doc    = null;
     path   = "";
     importedFrom = "";
@@ -105,6 +106,7 @@ export class MainForm extends Form {
     syncingLayers = false;
     syncingPages  = false;
     syncingFormat = false;
+    syncingLibrary = false;
     exporting     = false;
     forceClose    = false;
     pendingFit    = false;
@@ -183,8 +185,19 @@ export class MainForm extends Form {
         this.syncingGrid = false;
 
         this.ActPaste.Enabled = false;
+        this.library = new ShapeLibrary();
+        try {
+            if (File.Exists(this.libraryPath()))
+                this.library = ShapeLibrary.fromJSON(
+                    File.LoadJson(this.libraryPath()));
+        } catch (e) {
+            Logger.Warning("library: " + e.message);
+            this.library = new ShapeLibrary();
+        }
+
         this.statusText = this.toolHint("select");
         this.refreshAll();
+        this.refreshLibrary();
 
         /* A file manager passes the diagram as an argument. */
         const args = Application.Arguments;
@@ -1950,6 +1963,8 @@ export class MainForm extends Form {
         this.ActSendBack.Enabled      = shapeCount > 0;
         this.ActBringForward.Enabled  = shapeCount > 0;
         this.ActSendBackward.Enabled  = shapeCount > 0;
+
+        if (this.BtnLibraryAdd) this.refreshLibraryButtons();
     }
 
     syncColors() {
@@ -2246,6 +2261,144 @@ export class MainForm extends Form {
     TxtPageName_Activate() { this.renameActivePage(); }
 
     TxtPageName_LostFocus() { this.renameActivePage(); }
+
+    /* -------------------------------------------------------------- library */
+
+    libraryPath() {
+        return File.Join(Application.ConfigDirectory, "library.btlib");
+    }
+
+    saveLibrary() {
+        try {
+            File.SaveJson(this.libraryPath(), this.library.toJSON());
+            return true;
+        } catch (e) {
+            Message.Error(Locale.Text("Cannot save the library: {0}"), e.message);
+            return false;
+        }
+    }
+
+    refreshLibrary(select) {
+        if (!this.LstLibrary) return;
+        this.syncingLibrary = true;
+        this.LstLibrary.Clear();
+        for (let i = 0; i < this.library.items.length; i++)
+            this.LstLibrary.Add(this.library.items[i].name, String(i));
+        if (typeof select === "number" && select >= 0 &&
+            select < this.library.items.length)
+            this.LstLibrary.Index = select;
+        this.syncingLibrary = false;
+        this.refreshLibraryButtons();
+    }
+
+    refreshLibraryButtons() {
+        if (!this.BtnLibraryAdd) return;
+        const index = this.LstLibrary.Index;
+        const hasItem = index >= 0 && index < this.library.items.length;
+        this.BtnLibraryAdd.Enabled = this.sel.length > 0;
+        this.BtnLibraryInsert.Enabled = hasItem;
+        this.BtnLibraryDelete.Enabled = hasItem;
+        this.BtnLibraryExport.Enabled = this.library.items.length > 0;
+    }
+
+    LstLibrary_Select() {
+        if (this.syncingLibrary) return;
+        this.refreshLibraryButtons();
+    }
+
+    LstLibrary_Activate() { this.insertLibraryItem(); }
+
+    BtnLibraryAdd_Click() {
+        const item = this.library.addSelection(this.selectionData());
+        if (!item) {
+            this.setStatus(Locale.Text("Select something first."));
+            return;
+        }
+        if (!this.saveLibrary()) return;
+        this.refreshLibrary(this.library.items.length - 1);
+        this.setStatus(Locale.Text("Added {0} to the library.", item.name));
+    }
+
+    insertLibraryItem() {
+        const index = this.LstLibrary.Index;
+        if (index < 0 || index >= this.library.items.length) return;
+        if (!this.canEditActiveLayer()) return;
+
+        const box = this.viewport();
+        const at = this.toWorld(box.w / 2, box.h / 2);
+        const before = this.snapshot();
+        const ids = this.library.insert(this.doc, index, at.x, at.y,
+                                        this.activeLayer);
+        if (!ids.length) return;
+
+        this.select(ids);
+        this.pushUndo(Locale.Text("Insert from library"), before);
+        this.refreshAll();
+        this.setStatus(Locale.Text("Inserted {0}.",
+            this.library.items[index].name));
+    }
+
+    BtnLibraryInsert_Click() { this.insertLibraryItem(); }
+
+    BtnLibraryDelete_Click() {
+        const index = this.LstLibrary.Index;
+        if (index < 0 || index >= this.library.items.length) return;
+        this.library.items.splice(index, 1);
+        this.saveLibrary();
+        this.refreshLibrary(Math.min(index, this.library.items.length - 1));
+    }
+
+    BtnLibraryImport_Click() {
+        const folder = this.path ? File.Directory(this.path)
+                                 : Application.Directory;
+        Dialog.OpenFile(Locale.Text("Import library"), {
+            Folder: folder,
+            Filters: [[Locale.Text("Bintana Draw library"), "*.btlib"],
+                      [Locale.Text("Bintana Draw diagram"), "*.draw"],
+                      [Locale.Text("draw.io library"), "*.xml"],
+                      [Locale.Text("draw.io library"), "*.mxlibrary"],
+                      [Locale.Text("All files"), "*"]],
+        }, (path) => this.importLibrary(path));
+    }
+
+    importLibrary(path) {
+        let items;
+        try {
+            items = importLibrary(path);
+        } catch (e) {
+            Message.Error(Locale.Text("Cannot import {0}: {1}"),
+                          path, e.message);
+            return;
+        }
+        if (!items.length) {
+            this.setStatus(Locale.Text("The library is empty."));
+            return;
+        }
+        this.library.addItems(items);
+        if (!this.saveLibrary()) return;
+        this.refreshLibrary(this.library.items.length - items.length);
+        this.setStatus(Locale.Text("Imported {0} items.", items.length));
+    }
+
+    BtnLibraryExport_Click() {
+        if (!this.library.items.length) return;
+        const folder = this.path ? File.Directory(this.path)
+                                 : Application.Directory;
+        Dialog.SaveFile(Locale.Text("Export library"), {
+            Folder: folder, Name: "library.btlib",
+            Filters: [[Locale.Text("Bintana Draw library"), "*.btlib"]],
+        }, (chosen) => {
+            let path = chosen;
+            if (!File.IsExtension(path, "btlib")) path += ".btlib";
+            try {
+                File.SaveJson(path, this.library.toJSON());
+                this.setStatus(Locale.Text("Exported {0}", File.Name(path)));
+            } catch (e) {
+                Message.Error(Locale.Text("Cannot save {0}: {1}"),
+                              path, e.message);
+            }
+        });
+    }
 
     /* ------------------------------------------------------------ layer verbs */
 

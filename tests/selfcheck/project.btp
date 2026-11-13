@@ -5,6 +5,7 @@
   "sources": [
     "../../Diagram.js",
     "../../DrawioImport.js",
+    "../../Library.js",
     "../../Render.js",
     "../../ConfirmForm.js",
     "../../MainForm.js",

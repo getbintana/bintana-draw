@@ -432,6 +432,74 @@ msgstr "Dibujar flecha"
 
 
 
+
+# --- shape library -----------------------------------------------------------
+msgid "Library"
+msgstr "Biblioteca"
+
+msgid "Add selection"
+msgstr "Agregar selección"
+
+msgid "Insert"
+msgstr "Insertar"
+
+msgid "Import…"
+msgstr "Importar…"
+
+msgid "Export…"
+msgstr "Exportar…"
+
+msgid "Import library"
+msgstr "Importar biblioteca"
+
+msgid "Export library"
+msgstr "Exportar biblioteca"
+
+msgid "Bintana Draw library"
+msgstr "Biblioteca de Bintana Draw"
+
+msgid "draw.io library"
+msgstr "Biblioteca de draw.io"
+
+msgid "Select something first."
+msgstr "Seleccioná algo primero."
+
+msgid "Added {0} to the library."
+msgstr "Se agregó {0} a la biblioteca."
+
+msgid "Insert from library"
+msgstr "Insertar desde la biblioteca"
+
+msgid "Inserted {0}."
+msgstr "Se insertó {0}."
+
+msgid "The library is empty."
+msgstr "La biblioteca está vacía."
+
+msgid "Imported {0} items."
+msgstr "Se importaron {0} elementos."
+
+msgid "Cannot save the library: {0}"
+msgstr "No se pudo guardar la biblioteca: {0}"
+
+msgid "Not a Bintana Draw library."
+msgstr "No es una biblioteca de Bintana Draw."
+
+msgid "Empty"
+msgstr "Vacío"
+
+msgid "Item"
+msgstr "Elemento"
+
+msgid "This stencil is compressed. Export it as uncompressed XML and import that."
+msgstr "Este esténcil está comprimido. Exportalo como XML sin comprimir e importá ese archivo."
+
+msgid "Draw.io stencil paths are not supported yet."
+msgstr "Las rutas de esténciles de draw.io todavía no son compatibles."
+
+msgid "Unknown library format."
+msgstr "Formato de biblioteca desconocido."
+
 msgid "More shapes"
 msgstr "Más formas"
 

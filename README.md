@@ -34,6 +34,12 @@ The window is started with a blank canvas and the shape palette on the left.
   input, predefined process, internal storage, delay, on-page and off-page
   references, loop limit and manual operation. Pick one and click for the
   default size or drag to size it.
+- **Shape library** — the **Library** tab saves the current selection as a
+  reusable stamp, inserts it at the centre of the view, and deletes it. The
+  library lives in the application's config directory and can be exported as
+  `.btlib`. **Import** accepts a `.btlib`, a `.draw`, an uncompressed
+  `.drawio`/XML diagram, or a draw.io `.mxlibrary` with uncompressed `xml`
+  entries.
 - **Connectors** — the connector tool, dragged from one shape to another,
   produces an orthogonal route that follows both shapes when they move or
   resize. Connectors can be labelled and can be dashed.
@@ -201,9 +207,9 @@ handler whose control name is misspelled is silently dead.
 ## What it does not do yet
 
 This is a first editor, not a draw.io replacement. Missing, in the order they
-would change what a person can draw: custom shape libraries and stencils,
-images and icons, system-clipboard interchange with other applications, SVG
-import/export, and collaboration.
+would change what a person can draw: full draw.io stencil path definitions,
+library thumbnails, images and icons, system-clipboard interchange with other
+applications, SVG import/export, and collaboration.
 
 The draw.io import is deliberately the basic half: it reads every uncompressed
 page of a file, maps the common shapes by style (`rounded`, `ellipse`,

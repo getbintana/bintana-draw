@@ -13,119 +13,354 @@
     "AcceptFiles": true
   },
   "actions": [
-    { "name": "ActNew", "text": "New", "shortcut": "<Control>n" },
-    { "name": "ActOpen", "text": "Open…", "shortcut": "<Control>o" },
-    { "name": "ActSave", "text": "Save", "shortcut": "<Control>s" },
-    { "name": "ActSaveAs", "text": "Save As…", "shortcut": "<Control><Shift>s" },
-    { "name": "ActExportPng", "text": "Export PNG…" },
-    { "name": "ActExportPdf", "text": "Export PDF…" },
-    { "name": "ActQuit", "text": "Quit", "shortcut": "<Control>q" },
-    { "name": "ActUndo", "text": "Undo", "shortcut": "<Control>z", "enabled": false },
-    { "name": "ActRedo", "text": "Redo", "shortcut": "<Control><Shift>z", "enabled": false },
-    { "name": "ActCut", "text": "Cut", "shortcut": "<Control>x", "enabled": false },
-    { "name": "ActCopy", "text": "Copy", "shortcut": "<Control>c", "enabled": false },
-    { "name": "ActPaste", "text": "Paste", "shortcut": "<Control>v", "enabled": false },
-    { "name": "ActDuplicate", "text": "Duplicate", "shortcut": "<Control>d", "enabled": false },
-    { "name": "ActDelete", "text": "Delete", "shortcut": "Delete", "enabled": false },
-    { "name": "ActSelectAll", "text": "Select All", "shortcut": "<Control>a" },
-    { "name": "ActGroup", "text": "Group", "shortcut": "<Control>g", "enabled": false },
-    { "name": "ActUngroup", "text": "Ungroup", "shortcut": "<Control><Shift>g", "enabled": false },
-    { "name": "ActArrowNone", "text": "No Arrowheads", "enabled": false },
-    { "name": "ActArrowEnd", "text": "Arrow at End", "enabled": false },
-    { "name": "ActArrowStart", "text": "Arrow at Start", "enabled": false },
-    { "name": "ActArrowBoth", "text": "Arrowheads at Both Ends", "enabled": false },
-    { "name": "ActBringFront", "text": "Bring to Front", "enabled": false },
-    { "name": "ActSendBack", "text": "Send to Back", "enabled": false },
-    { "name": "ActBringForward", "text": "Bring Forward", "enabled": false },
-    { "name": "ActSendBackward", "text": "Send Backward", "enabled": false },
-    { "name": "ActAlignLeft", "text": "Align Left", "enabled": false },
-    { "name": "ActAlignCenter", "text": "Align Center", "enabled": false },
-    { "name": "ActAlignRight", "text": "Align Right", "enabled": false },
-    { "name": "ActAlignTop", "text": "Align Top", "enabled": false },
-    { "name": "ActAlignMiddle", "text": "Align Middle", "enabled": false },
-    { "name": "ActAlignBottom", "text": "Align Bottom", "enabled": false },
-    { "name": "ActDistributeHorizontal", "text": "Distribute Horizontally", "enabled": false },
-    { "name": "ActDistributeVertical", "text": "Distribute Vertically", "enabled": false },
-    { "name": "ActZoomIn", "text": "Zoom In" },
-    { "name": "ActZoomOut", "text": "Zoom Out" },
-    { "name": "ActZoomReset", "text": "Actual Size" },
-    { "name": "ActZoomFit", "text": "Fit to Window" }
+    {
+      "name": "ActNew",
+      "text": "New",
+      "shortcut": "<Control>n"
+    },
+    {
+      "name": "ActOpen",
+      "text": "Open…",
+      "shortcut": "<Control>o"
+    },
+    {
+      "name": "ActSave",
+      "text": "Save",
+      "shortcut": "<Control>s"
+    },
+    {
+      "name": "ActSaveAs",
+      "text": "Save As…",
+      "shortcut": "<Control><Shift>s"
+    },
+    {
+      "name": "ActExportPng",
+      "text": "Export PNG…"
+    },
+    {
+      "name": "ActExportPdf",
+      "text": "Export PDF…"
+    },
+    {
+      "name": "ActQuit",
+      "text": "Quit",
+      "shortcut": "<Control>q"
+    },
+    {
+      "name": "ActUndo",
+      "text": "Undo",
+      "shortcut": "<Control>z",
+      "enabled": false
+    },
+    {
+      "name": "ActRedo",
+      "text": "Redo",
+      "shortcut": "<Control><Shift>z",
+      "enabled": false
+    },
+    {
+      "name": "ActCut",
+      "text": "Cut",
+      "shortcut": "<Control>x",
+      "enabled": false
+    },
+    {
+      "name": "ActCopy",
+      "text": "Copy",
+      "shortcut": "<Control>c",
+      "enabled": false
+    },
+    {
+      "name": "ActPaste",
+      "text": "Paste",
+      "shortcut": "<Control>v",
+      "enabled": false
+    },
+    {
+      "name": "ActDuplicate",
+      "text": "Duplicate",
+      "shortcut": "<Control>d",
+      "enabled": false
+    },
+    {
+      "name": "ActDelete",
+      "text": "Delete",
+      "shortcut": "Delete",
+      "enabled": false
+    },
+    {
+      "name": "ActSelectAll",
+      "text": "Select All",
+      "shortcut": "<Control>a"
+    },
+    {
+      "name": "ActGroup",
+      "text": "Group",
+      "shortcut": "<Control>g",
+      "enabled": false
+    },
+    {
+      "name": "ActUngroup",
+      "text": "Ungroup",
+      "shortcut": "<Control><Shift>g",
+      "enabled": false
+    },
+    {
+      "name": "ActArrowNone",
+      "text": "No Arrowheads",
+      "enabled": false
+    },
+    {
+      "name": "ActArrowEnd",
+      "text": "Arrow at End",
+      "enabled": false
+    },
+    {
+      "name": "ActArrowStart",
+      "text": "Arrow at Start",
+      "enabled": false
+    },
+    {
+      "name": "ActArrowBoth",
+      "text": "Arrowheads at Both Ends",
+      "enabled": false
+    },
+    {
+      "name": "ActBringFront",
+      "text": "Bring to Front",
+      "enabled": false
+    },
+    {
+      "name": "ActSendBack",
+      "text": "Send to Back",
+      "enabled": false
+    },
+    {
+      "name": "ActBringForward",
+      "text": "Bring Forward",
+      "enabled": false
+    },
+    {
+      "name": "ActSendBackward",
+      "text": "Send Backward",
+      "enabled": false
+    },
+    {
+      "name": "ActAlignLeft",
+      "text": "Align Left",
+      "enabled": false
+    },
+    {
+      "name": "ActAlignCenter",
+      "text": "Align Center",
+      "enabled": false
+    },
+    {
+      "name": "ActAlignRight",
+      "text": "Align Right",
+      "enabled": false
+    },
+    {
+      "name": "ActAlignTop",
+      "text": "Align Top",
+      "enabled": false
+    },
+    {
+      "name": "ActAlignMiddle",
+      "text": "Align Middle",
+      "enabled": false
+    },
+    {
+      "name": "ActAlignBottom",
+      "text": "Align Bottom",
+      "enabled": false
+    },
+    {
+      "name": "ActDistributeHorizontal",
+      "text": "Distribute Horizontally",
+      "enabled": false
+    },
+    {
+      "name": "ActDistributeVertical",
+      "text": "Distribute Vertically",
+      "enabled": false
+    },
+    {
+      "name": "ActZoomIn",
+      "text": "Zoom In"
+    },
+    {
+      "name": "ActZoomOut",
+      "text": "Zoom Out"
+    },
+    {
+      "name": "ActZoomReset",
+      "text": "Actual Size"
+    },
+    {
+      "name": "ActZoomFit",
+      "text": "Fit to Window"
+    }
   ],
   "menus": [
     {
       "name": "MnuFile",
       "text": "_File",
       "children": [
-        { "action": "ActNew" },
-        { "action": "ActOpen" },
-        { "separator": true },
-        { "action": "ActSave" },
-        { "action": "ActSaveAs" },
-        { "separator": true },
-        { "action": "ActExportPng" },
-        { "action": "ActExportPdf" },
-        { "separator": true },
-        { "action": "ActQuit" }
+        {
+          "action": "ActNew"
+        },
+        {
+          "action": "ActOpen"
+        },
+        {
+          "separator": true
+        },
+        {
+          "action": "ActSave"
+        },
+        {
+          "action": "ActSaveAs"
+        },
+        {
+          "separator": true
+        },
+        {
+          "action": "ActExportPng"
+        },
+        {
+          "action": "ActExportPdf"
+        },
+        {
+          "separator": true
+        },
+        {
+          "action": "ActQuit"
+        }
       ]
     },
     {
       "name": "MnuEdit",
       "text": "_Edit",
       "children": [
-        { "action": "ActUndo" },
-        { "action": "ActRedo" },
-        { "separator": true },
-        { "action": "ActCut" },
-        { "action": "ActCopy" },
-        { "action": "ActPaste" },
-        { "action": "ActDuplicate" },
-        { "action": "ActDelete" },
-        { "separator": true },
-        { "action": "ActSelectAll" },
-        { "separator": true },
-        { "action": "ActGroup" },
-        { "action": "ActUngroup" },
-        { "separator": true },
+        {
+          "action": "ActUndo"
+        },
+        {
+          "action": "ActRedo"
+        },
+        {
+          "separator": true
+        },
+        {
+          "action": "ActCut"
+        },
+        {
+          "action": "ActCopy"
+        },
+        {
+          "action": "ActPaste"
+        },
+        {
+          "action": "ActDuplicate"
+        },
+        {
+          "action": "ActDelete"
+        },
+        {
+          "separator": true
+        },
+        {
+          "action": "ActSelectAll"
+        },
+        {
+          "separator": true
+        },
+        {
+          "action": "ActGroup"
+        },
+        {
+          "action": "ActUngroup"
+        },
+        {
+          "separator": true
+        },
         {
           "name": "MnuAlign",
           "text": "Align",
           "children": [
-            { "action": "ActAlignLeft" },
-            { "action": "ActAlignCenter" },
-            { "action": "ActAlignRight" },
-            { "separator": true },
-            { "action": "ActAlignTop" },
-            { "action": "ActAlignMiddle" },
-            { "action": "ActAlignBottom" }
+            {
+              "action": "ActAlignLeft"
+            },
+            {
+              "action": "ActAlignCenter"
+            },
+            {
+              "action": "ActAlignRight"
+            },
+            {
+              "separator": true
+            },
+            {
+              "action": "ActAlignTop"
+            },
+            {
+              "action": "ActAlignMiddle"
+            },
+            {
+              "action": "ActAlignBottom"
+            }
           ]
         },
         {
           "name": "MnuDistribute",
           "text": "Distribute",
           "children": [
-            { "action": "ActDistributeHorizontal" },
-            { "action": "ActDistributeVertical" }
+            {
+              "action": "ActDistributeHorizontal"
+            },
+            {
+              "action": "ActDistributeVertical"
+            }
           ]
         },
-        { "separator": true },
+        {
+          "separator": true
+        },
         {
           "name": "MnuOrder",
           "text": "Order",
           "children": [
-            { "action": "ActBringFront" },
-            { "action": "ActSendBack" },
-            { "action": "ActBringForward" },
-            { "action": "ActSendBackward" }
+            {
+              "action": "ActBringFront"
+            },
+            {
+              "action": "ActSendBack"
+            },
+            {
+              "action": "ActBringForward"
+            },
+            {
+              "action": "ActSendBackward"
+            }
           ]
         },
         {
           "name": "MnuArrowheads",
           "text": "Arrowheads",
           "children": [
-            { "action": "ActArrowNone" },
-            { "action": "ActArrowEnd" },
-            { "action": "ActArrowStart" },
-            { "action": "ActArrowBoth" }
+            {
+              "action": "ActArrowNone"
+            },
+            {
+              "action": "ActArrowEnd"
+            },
+            {
+              "action": "ActArrowStart"
+            },
+            {
+              "action": "ActArrowBoth"
+            }
           ]
         }
       ]
@@ -134,20 +369,40 @@
       "name": "MnuView",
       "text": "_View",
       "children": [
-        { "action": "ActZoomIn" },
-        { "action": "ActZoomOut" },
-        { "action": "ActZoomReset" },
-        { "action": "ActZoomFit" },
-        { "separator": true },
-        { "name": "MnuGrid", "text": "Show Grid", "check": true }
+        {
+          "action": "ActZoomIn"
+        },
+        {
+          "action": "ActZoomOut"
+        },
+        {
+          "action": "ActZoomReset"
+        },
+        {
+          "action": "ActZoomFit"
+        },
+        {
+          "separator": true
+        },
+        {
+          "name": "MnuGrid",
+          "text": "Show Grid",
+          "check": true
+        }
       ]
     },
     {
       "name": "MnuHelp",
       "text": "_Help",
       "children": [
-        { "name": "MnuShortcuts", "text": "Keyboard Shortcuts" },
-        { "name": "MnuAbout", "text": "About Bintana Draw" }
+        {
+          "name": "MnuShortcuts",
+          "text": "Keyboard Shortcuts"
+        },
+        {
+          "name": "MnuAbout",
+          "text": "About Bintana Draw"
+        }
       ]
     }
   ],
@@ -193,7 +448,11 @@
         {
           "type": "Separator",
           "name": "Sep1",
-          "properties": { "Orientation": "Vertical", "Width": 14, "Height": 26 }
+          "properties": {
+            "Orientation": "Vertical",
+            "Width": 14,
+            "Height": 26
+          }
         },
         {
           "type": "Button",
@@ -216,7 +475,11 @@
         {
           "type": "Separator",
           "name": "Sep2",
-          "properties": { "Orientation": "Vertical", "Width": 14, "Height": 26 }
+          "properties": {
+            "Orientation": "Vertical",
+            "Width": 14,
+            "Height": 26
+          }
         },
         {
           "type": "Button",
@@ -248,7 +511,11 @@
         {
           "type": "Separator",
           "name": "Sep3",
-          "properties": { "Orientation": "Vertical", "Width": 14, "Height": 26 }
+          "properties": {
+            "Orientation": "Vertical",
+            "Width": 14,
+            "Height": 26
+          }
         },
         {
           "type": "Button",
@@ -275,14 +542,23 @@
         {
           "type": "Label",
           "name": "LblStroke",
-          "properties": { "Text": "Line", "For": "SpnStrokeWidth" }
+          "properties": {
+            "Text": "Line",
+            "For": "SpnStrokeWidth"
+          }
         },
         {
           "type": "SpinBox",
           "name": "SpnStrokeWidth",
           "properties": {
-            "Min": 1, "Max": 8, "Step": 1, "Decimals": 0,
-            "Value": 2, "Numeric": true, "Width": 64, "Height": 30,
+            "Min": 1,
+            "Max": 8,
+            "Step": 1,
+            "Decimals": 0,
+            "Value": 2,
+            "Numeric": true,
+            "Width": 64,
+            "Height": 30,
             "AccessibleName": "Line width"
           }
         },
@@ -290,25 +566,40 @@
           "type": "ComboBox",
           "name": "CmbDash",
           "properties": {
-            "Width": 88, "Height": 30, "AccessibleName": "Line style"
+            "Width": 88,
+            "Height": 30,
+            "AccessibleName": "Line style"
           }
         },
         {
           "type": "Separator",
           "name": "FmtSep1",
-          "properties": { "Orientation": "Vertical", "Width": 14, "Height": 24 }
+          "properties": {
+            "Orientation": "Vertical",
+            "Width": 14,
+            "Height": 24
+          }
         },
         {
           "type": "Label",
           "name": "LblFont",
-          "properties": { "Text": "Text", "For": "SpnFont" }
+          "properties": {
+            "Text": "Text",
+            "For": "SpnFont"
+          }
         },
         {
           "type": "SpinBox",
           "name": "SpnFont",
           "properties": {
-            "Min": 6, "Max": 72, "Step": 1, "Decimals": 0,
-            "Value": 12, "Numeric": true, "Width": 64, "Height": 30,
+            "Min": 6,
+            "Max": 72,
+            "Step": 1,
+            "Decimals": 0,
+            "Value": 12,
+            "Numeric": true,
+            "Width": 64,
+            "Height": 30,
             "AccessibleName": "Font size"
           }
         },
@@ -316,82 +607,122 @@
           "type": "ToggleButton",
           "name": "BtnBold",
           "properties": {
-            "Text": "B", "Tooltip": "Bold", "AccessibleName": "Bold",
-            "Font": "Sans Bold 12", "Width": 34, "Height": 30
+            "Text": "B",
+            "Tooltip": "Bold",
+            "AccessibleName": "Bold",
+            "Font": "Sans Bold 12",
+            "Width": 34,
+            "Height": 30
           }
         },
         {
           "type": "ToggleButton",
           "name": "BtnItalic",
           "properties": {
-            "Text": "I", "Tooltip": "Italic", "AccessibleName": "Italic",
-            "Font": "Sans Italic 12", "Width": 34, "Height": 30
+            "Text": "I",
+            "Tooltip": "Italic",
+            "AccessibleName": "Italic",
+            "Font": "Sans Italic 12",
+            "Width": 34,
+            "Height": 30
           }
         },
         {
           "type": "Separator",
           "name": "FmtSep2",
-          "properties": { "Orientation": "Vertical", "Width": 14, "Height": 24 }
+          "properties": {
+            "Orientation": "Vertical",
+            "Width": 14,
+            "Height": 24
+          }
         },
         {
           "type": "ToggleButton",
           "name": "BtnAlignLeft",
           "properties": {
-            "Text": "L", "Tooltip": "Align left", "AccessibleName": "Align left",
-            "Width": 30, "Height": 30
+            "Text": "L",
+            "Tooltip": "Align left",
+            "AccessibleName": "Align left",
+            "Width": 30,
+            "Height": 30
           }
         },
         {
           "type": "ToggleButton",
           "name": "BtnAlignCenter",
           "properties": {
-            "Text": "C", "Tooltip": "Align center",
-            "AccessibleName": "Align center", "Active": true,
-            "Width": 30, "Height": 30
+            "Text": "C",
+            "Tooltip": "Align center",
+            "AccessibleName": "Align center",
+            "Active": true,
+            "Width": 30,
+            "Height": 30
           }
         },
         {
           "type": "ToggleButton",
           "name": "BtnAlignRight",
           "properties": {
-            "Text": "R", "Tooltip": "Align right",
-            "AccessibleName": "Align right", "Width": 30, "Height": 30
+            "Text": "R",
+            "Tooltip": "Align right",
+            "AccessibleName": "Align right",
+            "Width": 30,
+            "Height": 30
           }
         },
         {
           "type": "ComboBox",
           "name": "CmbVAlign",
           "properties": {
-            "Width": 100, "Height": 30, "AccessibleName": "Vertical alignment"
+            "Width": 100,
+            "Height": 30,
+            "AccessibleName": "Vertical alignment"
           }
         },
         {
           "type": "ComboBox",
           "name": "CmbRoute",
           "properties": {
-            "Width": 95, "Height": 30, "AccessibleName": "Connector route", "Tooltip": "Connector route"
+            "Width": 95,
+            "Height": 30,
+            "AccessibleName": "Connector route",
+            "Tooltip": "Connector route"
           }
         },
         {
           "type": "SpinBox",
           "name": "SpnRotation",
           "properties": {
-            "Min": -360, "Max": 360, "Step": 15, "Decimals": 0,
-            "Value": 0, "Numeric": true, "Width": 56, "Height": 30,
-            "AccessibleName": "Rotation", "Tooltip": "Rotation"
+            "Min": -360,
+            "Max": 360,
+            "Step": 15,
+            "Decimals": 0,
+            "Value": 0,
+            "Numeric": true,
+            "Width": 56,
+            "Height": 30,
+            "AccessibleName": "Rotation",
+            "Tooltip": "Rotation"
           }
         },
         {
           "type": "Separator",
           "name": "FmtSep3",
-          "properties": { "Orientation": "Vertical", "Width": 14, "Height": 24 }
+          "properties": {
+            "Orientation": "Vertical",
+            "Width": 14,
+            "Height": 24
+          }
         },
         {
           "type": "ColorButton",
           "name": "BtnTextColor",
           "properties": {
-            "AccessibleName": "Text color", "Tooltip": "Text color",
-            "HAlign": "Start", "Width": 60, "Height": 28,
+            "AccessibleName": "Text color",
+            "Tooltip": "Text color",
+            "HAlign": "Start",
+            "Width": 60,
+            "Height": 28,
             "Value": "rgb(31,41,55)"
           }
         }
@@ -630,36 +961,80 @@
                 "Cursor": "Arrow",
                 "AccessibleName": "Diagram canvas",
                 "Menu": [
-                  { "action": "ActUndo" },
-                  { "action": "ActRedo" },
-                  { "separator": true },
-                  { "action": "ActCut" },
-                  { "action": "ActCopy" },
-                  { "action": "ActPaste" },
-                  { "action": "ActDuplicate" },
-                  { "action": "ActDelete" },
-                  { "separator": true },
-                  { "action": "ActSelectAll" },
-                  { "separator": true },
-                  { "action": "ActGroup" },
-                  { "action": "ActUngroup" },
-                  { "separator": true },
+                  {
+                    "action": "ActUndo"
+                  },
+                  {
+                    "action": "ActRedo"
+                  },
+                  {
+                    "separator": true
+                  },
+                  {
+                    "action": "ActCut"
+                  },
+                  {
+                    "action": "ActCopy"
+                  },
+                  {
+                    "action": "ActPaste"
+                  },
+                  {
+                    "action": "ActDuplicate"
+                  },
+                  {
+                    "action": "ActDelete"
+                  },
+                  {
+                    "separator": true
+                  },
+                  {
+                    "action": "ActSelectAll"
+                  },
+                  {
+                    "separator": true
+                  },
+                  {
+                    "action": "ActGroup"
+                  },
+                  {
+                    "action": "ActUngroup"
+                  },
+                  {
+                    "separator": true
+                  },
                   {
                     "text": "Order",
                     "children": [
-                      { "action": "ActBringFront" },
-                      { "action": "ActSendBack" },
-                      { "action": "ActBringForward" },
-                      { "action": "ActSendBackward" }
+                      {
+                        "action": "ActBringFront"
+                      },
+                      {
+                        "action": "ActSendBack"
+                      },
+                      {
+                        "action": "ActBringForward"
+                      },
+                      {
+                        "action": "ActSendBackward"
+                      }
                     ]
                   },
                   {
                     "text": "Arrowheads",
                     "children": [
-                      { "action": "ActArrowNone" },
-                      { "action": "ActArrowEnd" },
-                      { "action": "ActArrowStart" },
-                      { "action": "ActArrowBoth" }
+                      {
+                        "action": "ActArrowNone"
+                      },
+                      {
+                        "action": "ActArrowEnd"
+                      },
+                      {
+                        "action": "ActArrowStart"
+                      },
+                      {
+                        "action": "ActArrowBoth"
+                      }
                     ]
                   }
                 ]
@@ -684,152 +1059,260 @@
           ]
         },
         {
-          "type": "Panel",
-          "name": "LayersPanel",
+          "type": "Notebook",
+          "name": "RightTabs",
           "properties": {
-            "Arrangement": "Vertical",
-            "Spacing": 6,
-            "Padding": "10",
+            "Tabs": [
+              "Layers",
+              "Library"
+            ],
+            "Current": 0,
             "Width": 216,
+            "HAlign": "Fill",
+            "VAlign": "Fill",
             "Style": "draw-sidebar-right"
           },
           "children": [
             {
-              "type": "Label",
-              "name": "LblLayers",
+              "type": "Panel",
+              "name": "LayersPage",
               "properties": {
-                "Text": "Layers",
-                "Style": "section-title",
-                "Height": 24
-              }
-            },
-            {
-              "type": "Scroller",
-              "name": "LayerScroll",
-              "properties": {
-                "HAlign": "Fill",
-                "VAlign": "Fill",
-                "Expand": true,
-                "Height": 160,
-                "MinHeight": 120
+                "Arrangement": "Vertical",
+                "Spacing": 6,
+                "Padding": "10"
               },
               "children": [
                 {
-                  "type": "ListBox",
-                  "name": "LstLayers",
+                  "type": "Scroller",
+                  "name": "LayerScroll",
                   "properties": {
                     "HAlign": "Fill",
-                    "VAlign": "Start",
-                    "Width": 190,
-                    "MinHeight": 40,
-                    "AccessibleName": "Layers"
+                    "VAlign": "Fill",
+                    "Expand": true,
+                    "Height": 160,
+                    "MinHeight": 120
+                  },
+                  "children": [
+                    {
+                      "type": "ListBox",
+                      "name": "LstLayers",
+                      "properties": {
+                        "HAlign": "Fill",
+                        "VAlign": "Start",
+                        "Width": 190,
+                        "MinHeight": 40,
+                        "AccessibleName": "Layers"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "Panel",
+                  "name": "LayerAddRow",
+                  "properties": {
+                    "Arrangement": "Horizontal",
+                    "Spacing": 4,
+                    "Height": 32
+                  },
+                  "children": [
+                    {
+                      "type": "Button",
+                      "name": "BtnLayerAdd",
+                      "properties": {
+                        "Text": "Add",
+                        "Height": 30,
+                        "Expand": true
+                      }
+                    },
+                    {
+                      "type": "Button",
+                      "name": "BtnLayerRemove",
+                      "properties": {
+                        "Text": "Remove",
+                        "Height": 30,
+                        "Expand": true
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "Panel",
+                  "name": "LayerMoveRow",
+                  "properties": {
+                    "Arrangement": "Horizontal",
+                    "Spacing": 4,
+                    "Height": 32
+                  },
+                  "children": [
+                    {
+                      "type": "Button",
+                      "name": "BtnLayerUp",
+                      "properties": {
+                        "Text": "Move up",
+                        "Height": 30,
+                        "Expand": true
+                      }
+                    },
+                    {
+                      "type": "Button",
+                      "name": "BtnLayerDown",
+                      "properties": {
+                        "Text": "Move down",
+                        "Height": 30,
+                        "Expand": true
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "ToggleButton",
+                  "name": "BtnLayerVisible",
+                  "properties": {
+                    "Text": "Visible",
+                    "Active": true,
+                    "HAlign": "Fill",
+                    "Height": 30
+                  }
+                },
+                {
+                  "type": "ToggleButton",
+                  "name": "BtnLayerLocked",
+                  "properties": {
+                    "Text": "Locked",
+                    "HAlign": "Fill",
+                    "Height": 30
+                  }
+                },
+                {
+                  "type": "Label",
+                  "name": "LblLayerName",
+                  "properties": {
+                    "Text": "Name",
+                    "For": "TxtLayerName",
+                    "Height": 22
+                  }
+                },
+                {
+                  "type": "TextBox",
+                  "name": "TxtLayerName",
+                  "properties": {
+                    "HAlign": "Fill",
+                    "Height": 32,
+                    "AccessibleName": "Layer name"
+                  }
+                },
+                {
+                  "type": "Button",
+                  "name": "BtnLayerAssign",
+                  "properties": {
+                    "Text": "Move selection here",
+                    "HAlign": "Fill",
+                    "Height": 34
                   }
                 }
               ]
             },
             {
               "type": "Panel",
-              "name": "LayerAddRow",
+              "name": "LibraryPage",
               "properties": {
-                "Arrangement": "Horizontal",
-                "Spacing": 4,
-                "Height": 32
+                "Arrangement": "Vertical",
+                "Spacing": 6,
+                "Padding": "10"
               },
               "children": [
                 {
-                  "type": "Button",
-                  "name": "BtnLayerAdd",
+                  "type": "Scroller",
+                  "name": "LibraryScroll",
                   "properties": {
-                    "Text": "Add",
-                    "Height": 30,
-                    "Expand": true
-                  }
+                    "HAlign": "Fill",
+                    "VAlign": "Fill",
+                    "Expand": true,
+                    "Height": 160,
+                    "MinHeight": 120
+                  },
+                  "children": [
+                    {
+                      "type": "ListBox",
+                      "name": "LstLibrary",
+                      "properties": {
+                        "HAlign": "Fill",
+                        "VAlign": "Start",
+                        "Width": 190,
+                        "MinHeight": 40,
+                        "AccessibleName": "Library"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "Panel",
+                  "name": "LibraryRow1",
+                  "properties": {
+                    "Arrangement": "Horizontal",
+                    "Spacing": 4,
+                    "Height": 32
+                  },
+                  "children": [
+                    {
+                      "type": "Button",
+                      "name": "BtnLibraryAdd",
+                      "properties": {
+                        "Text": "Add selection",
+                        "Height": 30,
+                        "Expand": true
+                      }
+                    },
+                    {
+                      "type": "Button",
+                      "name": "BtnLibraryInsert",
+                      "properties": {
+                        "Text": "Insert",
+                        "Height": 30,
+                        "Expand": true
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "Panel",
+                  "name": "LibraryRow2",
+                  "properties": {
+                    "Arrangement": "Horizontal",
+                    "Spacing": 4,
+                    "Height": 32
+                  },
+                  "children": [
+                    {
+                      "type": "Button",
+                      "name": "BtnLibraryDelete",
+                      "properties": {
+                        "Text": "Delete",
+                        "Height": 30,
+                        "Expand": true
+                      }
+                    },
+                    {
+                      "type": "Button",
+                      "name": "BtnLibraryImport",
+                      "properties": {
+                        "Text": "Import…",
+                        "Height": 30,
+                        "Expand": true
+                      }
+                    }
+                  ]
                 },
                 {
                   "type": "Button",
-                  "name": "BtnLayerRemove",
+                  "name": "BtnLibraryExport",
                   "properties": {
-                    "Text": "Remove",
-                    "Height": 30,
-                    "Expand": true
+                    "Text": "Export…",
+                    "HAlign": "Fill",
+                    "Height": 30
                   }
                 }
               ]
-            },
-            {
-              "type": "Panel",
-              "name": "LayerMoveRow",
-              "properties": {
-                "Arrangement": "Horizontal",
-                "Spacing": 4,
-                "Height": 32
-              },
-              "children": [
-                {
-                  "type": "Button",
-                  "name": "BtnLayerUp",
-                  "properties": {
-                    "Text": "Move up",
-                    "Height": 30,
-                    "Expand": true
-                  }
-                },
-                {
-                  "type": "Button",
-                  "name": "BtnLayerDown",
-                  "properties": {
-                    "Text": "Move down",
-                    "Height": 30,
-                    "Expand": true
-                  }
-                }
-              ]
-            },
-            {
-              "type": "ToggleButton",
-              "name": "BtnLayerVisible",
-              "properties": {
-                "Text": "Visible",
-                "Active": true,
-                "HAlign": "Fill",
-                "Height": 30
-              }
-            },
-            {
-              "type": "ToggleButton",
-              "name": "BtnLayerLocked",
-              "properties": {
-                "Text": "Locked",
-                "HAlign": "Fill",
-                "Height": 30
-              }
-            },
-            {
-              "type": "Label",
-              "name": "LblLayerName",
-              "properties": {
-                "Text": "Name",
-                "For": "TxtLayerName",
-                "Height": 22
-              }
-            },
-            {
-              "type": "TextBox",
-              "name": "TxtLayerName",
-              "properties": {
-                "HAlign": "Fill",
-                "Height": 32,
-                "AccessibleName": "Layer name"
-              }
-            },
-            {
-              "type": "Button",
-              "name": "BtnLayerAssign",
-              "properties": {
-                "Text": "Move selection here",
-                "HAlign": "Fill",
-                "Height": 34
-              }
             }
           ]
         }

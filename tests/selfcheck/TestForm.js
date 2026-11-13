@@ -216,6 +216,7 @@ class TestForm extends Form {
         this.endpoints(fm);
         this.routing(fm);
         this.moreShapes(fm);
+        this.library(fm);
         this.layers(fm);
         this.pages(fm);
 
@@ -1146,6 +1147,93 @@ class TestForm extends Form {
                    !!fm.doc.edgeById(spare.id));
     }
 
+    library(fm) {
+        fm.resetDocument();
+        fm.library = new ShapeLibrary();
+        fm.refreshLibrary();
+        this.check("library: import is always enabled",
+                   fm.BtnLibraryImport.Enabled);
+        fm.panX = 0;
+        fm.panY = 0;
+        fm.zoom = 1;
+
+        const a = fm.doc.addShape("rect", 0, 0, 100, 50, { text: "Start" });
+        const b = fm.doc.addShape("round", 200, 0, 100, 50, { text: "End" });
+        fm.doc.addEdge(a.id, b.id, { text: "go" });
+        fm.refreshAll();
+        fm.select([a.id, b.id]);
+        fm.BtnLibraryAdd_Click();
+        this.eq("library: the selection was added", fm.library.items.length, 1);
+        this.eq("library: the list shows it", fm.LstLibrary.Count, 1);
+        this.eq("library: the item took the first label",
+                fm.library.items[0].name, "Start");
+        this.eq("library: it has the connector", fm.library.items[0].edges.length, 1);
+
+        fm.select([]);
+        fm.LstLibrary.Index = 0;
+        fm.refreshLibraryButtons();
+        const before = fm.doc.shapes.length;
+        fm.BtnLibraryInsert_Click();
+        this.eq("library: insert adds both shapes",
+                fm.doc.shapes.length, before + 2);
+        this.eq("library: and the connector", fm.doc.edges.length, 2);
+        fm.ActUndo_Execute();
+        this.eq("library: undo takes the stamp away",
+                fm.doc.shapes.length, before);
+
+        /* The library file and the importer. */
+        const file = File.Join(Application.Directory, "test.btlib");
+        File.SaveJson(file, fm.library.toJSON());
+        const imported = importLibrary(file);
+        this.eq("library: a .btlib round-trips", imported.length, 1);
+        this.eq("library: its shapes came", imported[0].shapes.length, 2);
+        File.Delete(file);
+
+        const mx = File.Join(Application.Directory, "test.mxlibrary");
+        File.Save(mx, '<mxlibrary>[{"title":"Stencil","xml":"&lt;mxGraphModel&gt;&lt;root&gt;&lt;mxCell id=&apos;0&apos;/&gt;&lt;mxCell id=&apos;1&apos; parent=&apos;0&apos;/&gt;&lt;mxCell id=&apos;a&apos; value=&apos;Stamp&apos; vertex=&apos;1&apos; parent=&apos;1&apos;&gt;&lt;mxGeometry x=&apos;0&apos; y=&apos;0&apos; width=&apos;80&apos; height=&apos;40&apos; as=&apos;geometry&apos;/&gt;&lt;/mxCell&gt;&lt;/root&gt;&lt;/mxGraphModel&gt;"}]</mxlibrary>');
+        const stencil = importLibrary(mx);
+        this.eq("library: an mxlibrary imports", stencil.length, 1);
+        this.eq("library: with its title", stencil[0].name, "Stencil");
+        this.eq("library: and its shape", stencil[0].shapes.length, 1);
+        File.Delete(mx);
+
+        const dio = File.Join(Application.Directory, "test.drawio");
+        File.Save(dio, '<mxfile><diagram><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/><mxCell id="a" value="Imported" vertex="1" parent="1"><mxGeometry x="0" y="0" width="90" height="50" as="geometry"/></mxCell></root></mxGraphModel></diagram></mxfile>');
+        const fromDiagram = importLibrary(dio);
+        this.eq("library: a draw.io diagram imports", fromDiagram.length, 1);
+        this.eq("library: with its shape", fromDiagram[0].shapes.length, 1);
+        File.Delete(dio);
+
+        /* Groups inside an item get new ids, not the original ones. */
+        const model = new Diagram();
+        const one = model.addShape("rect", 0, 0, 80, 40, { group: "g1" });
+        const two = model.addShape("rect", 100, 0, 80, 40, { group: "g1" });
+        const lib = new ShapeLibrary();
+        const items = lib.itemsFromDiagram(model);
+        lib.addItems(items);
+        this.eq("library: a group is one item", items.length, 1);
+        const copy = new Diagram();
+        lib.insert(copy, 0, 50, 50, copy.layers[0].id);
+        this.eq("library: the group came whole", copy.shapes.length, 2);
+        this.check("library: with a shared id",
+                   copy.shapes[0].group === copy.shapes[1].group);
+
+        const lineModel = new Diagram();
+        lineModel.addLine(0, 0, 100, 50, {});
+        const lineItems = new ShapeLibrary().itemsFromDiagram(lineModel);
+        this.eq("library: a free line is an item", lineItems.length, 1);
+        this.eq("library: with no shapes", lineItems[0].shapes.length, 0);
+        const lineCopy = new Diagram();
+        const lineLib = new ShapeLibrary();
+        lineLib.addItems(lineItems);
+        lineLib.insert(lineCopy, 0, 20, 20, lineCopy.layers[0].id);
+        this.eq("library: inserting it makes a line", lineCopy.edges.length, 1);
+
+        fm.LstLibrary.Index = 0;
+        fm.BtnLibraryDelete_Click();
+        this.eq("library: delete empties it", fm.library.items.length, 0);
+    }
+
     confirmDialog() {
         let answer = "";
         let dialog = ConfirmForm.ask("Title", "Message", "Save",
@@ -1199,6 +1287,10 @@ class TestForm extends Form {
             BtnLayerVisible: ["Click"], BtnLayerLocked: ["Click"],
             BtnLayerAssign: ["Click"],
             TxtLayerName: ["Activate", "LostFocus"],
+            LstLibrary: ["Select", "Activate"],
+            BtnLibraryAdd: ["Click"], BtnLibraryInsert: ["Click"],
+            BtnLibraryDelete: ["Click"], BtnLibraryImport: ["Click"],
+            BtnLibraryExport: ["Click"],
             CmbMoreShapes: ["Select"],
             CmbPage: ["Select"], BtnPageAdd: ["Click"],
             BtnPageRemove: ["Click"], BtnPageUp: ["Click"],

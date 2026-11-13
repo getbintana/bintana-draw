@@ -19,6 +19,8 @@ BINTANA=/path/to/build/bintana tests/run.sh
 - `Diagram.js` — the book, its pages, each page's layers, and the geometry.
   `Document` holds the pages and the active index; `Diagram` is one page. It
   imports no widget and is exercised with no display.
+- `Library.js` — the shape library: normalized stamps, insertion, and the
+  `.btlib` / `.draw` / `.drawio` / `.mxlibrary` importers.
 - `DrawioImport.js` — an uncompressed draw.io file mapped onto a `Diagram`.
   Compressed pages are refused on purpose; there is no deflate verb here.
 - `Render.js` — the only painter code. The screen and the export are the same
@@ -52,6 +54,14 @@ BINTANA=/path/to/build/bintana tests/run.sh
   `Locale.Text` as a single string; the extractor cannot see a concatenation.
 - **The self-check references the real sources with `../../`**, not copies:
   `bintana check` scans the whole tree and duplicate exports are a warning.
+- **A library item is normalized and carries its own ids.** `ShapeLibrary`
+  subtracts the top-left corner, keeps shape ids for its own edges, and
+  `insert` remaps those ids and every group id into the target page. The
+  library is UI state under `Application.ConfigDirectory`, not part of the
+  document and not undoable.
+- **The right panel is a Notebook now.** `LayersPage` and `LibraryPage` are
+  sibling pages; controls keep their names, but a new right-side panel must be
+  added as a page rather than as another sibling of `RightTabs`.
 - **An imported `.drawio` is not the save path.** `this.path` stays empty and
   `importedFrom` keeps the source for the title and the Save As name; otherwise
   Ctrl+S would write JSON over the original XML.

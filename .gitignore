@@ -6,3 +6,6 @@ tests/selfcheck/import.drawio
 tests/selfcheck/imported.draw
 tests/selfcheck/pages.draw
 tests/selfcheck/two.drawio
+tests/selfcheck/test.btlib
+tests/selfcheck/test.mxlibrary
+tests/selfcheck/test.drawio
