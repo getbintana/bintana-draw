@@ -1,0 +1,13 @@
+{
+  "name": "bintana-draw",
+  "id": "io.github.getbintana.Draw",
+  "startup": "MainForm",
+  "sources": [
+    "Diagram.js",
+    "Render.js",
+    "ConfirmForm.js",
+    "MainForm.js"
+  ],
+  "version": "0.1",
+  "description": "A diagram editor for flowcharts, boxes and connectors"
+}

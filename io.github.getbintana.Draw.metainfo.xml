@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.getbintana.Draw</id>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Bintana Draw</name>
+  <summary>Draw diagrams, flowcharts and boxes</summary>
+  <description>
+    <p>A small diagram editor: drag shapes onto an infinite canvas, connect them, write in them, and export the result as a picture.</p>
+  </description>
+  <launchable type="desktop-id">io.github.getbintana.Draw.desktop</launchable>
+  <icon type="stock">io.github.getbintana.Draw</icon>
+  <categories>
+    <category>Graphics</category>
+    <category>Office</category>
+  </categories>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="0.1" date="2026-11-12"/>
+  </releases>
+  <developer id="io.github.getbintana">
+    <name>Bintana</name>
+  </developer>
+  <url type="homepage">https://github.com/getbintana/bintana-draw</url>
+  <summary xml:lang="es">Dibujá diagramas, flujos y cajas</summary>
+</component>

@@ -1,0 +1,494 @@
+{
+  "format": "bintana-form/1",
+  "class": "MainForm",
+  "properties": {
+    "Text": "Bintana Draw",
+    "Icon": "io.github.getbintana.Draw",
+    "Width": 1220,
+    "Height": 780,
+    "Arrangement": "Vertical",
+    "Spacing": 0,
+    "Padding": "0",
+    "Remember": true,
+    "AcceptFiles": true
+  },
+  "actions": [
+    { "name": "ActNew", "text": "New", "shortcut": "<Control>n" },
+    { "name": "ActOpen", "text": "Open…", "shortcut": "<Control>o" },
+    { "name": "ActSave", "text": "Save", "shortcut": "<Control>s" },
+    { "name": "ActSaveAs", "text": "Save As…", "shortcut": "<Control><Shift>s" },
+    { "name": "ActExportPng", "text": "Export PNG…" },
+    { "name": "ActExportPdf", "text": "Export PDF…" },
+    { "name": "ActQuit", "text": "Quit", "shortcut": "<Control>q" },
+    { "name": "ActUndo", "text": "Undo", "shortcut": "<Control>z", "enabled": false },
+    { "name": "ActRedo", "text": "Redo", "shortcut": "<Control><Shift>z", "enabled": false },
+    { "name": "ActCut", "text": "Cut", "shortcut": "<Control>x", "enabled": false },
+    { "name": "ActCopy", "text": "Copy", "shortcut": "<Control>c", "enabled": false },
+    { "name": "ActPaste", "text": "Paste", "shortcut": "<Control>v", "enabled": false },
+    { "name": "ActDuplicate", "text": "Duplicate", "shortcut": "<Control>d", "enabled": false },
+    { "name": "ActDelete", "text": "Delete", "shortcut": "Delete", "enabled": false },
+    { "name": "ActSelectAll", "text": "Select All", "shortcut": "<Control>a" },
+    { "name": "ActZoomIn", "text": "Zoom In" },
+    { "name": "ActZoomOut", "text": "Zoom Out" },
+    { "name": "ActZoomReset", "text": "Actual Size" },
+    { "name": "ActZoomFit", "text": "Fit to Window" }
+  ],
+  "menus": [
+    {
+      "name": "MnuFile",
+      "text": "_File",
+      "children": [
+        { "action": "ActNew" },
+        { "action": "ActOpen" },
+        { "separator": true },
+        { "action": "ActSave" },
+        { "action": "ActSaveAs" },
+        { "separator": true },
+        { "action": "ActExportPng" },
+        { "action": "ActExportPdf" },
+        { "separator": true },
+        { "action": "ActQuit" }
+      ]
+    },
+    {
+      "name": "MnuEdit",
+      "text": "_Edit",
+      "children": [
+        { "action": "ActUndo" },
+        { "action": "ActRedo" },
+        { "separator": true },
+        { "action": "ActCut" },
+        { "action": "ActCopy" },
+        { "action": "ActPaste" },
+        { "action": "ActDuplicate" },
+        { "action": "ActDelete" },
+        { "separator": true },
+        { "action": "ActSelectAll" }
+      ]
+    },
+    {
+      "name": "MnuView",
+      "text": "_View",
+      "children": [
+        { "action": "ActZoomIn" },
+        { "action": "ActZoomOut" },
+        { "action": "ActZoomReset" },
+        { "action": "ActZoomFit" },
+        { "separator": true },
+        { "name": "MnuGrid", "text": "Show Grid", "check": true }
+      ]
+    },
+    {
+      "name": "MnuHelp",
+      "text": "_Help",
+      "children": [
+        { "name": "MnuShortcuts", "text": "Keyboard Shortcuts" },
+        { "name": "MnuAbout", "text": "About Bintana Draw" }
+      ]
+    }
+  ],
+  "children": [
+    {
+      "type": "Panel",
+      "name": "Toolbar",
+      "properties": {
+        "Arrangement": "Horizontal",
+        "Spacing": 4,
+        "Padding": "6 8",
+        "Height": 46,
+        "Style": "draw-toolbar"
+      },
+      "children": [
+        {
+          "type": "Button",
+          "name": "BtnNew",
+          "properties": {
+            "Action": "ActNew",
+            "Style": "flat",
+            "Height": 34
+          }
+        },
+        {
+          "type": "Button",
+          "name": "BtnOpen",
+          "properties": {
+            "Action": "ActOpen",
+            "Style": "flat",
+            "Height": 34
+          }
+        },
+        {
+          "type": "Button",
+          "name": "BtnSave",
+          "properties": {
+            "Action": "ActSave",
+            "Style": "flat",
+            "Height": 34
+          }
+        },
+        {
+          "type": "Separator",
+          "name": "Sep1",
+          "properties": { "Orientation": "Vertical", "Width": 14, "Height": 26 }
+        },
+        {
+          "type": "Button",
+          "name": "BtnUndo",
+          "properties": {
+            "Action": "ActUndo",
+            "Style": "flat",
+            "Height": 34
+          }
+        },
+        {
+          "type": "Button",
+          "name": "BtnRedo",
+          "properties": {
+            "Action": "ActRedo",
+            "Style": "flat",
+            "Height": 34
+          }
+        },
+        {
+          "type": "Separator",
+          "name": "Sep2",
+          "properties": { "Orientation": "Vertical", "Width": 14, "Height": 26 }
+        },
+        {
+          "type": "Button",
+          "name": "BtnZoomOut",
+          "properties": {
+            "Action": "ActZoomOut",
+            "Style": "flat",
+            "Height": 34
+          }
+        },
+        {
+          "type": "Button",
+          "name": "BtnZoomIn",
+          "properties": {
+            "Action": "ActZoomIn",
+            "Style": "flat",
+            "Height": 34
+          }
+        },
+        {
+          "type": "Button",
+          "name": "BtnZoomFit",
+          "properties": {
+            "Action": "ActZoomFit",
+            "Style": "flat",
+            "Height": 34
+          }
+        },
+        {
+          "type": "Separator",
+          "name": "Sep3",
+          "properties": { "Orientation": "Vertical", "Width": 14, "Height": 26 }
+        },
+        {
+          "type": "Button",
+          "name": "BtnDelete",
+          "properties": {
+            "Action": "ActDelete",
+            "Style": "flat",
+            "Height": 34
+          }
+        }
+      ]
+    },
+    {
+      "type": "Panel",
+      "name": "Body",
+      "properties": {
+        "Arrangement": "Horizontal",
+        "Spacing": 0,
+        "Expand": true
+      },
+      "children": [
+        {
+          "type": "Panel",
+          "name": "Palette",
+          "properties": {
+            "Arrangement": "Vertical",
+            "Spacing": 5,
+            "Padding": "10",
+            "Width": 184,
+            "Style": "draw-sidebar"
+          },
+          "children": [
+            {
+              "type": "Label",
+              "name": "LblShapes",
+              "properties": {
+                "Text": "Shapes",
+                "Style": "section-title",
+                "Height": 24
+              }
+            },
+            {
+              "type": "ToggleButton",
+              "name": "BtnToolSelect",
+              "properties": {
+                "Text": "Select",
+                "Active": true,
+                "HAlign": "Fill",
+                "Height": 30
+              }
+            },
+            {
+              "type": "ToggleButton",
+              "name": "BtnToolRect",
+              "properties": {
+                "Text": "Rectangle",
+                "HAlign": "Fill",
+                "Height": 30
+              }
+            },
+            {
+              "type": "ToggleButton",
+              "name": "BtnToolRound",
+              "properties": {
+                "Text": "Rounded rectangle",
+                "HAlign": "Fill",
+                "Height": 30
+              }
+            },
+            {
+              "type": "ToggleButton",
+              "name": "BtnToolEllipse",
+              "properties": {
+                "Text": "Ellipse",
+                "HAlign": "Fill",
+                "Height": 30
+              }
+            },
+            {
+              "type": "ToggleButton",
+              "name": "BtnToolDiamond",
+              "properties": {
+                "Text": "Decision",
+                "HAlign": "Fill",
+                "Height": 30
+              }
+            },
+            {
+              "type": "ToggleButton",
+              "name": "BtnToolTerminator",
+              "properties": {
+                "Text": "Terminator",
+                "HAlign": "Fill",
+                "Height": 30
+              }
+            },
+            {
+              "type": "ToggleButton",
+              "name": "BtnToolData",
+              "properties": {
+                "Text": "Data",
+                "HAlign": "Fill",
+                "Height": 30
+              }
+            },
+            {
+              "type": "ToggleButton",
+              "name": "BtnToolCylinder",
+              "properties": {
+                "Text": "Database",
+                "HAlign": "Fill",
+                "Height": 30
+              }
+            },
+            {
+              "type": "ToggleButton",
+              "name": "BtnToolNote",
+              "properties": {
+                "Text": "Note",
+                "HAlign": "Fill",
+                "Height": 30
+              }
+            },
+            {
+              "type": "ToggleButton",
+              "name": "BtnToolText",
+              "properties": {
+                "Text": "Text",
+                "HAlign": "Fill",
+                "Height": 30
+              }
+            },
+            {
+              "type": "ToggleButton",
+              "name": "BtnToolConnect",
+              "properties": {
+                "Text": "Connector",
+                "HAlign": "Fill",
+                "Height": 30
+              }
+            },
+            {
+              "type": "Label",
+              "name": "LblStyle",
+              "properties": {
+                "Text": "Style",
+                "Style": "section-title",
+                "Height": 24
+              }
+            },
+            {
+              "type": "Label",
+              "name": "LblFill",
+              "properties": {
+                "Text": "Fill",
+                "For": "BtnFill",
+                "Height": 22
+              }
+            },
+            {
+              "type": "ColorButton",
+              "name": "BtnFill",
+              "properties": {
+                "Value": "rgb(218,232,252)",
+                "AccessibleName": "Fill color",
+                "HAlign": "Start",
+                "Width": 70,
+                "Height": 28
+              }
+            },
+            {
+              "type": "Label",
+              "name": "LblLine",
+              "properties": {
+                "Text": "Line",
+                "For": "BtnLine",
+                "Height": 22
+              }
+            },
+            {
+              "type": "ColorButton",
+              "name": "BtnLine",
+              "properties": {
+                "Value": "rgb(108,142,191)",
+                "AccessibleName": "Line color",
+                "HAlign": "Start",
+                "Width": 70,
+                "Height": 28
+              }
+            },
+            {
+              "type": "Label",
+              "name": "LblTip",
+              "properties": {
+                "Text": "Pick a shape, then drag on the canvas.",
+                "Style": "dim-label",
+                "Wrap": true,
+                "Expand": true,
+                "VAlign": "End",
+                "Height": 48
+              }
+            }
+          ]
+        },
+        {
+          "type": "Panel",
+          "name": "Stage",
+          "properties": {
+            "Expand": true,
+            "HAlign": "Fill",
+            "VAlign": "Fill",
+            "Style": "draw-stage"
+          },
+          "children": [
+            {
+              "type": "DrawingArea",
+              "name": "Canvas",
+              "properties": {
+                "X": 0,
+                "Y": 0,
+                "Width": 100,
+                "Height": 100,
+                "HAlign": "Fill",
+                "VAlign": "Fill",
+                "Focusable": true,
+                "AcceptFiles": true,
+                "Cursor": "Arrow",
+                "AccessibleName": "Diagram canvas",
+                "Menu": [
+                  { "action": "ActUndo" },
+                  { "action": "ActRedo" },
+                  { "separator": true },
+                  { "action": "ActCut" },
+                  { "action": "ActCopy" },
+                  { "action": "ActPaste" },
+                  { "action": "ActDuplicate" },
+                  { "action": "ActDelete" },
+                  { "separator": true },
+                  { "action": "ActSelectAll" }
+                ]
+              }
+            },
+            {
+              "type": "TextBox",
+              "name": "TxtEdit",
+              "properties": {
+                "X": 12,
+                "Y": 12,
+                "Width": 200,
+                "Height": 32,
+                "Visible": false,
+                "Font": "Sans 12",
+                "ActivatesDefault": false,
+                "AccessibleName": "Label text",
+                "Style": "inline-edit",
+                "Padding": "2 6"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "Panel",
+      "name": "Status",
+      "properties": {
+        "Arrangement": "Horizontal",
+        "Spacing": 10,
+        "Padding": "5 10",
+        "Height": 30,
+        "Style": "draw-status"
+      },
+      "children": [
+        {
+          "type": "Label",
+          "name": "LblStatus",
+          "properties": {
+            "Text": "Ready",
+            "Expand": true,
+            "Alignment": "Left",
+            "Ellipsize": true
+          }
+        },
+        {
+          "type": "Label",
+          "name": "LblCount",
+          "properties": {
+            "Text": "",
+            "Width": 130,
+            "Alignment": "Right",
+            "AccessibleName": "Diagram contents"
+          }
+        },
+        {
+          "type": "Label",
+          "name": "LblZoom",
+          "properties": {
+            "Text": "100%",
+            "Width": 60,
+            "Alignment": "Right",
+            "AccessibleName": "Zoom level"
+          }
+        }
+      ]
+    }
+  ]
+}

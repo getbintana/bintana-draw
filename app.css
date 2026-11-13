@@ -1,0 +1,33 @@
+/*
+ * The three regions of the window, and the one field that is not part of the
+ * layout: the text editor the canvas puts over a shape. Everything else is the
+ * desktop's own theme.
+ */
+
+.draw-toolbar {
+    background: rgba(0, 0, 0, 0.035);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.10);
+}
+
+.draw-sidebar {
+    background: rgba(0, 0, 0, 0.025);
+    border-right: 1px solid rgba(0, 0, 0, 0.10);
+}
+
+.draw-status {
+    border-top: 1px solid rgba(0, 0, 0, 0.10);
+    background: rgba(0, 0, 0, 0.025);
+}
+
+.section-title {
+    font-weight: 700;
+    opacity: 0.65;
+    padding-top: 4px;
+}
+
+.inline-edit {
+    border: 2px solid #3584e4;
+    border-radius: 5px;
+    background: #ffffff;
+    color: #1f2937;
+}

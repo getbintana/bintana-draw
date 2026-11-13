@@ -1,0 +1,17 @@
+{
+  "format": "bintana-draw/1",
+  "version": 1,
+  "shapes": [
+    { "id": "s1", "kind": "terminator", "x": 40, "y": 160, "w": 150, "h": 60, "text": "Start", "fill": "#d5e8d4", "stroke": "#82b366", "textColor": "#1f2937", "fontSize": 12, "radius": 12 },
+    { "id": "s2", "kind": "rect", "x": 260, "y": 155, "w": 170, "h": 70, "text": "Read the file", "fill": "#dae8fc", "stroke": "#6c8ebf", "textColor": "#1f2937", "fontSize": 12, "radius": 12 },
+    { "id": "s3", "kind": "diamond", "x": 500, "y": 140, "w": 170, "h": 100, "text": "Valid?", "fill": "#fff2cc", "stroke": "#d6b656", "textColor": "#1f2937", "fontSize": 12, "radius": 12 },
+    { "id": "s4", "kind": "ellipse", "x": 740, "y": 150, "w": 150, "h": 80, "text": "Done", "fill": "#d5e8d4", "stroke": "#82b366", "textColor": "#1f2937", "fontSize": 12, "radius": 12 },
+    { "id": "s5", "kind": "note", "x": 500, "y": 310, "w": 170, "h": 100, "text": "A note about the error", "fill": "#fff2cc", "stroke": "#d6b656", "textColor": "#1f2937", "fontSize": 12, "radius": 12 }
+  ],
+  "edges": [
+    { "id": "e1", "from": "s1", "to": "s2", "text": "", "stroke": "#495057", "dashed": false, "fontSize": 11 },
+    { "id": "e2", "from": "s2", "to": "s3", "text": "", "stroke": "#495057", "dashed": false, "fontSize": 11 },
+    { "id": "e3", "from": "s3", "to": "s4", "text": "yes", "stroke": "#495057", "dashed": false, "fontSize": 11 },
+    { "id": "e4", "from": "s3", "to": "s5", "text": "no", "stroke": "#495057", "dashed": true, "fontSize": 11 }
+  ]
+}

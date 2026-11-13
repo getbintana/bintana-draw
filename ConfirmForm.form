@@ -1,0 +1,66 @@
+{
+  "format": "bintana-form/1",
+  "class": "ConfirmForm",
+  "properties": {
+    "Text": "Unsaved changes",
+    "Width": 460,
+    "Height": 178,
+    "Resizable": false
+  },
+  "children": [
+    {
+      "type": "Label",
+      "name": "LblMessage",
+      "properties": {
+        "X": 18,
+        "Y": 18,
+        "Width": 424,
+        "Height": 62,
+        "Wrap": true,
+        "HAlign": "Fill",
+        "VAlign": "Fill"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "BtnSave",
+      "properties": {
+        "X": 110,
+        "Y": 124,
+        "Width": 100,
+        "Height": 34,
+        "Text": "Save",
+        "Style": "suggested-action",
+        "HAlign": "End",
+        "VAlign": "End"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "BtnDiscard",
+      "properties": {
+        "X": 220,
+        "Y": 124,
+        "Width": 100,
+        "Height": 34,
+        "Text": "Discard",
+        "HAlign": "End",
+        "VAlign": "End"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "BtnCancel",
+      "properties": {
+        "X": 330,
+        "Y": 124,
+        "Width": 110,
+        "Height": 34,
+        "Text": "Cancel",
+        "Cancel": true,
+        "HAlign": "End",
+        "VAlign": "End"
+      }
+    }
+  ]
+}

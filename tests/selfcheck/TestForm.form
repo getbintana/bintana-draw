@@ -1,0 +1,9 @@
+{
+  "format": "bintana-form/1",
+  "class": "TestForm",
+  "properties": {
+    "Text": "Bintana Draw self-check",
+    "Width": 320,
+    "Height": 120
+  }
+}

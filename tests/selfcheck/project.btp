@@ -1,0 +1,13 @@
+{
+  "name": "draw-selfcheck",
+  "id": "io.github.getbintana.Draw.SelfCheck",
+  "startup": "TestForm",
+  "sources": [
+    "../../Diagram.js",
+    "../../Render.js",
+    "../../ConfirmForm.js",
+    "../../MainForm.js",
+    "TestForm.js"
+  ],
+  "version": "0.1"
+}

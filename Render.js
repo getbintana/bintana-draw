@@ -1,0 +1,424 @@
+/*
+ * Everything the canvas paints. The renderer is handed a diagram and a view
+ * (`panX`, `panY`, `zoom`, what is selected, the gesture in flight) and draws
+ * one frame; it keeps no state between frames.
+ *
+ * Two drawings share the same shape and edge code: the one on screen, with its
+ * grid, selection and handles, and the one `Save`/`SavePdf` asks for, which is
+ * white paper fitted to the diagram and nothing else. That is what makes an
+ * export the same picture as the editor rather than a second implementation.
+ */
+"use strict";
+
+const KAPPA = 0.5522847498307936;
+const ACCENT = "#3584e4";
+
+/* ------------------------------------------------------------------ paths */
+
+function roundRectPath(p, x, y, w, h, radius) {
+    const r = Math.max(0, Math.min(radius, w / 2, h / 2));
+    if (r === 0) { p.Rectangle(x, y, w, h); return; }
+    p.MoveTo(x + r, y);
+    p.LineTo(x + w - r, y);
+    p.Arc(x + w - r, y + r, r, -90, 0);
+    p.LineTo(x + w, y + h - r);
+    p.Arc(x + w - r, y + h - r, r, 0, 90);
+    p.LineTo(x + r, y + h);
+    p.Arc(x + r, y + h - r, r, 90, 180);
+    p.LineTo(x, y + r);
+    p.Arc(x + r, y + r, r, 180, 270);
+    p.ClosePath();
+}
+
+function ellipsePath(p, x, y, w, h) {
+    const rx = w / 2, ry = h / 2;
+    const cx = x + rx, cy = y + ry;
+    p.MoveTo(cx + rx, cy);
+    p.CurveTo(cx + rx, cy - ry * KAPPA, cx + rx * KAPPA, cy - ry, cx, cy - ry);
+    p.CurveTo(cx - rx * KAPPA, cy - ry, cx - rx, cy - ry * KAPPA, cx - rx, cy);
+    p.CurveTo(cx - rx, cy + ry * KAPPA, cx - rx * KAPPA, cy + ry, cx, cy + ry);
+    p.CurveTo(cx + rx * KAPPA, cy + ry, cx + rx, cy + ry * KAPPA, cx + rx, cy);
+    p.ClosePath();
+}
+
+function diamondPath(p, s) {
+    const cx = s.x + s.w / 2, cy = s.y + s.h / 2;
+    p.Polygon([cx, s.y, s.x + s.w, cy, cx, s.y + s.h, s.x, cy]);
+}
+
+function cylinderPath(p, s) {
+    const ry = Math.min(18, s.h * 0.16);
+    const x = s.x, y = s.y, w = s.w, h = s.h;
+    const cx = x + w / 2;
+    const top = y + ry, bottom = y + h - ry;
+    p.MoveTo(x, top);
+    p.CurveTo(x, top - ry * KAPPA, cx - (w / 2) * KAPPA, y, cx, y);
+    p.CurveTo(cx + (w / 2) * KAPPA, y, x + w, top - ry * KAPPA, x + w, top);
+    p.LineTo(x + w, bottom);
+    p.CurveTo(x + w, bottom + ry * KAPPA, cx + (w / 2) * KAPPA, y + h, cx, y + h);
+    p.CurveTo(cx - (w / 2) * KAPPA, y + h, x, bottom + ry * KAPPA, x, bottom);
+    p.ClosePath();
+}
+
+function cylinderTopPath(p, s) {
+    const ry = Math.min(18, s.h * 0.16);
+    const x = s.x, y = s.y, w = s.w;
+    const cx = x + w / 2;
+    const rx = w / 2;
+    const cy = y + ry;
+    p.MoveTo(cx + rx, cy);
+    p.CurveTo(cx + rx, cy - ry * KAPPA, cx + rx * KAPPA, y, cx, y);
+    p.CurveTo(cx - rx * KAPPA, y, x, cy - ry * KAPPA, x, cy);
+    p.CurveTo(x, cy + ry * KAPPA, cx - rx * KAPPA, y + 2 * ry, cx, y + 2 * ry);
+    p.CurveTo(cx + rx * KAPPA, y + 2 * ry, cx + rx, cy + ry * KAPPA, cx + rx, cy);
+    p.ClosePath();
+}
+
+function notePath(p, s) {
+    const fold = Math.min(24, s.w * 0.22, s.h * 0.32);
+    p.Polygon([s.x, s.y, s.x + s.w - fold, s.y, s.x + s.w, s.y + fold,
+               s.x + s.w, s.y + s.h, s.x, s.y + s.h]);
+}
+
+function shapePath(p, s) {
+    switch (s.kind) {
+    case "round":      roundRectPath(p, s.x, s.y, s.w, s.h, s.radius); break;
+    case "terminator": roundRectPath(p, s.x, s.y, s.w, s.h, s.h / 2); break;
+    case "ellipse":    ellipsePath(p, s.x, s.y, s.w, s.h); break;
+    case "diamond":    diamondPath(p, s); break;
+    case "data":
+        p.Polygon([s.x + s.w * 0.18, s.y, s.x + s.w, s.y,
+                   s.x + s.w * 0.82, s.y + s.h, s.x, s.y + s.h]);
+        break;
+    case "cylinder":   cylinderPath(p, s); break;
+    case "note":       notePath(p, s); break;
+    default:           p.Rectangle(s.x, s.y, s.w, s.h); break;
+    }
+}
+
+function selectionOutline(p, s) {
+    if (s.kind === "text") p.Rectangle(s.x, s.y, s.w, s.h);
+    else shapePath(p, s);
+}
+
+/* ------------------------------------------------------------------ labels */
+
+function labelInShape(p, s) {
+    if (!s.text) return;
+
+    let x = s.x + 10;
+    let width = Math.max(10, s.w - 20);
+    let align = "Center";
+    let y = s.y + 10;
+
+    if (s.kind === "ellipse" || s.kind === "diamond") {
+        const pad = s.w * 0.18;
+        x = s.x + pad;
+        width = Math.max(10, s.w - pad * 2);
+    } else if (s.kind === "cylinder") {
+        x = s.x + 16;
+        width = Math.max(10, s.w - 32);
+    }
+
+    p.Font = "Sans " + Math.max(6, Math.round(s.fontSize));
+    p.Color = s.textColor || DEFAULT_TEXT;
+
+    const options = { Width: width, Align: align };
+    const height = p.TextHeight(s.text, options);
+
+    if (s.kind === "note") {
+        /* A note reads from the top-left and stops before its fold. */
+        const fold = Math.min(24, s.w * 0.22, s.h * 0.32);
+        x = s.x + 12;
+        width = Math.max(10, s.w - fold - 18);
+        align = "Left";
+        y = s.y + 10;
+    } else {
+        y = s.y + (s.h - height) / 2;
+    }
+
+    /* A long label must not paint outside the shape it belongs to. */
+    p.Push();
+    if (s.kind === "text") p.Rectangle(s.x, s.y, s.w, s.h);
+    else shapePath(p, s);
+    p.Clip();
+    p.Text(s.text, x, y, { Width: width, Align: align });
+    p.Pop();
+}
+
+function edgeLabel(p, e, points) {
+    if (!e.text) return;
+    const at = edgeMidpoint(points);
+    if (!at) return;
+
+    p.Font = "Sans " + Math.max(6, Math.round(e.fontSize));
+    const tw = p.TextWidth(e.text);
+    const th = p.TextHeight(e.text);
+    const pad = 4;
+    roundRectPath(p, at.x - tw / 2 - pad, at.y - th / 2 - pad,
+                  tw + pad * 2, th + pad * 2, 4);
+    p.Color = "rgba(255,255,255,0.94)";
+    p.Fill();
+
+    p.Color = e.stroke || DEFAULT_EDGE;
+    p.Text(e.text, at.x - tw / 2, at.y - th / 2);
+}
+
+/* ------------------------------------------------------------------ pieces */
+
+function drawShape(p, s) {
+    if (s.kind === "text") {
+        labelInShape(p, s);
+        return;
+    }
+
+    shapePath(p, s);
+    p.Color = s.fill || DEFAULT_FILL;
+    p.Fill();
+
+    shapePath(p, s);
+    p.Color = s.stroke || DEFAULT_STROKE;
+    p.LineWidth = 1.5;
+    p.Stroke();
+
+    if (s.kind === "cylinder") {
+        cylinderTopPath(p, s);
+        p.Color = s.stroke || DEFAULT_STROKE;
+        p.LineWidth = 1.5;
+        p.Stroke();
+    } else if (s.kind === "note") {
+        const fold = Math.min(24, s.w * 0.22, s.h * 0.32);
+        p.Color = s.stroke || DEFAULT_STROKE;
+        p.LineWidth = 1.5;
+        p.MoveTo(s.x + s.w - fold, s.y);
+        p.LineTo(s.x + s.w - fold, s.y + fold);
+        p.LineTo(s.x + s.w, s.y + fold);
+        p.Stroke();
+    }
+
+    labelInShape(p, s);
+}
+
+function arrowHead(p, points, color) {
+    if (points.length < 4) return;
+    const ex = points[points.length - 2], ey = points[points.length - 1];
+    const px = points[points.length - 4], py = points[points.length - 3];
+    const angle = Math.atan2(ey - py, ex - px);
+    const size = 11;
+    const spread = 0.42;
+    const ax = ex - size * Math.cos(angle - spread);
+    const ay = ey - size * Math.sin(angle - spread);
+    const bx = ex - size * Math.cos(angle + spread);
+    const by = ey - size * Math.sin(angle + spread);
+    p.Polygon([ex, ey, ax, ay, bx, by]);
+    p.Color = color;
+    p.Fill();
+}
+
+function drawEdgeLine(p, e, points) {
+    if (points.length < 4) return;
+    const color = e.stroke || DEFAULT_EDGE;
+    p.Color = color;
+    p.LineWidth = 2;
+    p.LineDash = e.dashed ? [7, 5] : [];
+    p.Polyline(points);
+    p.Stroke();
+    p.LineDash = [];
+    arrowHead(p, points, color);
+}
+
+/* ------------------------------------------------------------------ handles */
+
+export function shapeHandles(s) {
+    const cx = s.x + s.w / 2, cy = s.y + s.h / 2;
+    return [
+        { dir: "nw", x: s.x,       y: s.y },
+        { dir: "n",  x: cx,        y: s.y },
+        { dir: "ne", x: s.x + s.w, y: s.y },
+        { dir: "e",  x: s.x + s.w, y: cy },
+        { dir: "se", x: s.x + s.w, y: s.y + s.h },
+        { dir: "s",  x: cx,        y: s.y + s.h },
+        { dir: "sw", x: s.x,       y: s.y + s.h },
+        { dir: "w",  x: s.x,       y: cy },
+    ];
+}
+
+function drawSelection(p, diagram, selected, zoom) {
+    const ids = new Set(selected);
+
+    for (const s of diagram.shapes) {
+        if (!ids.has(s.id)) continue;
+        selectionOutline(p, s);
+        p.Color = ACCENT;
+        p.LineWidth = 1.5 / zoom;
+        p.LineDash = [4 / zoom, 3 / zoom];
+        p.Stroke();
+        p.LineDash = [];
+    }
+
+    /* Handles only when one shape and nothing else is selected. */
+    const shapes = diagram.shapes.filter((s) => ids.has(s.id));
+    if (shapes.length === 1 && selected.length === 1) {
+        const size = 8 / zoom;
+        for (const h of shapeHandles(shapes[0])) {
+            p.Rectangle(h.x - size / 2, h.y - size / 2, size, size);
+            p.Color = "#ffffff";
+            p.Fill();
+            p.Rectangle(h.x - size / 2, h.y - size / 2, size, size);
+            p.Color = ACCENT;
+            p.LineWidth = 1.4 / zoom;
+            p.Stroke();
+        }
+    }
+
+    for (const e of diagram.edges) {
+        if (!ids.has(e.id)) continue;
+        const points = edgeRoute(diagram, e);
+        if (points.length < 4) continue;
+        p.Color = "rgba(53,132,228,0.28)";
+        p.LineWidth = 8 / zoom;
+        p.Polyline(points);
+        p.Stroke();
+        p.Color = ACCENT;
+        p.LineWidth = 1.5 / zoom;
+        p.LineDash = [5 / zoom, 4 / zoom];
+        p.Polyline(points);
+        p.Stroke();
+        p.LineDash = [];
+    }
+}
+
+function drawGrid(p, view, width, height) {
+    let step = 20 * view.zoom;
+    if (step < 7) step *= 5;
+    if (step < 7) return;
+
+    const first = Math.floor((-view.panX) / step) - 1;
+    const lastX = Math.ceil((width - view.panX) / step) + 1;
+    const firstY = Math.floor((-view.panY) / step) - 1;
+    const lastY = Math.ceil((height - view.panY) / step) + 1;
+
+    p.Antialias = false;
+    p.LineWidth = 1;
+
+    p.Color = "rgba(15,23,42,0.055)";
+    for (let i = first; i <= lastX; i++) {
+        if (i % 5 === 0) continue;
+        const x = view.panX + i * step;
+        p.MoveTo(x, 0); p.LineTo(x, height);
+    }
+    for (let i = firstY; i <= lastY; i++) {
+        if (i % 5 === 0) continue;
+        const y = view.panY + i * step;
+        p.MoveTo(0, y); p.LineTo(width, y);
+    }
+    p.Stroke();
+
+    p.Color = "rgba(15,23,42,0.10)";
+    for (let i = first; i <= lastX; i++) {
+        if (i % 5 !== 0) continue;
+        const x = view.panX + i * step;
+        p.MoveTo(x, 0); p.LineTo(x, height);
+    }
+    for (let i = firstY; i <= lastY; i++) {
+        if (i % 5 !== 0) continue;
+        const y = view.panY + i * step;
+        p.MoveTo(0, y); p.LineTo(width, y);
+    }
+    p.Stroke();
+    p.Antialias = true;
+}
+
+/* ------------------------------------------------------------------ frames */
+
+function drawContent(p, diagram, selected, zoom) {
+    p.LineCap = "Round";
+    p.LineJoin = "Round";
+
+    for (const s of diagram.shapes) drawShape(p, s);
+
+    for (const e of diagram.edges)
+        drawEdgeLine(p, e, edgeRoute(diagram, e));
+
+    for (const e of diagram.edges)
+        edgeLabel(p, e, edgeRoute(diagram, e));
+
+    if (selected && selected.length)
+        drawSelection(p, diagram, selected, zoom);
+}
+
+function drawCreatePreview(p, preview) {
+    p.Color = "rgba(53,132,228,0.10)";
+    p.Rectangle(preview.x, preview.y, preview.w, preview.h);
+    p.Fill();
+    p.Color = ACCENT;
+    p.LineWidth = 1.5;
+    p.LineDash = [5, 4];
+    p.Rectangle(preview.x, preview.y, preview.w, preview.h);
+    p.Stroke();
+    p.LineDash = [];
+}
+
+function drawConnectPreview(p, preview) {
+    p.Color = ACCENT;
+    p.LineWidth = 2;
+    p.LineDash = [6, 5];
+    p.MoveTo(preview.x1, preview.y1);
+    p.LineTo(preview.x2, preview.y2);
+    p.Stroke();
+    p.LineDash = [];
+    p.Arc(preview.x2, preview.y2, 4 / Math.max(0.001, preview.zoom), 0, 360);
+    p.Fill();
+}
+
+function drawBand(p, band) {
+    p.Color = "rgba(53,132,228,0.12)";
+    p.Rectangle(band.x, band.y, band.w, band.h);
+    p.Fill();
+    p.Color = ACCENT;
+    p.LineWidth = 1;
+    p.LineDash = [4, 3];
+    p.Rectangle(band.x, band.y, band.w, band.h);
+    p.Stroke();
+    p.LineDash = [];
+}
+
+export function drawCanvas(p, diagram, view, width, height) {
+    p.Color = "#f7f8fa";
+    p.Rectangle(0, 0, width, height);
+    p.Fill();
+
+    if (view.grid) drawGrid(p, view, width, height);
+
+    p.Push();
+    p.Translate(view.panX, view.panY);
+    p.Scale(view.zoom);
+
+    drawContent(p, diagram, view.selected, view.zoom);
+    if (view.createPreview) drawCreatePreview(p, view.createPreview);
+    if (view.connectPreview) drawConnectPreview(p, view.connectPreview);
+    if (view.band) drawBand(p, view.band);
+
+    p.Pop();
+}
+
+export function drawExport(p, diagram, width, height) {
+    p.Color = "#ffffff";
+    p.Rectangle(0, 0, width, height);
+    p.Fill();
+
+    const bounds = diagram.bounds();
+    if (!bounds) return;
+
+    const pad = 28;
+    const zoom = Math.min((width - pad * 2) / Math.max(1, bounds.w),
+                          (height - pad * 2) / Math.max(1, bounds.h), 4);
+    const safe = Math.max(0.01, zoom);
+
+    p.Push();
+    p.Translate(pad + (width - pad * 2 - bounds.w * safe) / 2 - bounds.x * safe,
+                pad + (height - pad * 2 - bounds.h * safe) / 2 - bounds.y * safe);
+    p.Scale(safe);
+    drawContent(p, diagram, null, safe);
+    p.Pop();
+}

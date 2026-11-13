@@ -1,0 +1,322 @@
+# Spanish for Bintana Draw.
+#
+# The window's own words live in the .form; the canvas's live in the .js. The
+# tool names are commands, not prose, but a person reads them, so they are here
+# with everything else. Plural forms follow the catalogue's rule, which is why
+# the counts are Locale.Plural and not a hand-written if.
+msgid ""
+msgstr ""
+"Project-Id-Version: bintana-draw\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+# --- the window and its menus ------------------------------------------------
+msgid "Bintana Draw"
+msgstr "Bintana Draw"
+
+msgid "_File"
+msgstr "_Archivo"
+
+msgid "_Edit"
+msgstr "_Editar"
+
+msgid "_View"
+msgstr "_Ver"
+
+msgid "_Help"
+msgstr "_Ayuda"
+
+msgid "New"
+msgstr "Nuevo"
+
+msgid "Open…"
+msgstr "Abrir…"
+
+msgid "Save"
+msgstr "Guardar"
+
+msgid "Save As…"
+msgstr "Guardar como…"
+
+msgid "Export PNG…"
+msgstr "Exportar PNG…"
+
+msgid "Export PDF…"
+msgstr "Exportar PDF…"
+
+msgid "Quit"
+msgstr "Salir"
+
+msgid "Undo"
+msgstr "Deshacer"
+
+msgid "Redo"
+msgstr "Rehacer"
+
+msgid "Cut"
+msgstr "Cortar"
+
+msgid "Copy"
+msgstr "Copiar"
+
+msgid "Paste"
+msgstr "Pegar"
+
+msgid "Duplicate"
+msgstr "Duplicar"
+
+msgid "Delete"
+msgstr "Eliminar"
+
+msgid "Select All"
+msgstr "Seleccionar todo"
+
+msgid "Zoom In"
+msgstr "Acercar"
+
+msgid "Zoom Out"
+msgstr "Alejar"
+
+msgid "Actual Size"
+msgstr "Tamaño real"
+
+msgid "Fit to Window"
+msgstr "Ajustar a la ventana"
+
+msgid "Show Grid"
+msgstr "Mostrar cuadrícula"
+
+msgid "Keyboard Shortcuts"
+msgstr "Atajos de teclado"
+
+msgid "About Bintana Draw"
+msgstr "Acerca de Bintana Draw"
+
+# --- the palette -------------------------------------------------------------
+msgid "Shapes"
+msgstr "Formas"
+
+msgid "Select"
+msgstr "Seleccionar"
+
+msgid "Rectangle"
+msgstr "Rectángulo"
+
+msgid "Rounded rectangle"
+msgstr "Rectángulo redondeado"
+
+msgid "Ellipse"
+msgstr "Elipse"
+
+msgid "Decision"
+msgstr "Decisión"
+
+msgid "Terminator"
+msgstr "Terminal"
+
+msgid "Data"
+msgstr "Datos"
+
+msgid "Database"
+msgstr "Base de datos"
+
+msgid "Note"
+msgstr "Nota"
+
+msgid "Text"
+msgstr "Texto"
+
+msgid "Connector"
+msgstr "Conector"
+
+msgid "Style"
+msgstr "Estilo"
+
+msgid "Fill"
+msgstr "Relleno"
+
+msgid "Line"
+msgstr "Línea"
+
+msgid "Fill color"
+msgstr "Color de relleno"
+
+msgid "Line color"
+msgstr "Color de línea"
+
+msgid "Pick a shape, then drag on the canvas."
+msgstr "Elegí una forma y arrastrá en el lienzo."
+
+msgid "Ready"
+msgstr "Listo"
+
+msgid "Untitled"
+msgstr "Sin título"
+
+msgid "Diagram canvas"
+msgstr "Lienzo del diagrama"
+
+msgid "Label text"
+msgstr "Texto de la etiqueta"
+
+msgid "Diagram contents"
+msgstr "Contenido del diagrama"
+
+msgid "Zoom level"
+msgstr "Nivel de zoom"
+
+# --- what the canvas says ----------------------------------------------------
+msgid "Select and drag. Double-click to edit text."
+msgstr "Seleccioná y arrastrá. Hacé doble clic para editar el texto."
+
+msgid "Drag from one shape to another to connect them."
+msgstr "Arrastrá de una forma a otra para conectarlas."
+
+msgid "Click where the text should go."
+msgstr "Hacé clic donde va el texto."
+
+msgid "Drag a note, or click for the default size."
+msgstr "Arrastrá una nota, o hacé clic para el tamaño predeterminado."
+
+msgid "Drag a shape, or click for the default size."
+msgstr "Arrastrá una forma, o hacé clic para el tamaño predeterminado."
+
+msgid "Create shape"
+msgstr "Crear forma"
+
+msgid "Move"
+msgstr "Mover"
+
+msgid "Resize"
+msgstr "Redimensionar"
+
+msgid "Connect shapes"
+msgstr "Conectar formas"
+
+msgid "Connector added."
+msgstr "Conector agregado."
+
+msgid "Drop the connector on another shape."
+msgstr "Soltá el conector sobre otra forma."
+
+msgid "Edit text"
+msgstr "Editar texto"
+
+msgid "Copied."
+msgstr "Copiado."
+
+msgid "{0} item selected"
+msgid_plural "{0} items selected"
+msgstr[0] "{0} elemento seleccionado"
+msgstr[1] "{0} elementos seleccionados"
+
+msgid "{0} shape"
+msgid_plural "{0} shapes"
+msgstr[0] "{0} forma"
+msgstr[1] "{0} formas"
+
+# --- files -------------------------------------------------------------------
+msgid "Open diagram"
+msgstr "Abrir diagrama"
+
+msgid "Save diagram"
+msgstr "Guardar diagrama"
+
+msgid "Bintana Draw diagram"
+msgstr "Diagrama de Bintana Draw"
+
+msgid "All files"
+msgstr "Todos los archivos"
+
+msgid "Opened {0}"
+msgstr "Se abrió {0}"
+
+msgid "Saved {0}"
+msgstr "Se guardó {0}"
+
+msgid "Cannot open {0}: {1}"
+msgstr "No se pudo abrir {0}: {1}"
+
+msgid "Cannot save {0}: {1}"
+msgstr "No se pudo guardar {0}: {1}"
+
+msgid "Export PNG"
+msgstr "Exportar PNG"
+
+msgid "Export PDF"
+msgstr "Exportar PDF"
+
+msgid "PNG image"
+msgstr "Imagen PNG"
+
+msgid "PDF document"
+msgstr "Documento PDF"
+
+msgid "The diagram is empty."
+msgstr "El diagrama está vacío."
+
+msgid "Exported {0}"
+msgstr "Se exportó {0}"
+
+msgid "Cannot export {0}: {1}"
+msgstr "No se pudo exportar {0}: {1}"
+
+msgid "Unsaved changes"
+msgstr "Cambios sin guardar"
+
+msgid "Save the diagram before continuing?"
+msgstr "¿Querés guardar el diagrama antes de continuar?"
+
+msgid "Discard"
+msgstr "Descartar"
+
+msgid "Cancel"
+msgstr "Cancelar"
+
+# --- about -------------------------------------------------------------------
+msgid "Bintana Draw {0}"
+msgstr "Bintana Draw {0}"
+
+msgid ""
+"Ctrl+N  New\n"
+"Ctrl+O  Open\n"
+"Ctrl+S  Save\n"
+"Ctrl+Shift+S  Save As\n"
+"Ctrl+Z  Undo\n"
+"Ctrl+Shift+Z  Redo\n"
+"Ctrl+X  Cut\n"
+"Ctrl+C  Copy\n"
+"Ctrl+V  Paste\n"
+"Ctrl+D  Duplicate\n"
+"Ctrl+A  Select All\n"
+"Delete  Delete\n"
+"Arrows  Move the selection\n"
+"Shift+Arrows  Move one unit\n"
+"+ / −  Zoom\n"
+"0  Actual size\n"
+"Middle drag  Pan\n"
+"Wheel  Scroll\n"
+"Double-click  Edit text"
+msgstr ""
+"Ctrl+N  Nuevo\n"
+"Ctrl+O  Abrir\n"
+"Ctrl+S  Guardar\n"
+"Ctrl+Shift+S  Guardar como\n"
+"Ctrl+Z  Deshacer\n"
+"Ctrl+Shift+Z  Rehacer\n"
+"Ctrl+X  Cortar\n"
+"Ctrl+C  Copiar\n"
+"Ctrl+V  Pegar\n"
+"Ctrl+D  Duplicar\n"
+"Ctrl+A  Seleccionar todo\n"
+"Supr  Eliminar\n"
+"Flechas  Mover la selección\n"
+"Shift+Flechas  Mover una unidad\n"
+"+ / −  Zoom\n"
+"0  Tamaño real\n"
+"Arrastrar con el botón central  Desplazar\n"
+"Rueda  Desplazar\n"
+"Doble clic  Editar el texto"
