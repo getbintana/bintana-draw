@@ -1,9 +1,11 @@
 /*
- * The downloader's window: a short curated list, the terms of the selected
- * set, and one request. It is a form rather than a dialog primitive because a
- * license is prose that has to stay on screen while the person decides.
+ * The downloader's window: a curated tree grouped by what the sets are for,
+ * the terms of the selected set, and one request. The filter reads names and
+ * the shape words in each set, so "AND" finds the logic gates. It is a form
+ * rather than a dialog primitive because a license is prose that has to stay
+ * on screen while the person decides.
  *
- * The download itself is `Http.Get`; the answer is handed to
+ * The download itself is the form's `HttpClient` part; the answer is handed to
  * `importLibraryText`, the same importer the file chooser uses, so a set from
  * the network and a set from disk cannot drift apart.
  */
@@ -21,24 +23,56 @@ export class StencilsForm extends Form {
         dialog.fill();
         dialog.Modal = true;
         dialog.Show();
-        dialog.LstStencils.SetFocus();
+        dialog.TrvStencils.SetFocus();
         return dialog;
     }
 
+    matches(entry, query) {
+        if (!query) return true;
+        const words = [entry.name, entry.group, entry.source,
+                       entry.keywords, entry.license].join(" ");
+        return words.toLowerCase().indexOf(query) >= 0;
+    }
+
     fill() {
+        const query = (this.TxtFilter.Text || "").trim().toLowerCase();
+        const previous = this.TrvStencils.Key;
+        let first = "";
+
         this.syncing = true;
-        this.LstStencils.Clear();
-        for (const entry of STENCIL_SETS)
-            this.LstStencils.Add(entry.name + "  ·  " + entry.source, entry.id);
-        if (STENCIL_SETS.length) this.LstStencils.Index = 0;
+        this.TrvStencils.Clear();
+        for (const entry of STENCIL_SETS) {
+            if (!this.matches(entry, query)) continue;
+            const group = "group:" + entry.group;
+            if (!this.TrvStencils.Exists(group))
+                this.TrvStencils.Add(group, entry.group);
+            const key = "set:" + entry.id;
+            this.TrvStencils.Add(key, entry.name + "  ·  " + entry.source, group);
+            if (!first) first = key;
+        }
+        this.TrvStencils.ExpandAll();
+        if (previous && previous.indexOf("set:") === 0 &&
+            this.TrvStencils.Exists(previous))
+            this.TrvStencils.Key = previous;
+        else if (first)
+            this.TrvStencils.Key = first;
         this.syncing = false;
-        this.refreshInfo();
+
+        if (!first) {
+            this.LblLicense.Text = Locale.Text("No set matches “{0}”.", query);
+            this.BtnDownload.Enabled = false;
+        } else {
+            this.refreshInfo();
+        }
     }
 
     current() {
-        const index = this.LstStencils.Index;
-        return index >= 0 && index < STENCIL_SETS.length
-            ? STENCIL_SETS[index] : null;
+        const key = this.TrvStencils.Key;
+        if (!key || key.indexOf("set:") !== 0) return null;
+        const id = key.slice(4);
+        for (const entry of STENCIL_SETS)
+            if (entry.id === id) return entry;
+        return null;
     }
 
     refreshInfo() {
@@ -51,15 +85,18 @@ export class StencilsForm extends Form {
         this.LblLicense.Text =
             Locale.Text("License: {0}", entry.license) + "\n" +
             entry.licenseUrl + "\n" +
-            Locale.Text("Source: {0}", entry.source);
+            Locale.Text("Source: {0}", entry.source) + "\n" +
+            Locale.Text("Contains: {0}", entry.keywords);
         this.BtnDownload.Enabled = !this.busy;
     }
 
-    LstStencils_Select() {
+    TxtFilter_Change() { this.fill(); }
+
+    TrvStencils_Select() {
         if (!this.syncing) this.refreshInfo();
     }
 
-    LstStencils_Activate() { this.downloadSelected(); }
+    TrvStencils_Activate() { this.downloadSelected(); }
 
     BtnDownload_Click() { this.downloadSelected(); }
 

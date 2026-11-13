@@ -1334,12 +1334,31 @@ class TestForm extends Form {
     stencilForm(fm) {
         const dialog = StencilsForm.show(null);
         this.check("stencil form: it opens", !!dialog);
-        this.eq("stencil form: the catalog is listed",
-                dialog.LstStencils.Count, STENCIL_SETS.length);
-        this.eq("stencil form: the first set is selected",
-                dialog.LstStencils.Index, 0);
+        this.check("stencil form: every set is in the tree",
+                   STENCIL_SETS.every((entry) =>
+                       dialog.TrvStencils.Exists("set:" + entry.id)));
+        this.check("stencil form: a group is a parent",
+                   dialog.TrvStencils.Exists("group:" + Locale.Text("General")));
+        this.check("stencil form: a set is selected",
+                   dialog.TrvStencils.Key.indexOf("set:") === 0);
         this.check("stencil form: its license is shown",
                    dialog.LblLicense.Text.indexOf("draw.io") >= 0);
+
+        dialog.TxtFilter.Text = "AND";
+        dialog.TxtFilter_Change();
+        this.check("stencil form: AND finds the logic gates",
+                   dialog.TrvStencils.Exists("set:logic"));
+        this.check("stencil form: AND finds the BPMN gateway",
+                   dialog.TrvStencils.Exists("set:bpmn"));
+        this.check("stencil form: AND hides the basic set",
+                   !dialog.TrvStencils.Exists("set:basic"));
+        this.check("stencil form: the matching set says what it contains",
+                   dialog.LblLicense.Text.toLowerCase().indexOf("gateway") >= 0);
+
+        dialog.TxtFilter.Text = "zzzz";
+        dialog.TxtFilter_Change();
+        this.check("stencil form: nothing matches",
+                   dialog.LblLicense.Text.indexOf("zzzz") >= 0);
         dialog.Close();
     }
 

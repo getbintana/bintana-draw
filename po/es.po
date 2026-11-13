@@ -563,6 +563,30 @@ msgstr "IBM Cloud, vía draw.io"
 msgid "Apache 2.0, IBM Cloud architecture icons. IBM and IBM Cloud are trademarks of IBM."
 msgstr "Apache 2.0, íconos de arquitectura de IBM Cloud. IBM e IBM Cloud son marcas de IBM."
 
+msgid "Filter by name or icon…"
+msgstr "Filtrar por nombre o ícono…"
+
+msgid "No set matches “{0}”."
+msgstr "Ningún conjunto coincide con «{0}»."
+
+msgid "Contains: {0}"
+msgstr "Contiene: {0}"
+
+msgid "General"
+msgstr "General"
+
+msgid "Flowcharts"
+msgstr "Diagramas de flujo"
+
+msgid "Engineering"
+msgstr "Ingeniería"
+
+msgid "Interface"
+msgstr "Interfaz"
+
+msgid "Cloud"
+msgstr "Nube"
+
 msgid "Basic shapes"
 msgstr "Formas básicas"
 

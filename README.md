@@ -46,8 +46,9 @@ The window is started with a blank canvas and the shape palette on the left.
   uncompressed `.drawio`/XML diagram, a draw.io stencil set (`<shapes>`), or a
   draw.io `.mxlibrary` with uncompressed `xml` entries. Stencil geometry is
   kept as vector paths, so the imported shapes resize without a picture.
-  **Get stencils…** downloads a curated set into the library and shows its
-  license before the request.
+  **Get stencils…** downloads a curated set into the library, grouped by
+  category and filtered by name or shape word, with its license shown before
+  the request.
 
 - **Connectors** — the connector tool, dragged from one shape to another,
   produces an orthogonal route that follows both shapes when they move or

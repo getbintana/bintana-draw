@@ -25,7 +25,8 @@ BINTANA=/path/to/build/bintana tests/run.sh
   items: paths, rects, ellipses, paint colours and arcs as cubic Béziers.
 - `StencilCatalog.js` — the curated, license-checked URLs the downloader may
   fetch. AWS, Azure and GCP are absent on purpose.
-- `StencilsForm.*` — the downloader's modal form and its `HttpClient` part.
+- `StencilsForm.*` — the downloader's modal form: a `TreeView` grouped by
+  category, a filter over names and shape words, and its `HttpClient` part.
 - `DrawioImport.js` — an uncompressed draw.io file mapped onto a `Diagram`.
   Compressed pages are refused on purpose; there is no deflate verb here.
 - `Render.js` — the only painter code. The screen and the export are the same

@@ -21,25 +21,38 @@
       }
     },
     {
+      "type": "TextBox",
+      "name": "TxtFilter",
+      "properties": {
+        "X": 18,
+        "Y": 64,
+        "Width": 644,
+        "Height": 32,
+        "Placeholder": "Filter by name or icon…",
+        "AccessibleName": "Filter stencil libraries"
+      }
+    },
+    {
       "type": "Scroller",
       "name": "Scroller",
       "properties": {
         "X": 18,
-        "Y": 68,
+        "Y": 104,
         "Width": 644,
-        "Height": 238,
+        "Height": 202,
         "Arrangement": "Vertical",
         "Scrollbars": "Vertical"
       },
       "children": [
         {
-          "type": "ListBox",
-          "name": "LstStencils",
+          "type": "TreeView",
+          "name": "TrvStencils",
           "properties": {
             "HAlign": "Fill",
             "VAlign": "Fill",
             "Width": 620,
             "MinHeight": 40,
+            "AutoExpand": true,
             "AccessibleName": "Stencil libraries",
             "HExpand": true,
             "VExpand": true
