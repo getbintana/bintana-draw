@@ -1,7 +1,7 @@
 /*
  * A shape library: named stamps made of shapes, groups and connectors. It is
  * the format a person saves a selection into, and the one an imported draw.io
- * stencil becomes.
+ * stencil or stencil set becomes.
  *
  * An item is normalized: its top-left corner is 0,0 and its own edges still
  * name the item's shapes. Inserting it creates fresh ids, remaps groups and
@@ -18,7 +18,7 @@ function shapeCopy(s) {
         textColor: s.textColor, fontSize: s.fontSize, radius: s.radius,
         textBold: s.textBold === true, textItalic: s.textItalic === true,
         textAlign: s.textAlign || "", textVAlign: s.textVAlign || "",
-        image: s.image || "",
+        image: s.image || "", vector: s.vector || null,
     };
 }
 
@@ -231,7 +231,8 @@ export class ShapeLibrary {
                     radius: raw.radius, textBold: raw.textBold,
                     textItalic: raw.textItalic, textAlign: raw.textAlign,
                     textVAlign: raw.textVAlign, rotation: raw.rotation,
-                    image: raw.image, group: group, layer: layer,
+                    image: raw.image, vector: raw.vector,
+                    group: group, layer: layer,
                 });
             names.set(raw.id, shape.id);
             ids.push(shape.id);
@@ -290,6 +291,16 @@ function entriesFromStencil(root) {
             xml = decodeURIComponent(xml);
         if (xml.charAt(0) !== "<")
             throw new Error(Locale.Text("This stencil is compressed. Export it as uncompressed XML and import that."));
+        const document = Xml.Parse(xml);
+        if (document.Root && (document.Root.Name === "shape" ||
+                              document.Root.Name === "shapes")) {
+            for (const item of stencilItems(document.Root)) {
+                if (title) item.name = title;
+                items.push(item);
+            }
+            continue;
+        }
+
         const imported = DrawioImport.parse(xml);
         for (const page of imported.diagrams) {
             const library = new ShapeLibrary();
@@ -325,8 +336,9 @@ export function importLibrary(path) {
         const document = Xml.Parse(text);
         if (document.Root && document.Root.Name === "mxlibrary")
             return entriesFromStencil(document.Root);
-        if (document.Root && document.Root.Name === "shapes")
-            throw new Error(Locale.Text("Draw.io stencil paths are not supported yet."));
+        if (document.Root && (document.Root.Name === "shape" ||
+                              document.Root.Name === "shapes"))
+            return stencilItems(document.Root);
 
         const imported = DrawioImport.parse(text);
         const library = new ShapeLibrary();

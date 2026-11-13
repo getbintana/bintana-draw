@@ -43,8 +43,10 @@ The window is started with a blank canvas and the shape palette on the left.
   reusable stamp, shows it in a preview, inserts it at the centre of the view,
   and deletes it. The library lives in the application's config directory and
   can be exported as `.btlib`. **Import** accepts a `.btlib`, a `.draw`, an
-  uncompressed `.drawio`/XML diagram, or a draw.io `.mxlibrary` with
-  uncompressed `xml` entries.
+  uncompressed `.drawio`/XML diagram, a draw.io stencil set (`<shapes>`), or a
+  draw.io `.mxlibrary` with uncompressed `xml` entries. Stencil geometry is
+  kept as vector paths, so the imported shapes resize without a picture.
+
 - **Connectors** — the connector tool, dragged from one shape to another,
   produces an orthogonal route that follows both shapes when they move or
   resize. Connectors can be labelled and can be dashed.
@@ -164,17 +166,21 @@ One object, two arrays, and numbers in canvas units on an unbounded plane:
 }
 ```
 
-An `image` shape carries its pixels as base64 in `image`; every other kind
-leaves that field empty. A file is read with `Document.fromJSON`, which refuses
-a foreign `format`, clamps sizes, drops connectors whose ends are missing and
-renumbers colliding ids. A file written before pages existed has its shapes at
-the top level and opens as one page. That is also the whole of the format's
+An `image` shape carries its pixels as base64 in `image`; a `vector` shape
+carries a stencil's box and path parts in `vector`; every other kind leaves
+both empty. A file is read with `Document.fromJSON`, which refuses a foreign
+`format`, clamps sizes, drops connectors whose ends are missing and renumbers
+colliding ids. A file written before pages existed has its shapes at the top
+level and opens as one page. That is also the whole of the format's
 documentation.
 
 ## The project
 
 ```
 Diagram.js       the document and its geometry -- no widgets
+Stencil.js       draw.io stencil sets, read as vector library items
+Library.js       saved stamps, their insertion and every library importer
+DrawioImport.js  an uncompressed draw.io diagram mapped onto a page
 Render.js        the canvas and the export, as one painter routine
 MainForm.form    the window: menus, toolbar, palette, canvas, status bar
 MainForm.js      the hand: tool, selection, gesture, file, undo
@@ -214,17 +220,20 @@ handler whose control name is misspelled is silently dead.
 ## What it does not do yet
 
 This is a first editor, not a draw.io replacement. Missing, in the order they
-would change what a person can draw: full draw.io stencil path definitions,
-library thumbnails, a built-in icon set, system-clipboard interchange with
-other applications, SVG import/export, and collaboration.
+would change what a person can draw: a draw.io diagram that names a stencil
+without carrying its XML, library thumbnails, a built-in icon set,
+system-clipboard interchange with other applications, SVG import/export, and
+collaboration.
 
 The draw.io import is deliberately the basic half: it reads every uncompressed
 page of a file, maps the common shapes by style (`rounded`, `ellipse`,
 `rhombus`, `shape=note`, `shape=terminator`, `shape=parallelogram`,
 `shape=cylinder3`), keeps fill and stroke colours, labels, dashed edges, the
 draw.io layers, the page names, the group membership and image cells whose
-pixels are inline as base64. It does not read compressed pages, rotation,
-images referred to by a path or URL, or a group cell's own label and style.
+pixels are inline as base64. Stencil sets are imported into the library; a
+diagram that only names `shape=mxgraph...` is not resolved, because the file
+carries no geometry for it. It does not read compressed pages, rotation, images
+referred to by a path or URL, or a group cell's own label and style.
 There is no autosave and no recovery file; the unsaved-changes question is the
 whole of the safety net.
 

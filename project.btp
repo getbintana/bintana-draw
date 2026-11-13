@@ -5,6 +5,7 @@
   "sources": [
     "Diagram.js",
     "DrawioImport.js",
+    "Stencil.js",
     "Library.js",
     "Render.js",
     "ConfirmForm.js",

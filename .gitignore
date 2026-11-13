@@ -10,3 +10,5 @@ tests/selfcheck/test.btlib
 tests/selfcheck/test.mxlibrary
 tests/selfcheck/test.drawio
 tests/selfcheck/test-library.btlib
+tests/selfcheck/test-stencil.xml
+tests/selfcheck/test-stencil.mxlibrary

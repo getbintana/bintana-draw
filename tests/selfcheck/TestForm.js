@@ -217,6 +217,7 @@ class TestForm extends Form {
         this.routing(fm);
         this.moreShapes(fm);
         this.images(fm);
+        this.stencils(fm);
         this.library(fm);
         this.layers(fm);
         this.pages(fm);
@@ -1218,6 +1219,104 @@ class TestForm extends Form {
         fm.library = new ShapeLibrary();
         fm.refreshLibrary();
         File.Delete(libraryFile);
+    }
+
+    stencils(fm) {
+        fm.resetDocument();
+        const xml = `<shapes name="mxgraph.test">
+            <shape name="Star" w="100" h="100" aspect="variable" strokewidth="inherit">
+                <connections/>
+                <background><path>
+                    <move x="50" y="0"/><line x="60" y="35"/><line x="100" y="35"/>
+                    <line x="70" y="55"/><line x="80" y="100"/><line x="50" y="75"/>
+                    <line x="20" y="100"/><line x="30" y="55"/><line x="0" y="35"/>
+                    <line x="40" y="35"/><close/>
+                </path></background>
+                <foreground><fillstroke/></foreground>
+            </shape>
+            <shape name="Arc" w="60" h="60">
+                <background><path>
+                    <move x="0" y="30"/><arc rx="30" ry="30" x-axis-rotation="0"
+                        large-arc-flag="1" sweep-flag="1" x="60" y="30"/>
+                    <line x="0" y="30"/><close/>
+                </path></background>
+                <foreground><fillalpha alpha="0.5"/><fill/>
+                    <strokecolor color="none"/><stroke/>
+                </foreground>
+            </shape>
+            <shape name="Saved" w="100" h="40">
+                <foreground>
+                    <save/><fillcolor color="#ff0000"/>
+                    <path><move x="0" y="0"/><line x="50" y="0"/><line x="50" y="40"/>
+                        <line x="0" y="40"/><close/></path><fill/>
+                    <restore/>
+                    <path><move x="50" y="0"/><line x="100" y="0"/>
+                        <line x="100" y="40"/><line x="50" y="40"/><close/></path>
+                    <fillstroke/>
+                </foreground>
+            </shape>
+            <shape name="Round" w="100" h="60">
+                <background><roundrect x="0" y="0" w="100" h="60" arcsize="10"/></background>
+                <foreground><fillstroke/></foreground>
+            </shape>
+        </shapes>`;
+
+        const root = Xml.Parse(xml).Root;
+        const items = stencilItems(root);
+        this.eq("stencil: four shapes imported", items.length, 4);
+        this.eq("stencil: the name came", items[0].name, "Star");
+        this.eq("stencil: a shape is a vector",
+                items[0].shapes[0].kind, "vector");
+        this.eq("stencil: its box came",
+                items[0].shapes[0].vector.w, 100);
+        this.eq("stencil: the path is one part",
+                items[0].shapes[0].vector.parts.length, 1);
+        this.check("stencil: the background is filled and stroked",
+                   items[0].shapes[0].vector.parts[0].fill &&
+                   items[0].shapes[0].vector.parts[0].stroke);
+        this.check("stencil: the path starts where it should",
+                   items[0].shapes[0].vector.parts[0].d.indexOf("M 50 0") === 0);
+        this.check("stencil: an arc became curves",
+                   items[1].shapes[0].vector.parts[0].d.indexOf("C ") >= 0);
+        this.eq("stencil: a strokecolored part kept none",
+                items[1].shapes[0].vector.parts[0].strokeColor, "none");
+        this.eq("stencil: fillalpha came through",
+                items[1].shapes[0].vector.parts[0].fillAlpha, 0.5);
+        this.eq("stencil: save and restore separate colours",
+                items[2].shapes[0].vector.parts[0].fillColor, "#ff0000");
+        this.eq("stencil: the restored part has the default",
+                items[2].shapes[0].vector.parts[1].fillColor, "");
+        this.check("stencil: a roundrect became curves",
+                   items[3].shapes[0].vector.parts[0].d.indexOf("C ") >= 0);
+
+        /* The item inserts, and a document save keeps the little drawing. */
+        const lib = new ShapeLibrary();
+        lib.addItems(items);
+        const model = new Diagram();
+        lib.insert(model, 0, 50, 50, model.layers[0].id);
+        const placed = model.shapes[0];
+        this.eq("stencil: insert makes one shape", model.shapes.length, 1);
+        this.eq("stencil: with its vector", placed.kind, "vector");
+        this.eq("stencil: and its parts", placed.vector.parts.length, 1);
+        const round = Diagram.fromJSON(
+            JSON.parse(JSON.stringify(model.toJSON())));
+        this.eq("stencil: the file keeps the vector",
+                round.shapes[0].vector.parts.length, 1);
+
+        const file = File.Join(Application.Directory, "test-stencil.xml");
+        File.Save(file, xml);
+        const imported = importLibrary(file);
+        this.eq("stencil: an .xml set imports", imported.length, 4);
+        File.Delete(file);
+
+        const mx = File.Join(Application.Directory, "test-stencil.mxlibrary");
+        File.Save(mx, '<mxlibrary>[{"title":"Mx Star","xml":"&lt;shape name=&apos;Star&apos; w=&apos;100&apos; h=&apos;100&apos;&gt;&lt;background&gt;&lt;path&gt;&lt;move x=&apos;50&apos; y=&apos;0&apos;/&gt;&lt;line x=&apos;100&apos; y=&apos;50&apos;/&gt;&lt;line x=&apos;50&apos; y=&apos;100&apos;/&gt;&lt;line x=&apos;0&apos; y=&apos;50&apos;/&gt;&lt;close/&gt;&lt;/path&gt;&lt;/background&gt;&lt;foreground&gt;&lt;fillstroke/&gt;&lt;/foreground&gt;&lt;/shape&gt;"}]</mxlibrary>');
+        const mxItems = importLibrary(mx);
+        this.eq("stencil: an mxlibrary shape imports", mxItems.length, 1);
+        this.eq("stencil: with its title", mxItems[0].name, "Mx Star");
+        this.eq("stencil: and its geometry",
+                mxItems[0].shapes[0].vector.parts.length, 1);
+        File.Delete(mx);
     }
 
     library(fm) {

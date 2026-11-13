@@ -1,8 +1,8 @@
 /*
  * Everything the canvas paints. The renderer is handed a diagram and a view
  * (`panX`, `panY`, `zoom`, what is selected, the gesture in flight) and draws
- * one frame; the only thing kept between frames is a cache of decoded images,
- * keyed by the base64 text a shape carries.
+ * one frame; the only things kept between frames are caches of decoded images
+ * and parsed vector paths, keyed by the text the shape carries.
  *
  * Two drawings share the same shape and edge code: the one on screen, with its
  * grid, selection and handles, and the one `Save`/`SavePdf` asks for, which is
@@ -17,6 +17,7 @@ const ACCENT = "#3584e4";
 /* A .draw carries its images as base64, so the text itself is the key: the
  * same picture in two shapes is decoded once, and a reload makes a new map. */
 const imageCache = new Map();
+const vectorPathCache = new Map();
 
 function dashPattern(dash, dashed) {
     if (dash === "dot") return [2, 3];
@@ -162,6 +163,162 @@ function shapePath(p, s) {
     }
 }
 
+function vectorCommands(d) {
+    if (vectorPathCache.has(d)) return vectorPathCache.get(d);
+    const tokens = d.match(/[MLCQZ]|[-+]?(?:\d*\.?\d+)(?:[eE][-+]?\d+)?/g) || [];
+    const commands = [];
+    let i = 0;
+    let command = "";
+    while (i < tokens.length) {
+        const token = tokens[i];
+        if (/[MLCQZ]/.test(token)) {
+            command = token;
+            i++;
+            if (command === "Z") {
+                commands.push(["Z"]);
+                continue;
+            }
+        }
+        if (command === "M" && i + 1 < tokens.length) {
+            commands.push(["M", parseFloat(tokens[i]), parseFloat(tokens[i + 1])]);
+            i += 2;
+        } else if (command === "L" && i + 1 < tokens.length) {
+            commands.push(["L", parseFloat(tokens[i]), parseFloat(tokens[i + 1])]);
+            i += 2;
+        } else if (command === "Q" && i + 3 < tokens.length) {
+            commands.push(["Q", parseFloat(tokens[i]), parseFloat(tokens[i + 1]),
+                           parseFloat(tokens[i + 2]), parseFloat(tokens[i + 3])]);
+            i += 4;
+        } else if (command === "C" && i + 5 < tokens.length) {
+            commands.push(["C", parseFloat(tokens[i]), parseFloat(tokens[i + 1]),
+                           parseFloat(tokens[i + 2]), parseFloat(tokens[i + 3]),
+                           parseFloat(tokens[i + 4]), parseFloat(tokens[i + 5])]);
+            i += 6;
+        } else {
+            i++;
+        }
+    }
+    vectorPathCache.set(d, commands);
+    return commands;
+}
+
+function vectorColor(value, shape, fallback) {
+    if (!value) return fallback;
+    const key = String(value).toLowerCase();
+    if (key === "none" || key === "transparent") return "rgba(0,0,0,0)";
+    if (key === "fill") return shape.fill || fallback;
+    if (key === "stroke") return shape.stroke || fallback;
+    if (key === "default" || key === "accentcolor") return fallback;
+    return value;
+}
+
+function colorWithAlpha(color, alpha) {
+    if (alpha === undefined || alpha >= 1) return color;
+    if (alpha <= 0) return "rgba(0,0,0,0)";
+    if (typeof color !== "string") return color;
+    if (/^#[0-9a-f]{6}$/i.test(color)) {
+        const r = parseInt(color.slice(1, 3), 16);
+        const g = parseInt(color.slice(3, 5), 16);
+        const b = parseInt(color.slice(5, 7), 16);
+        return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
+    }
+    if (/^#[0-9a-f]{3}$/i.test(color)) {
+        const r = parseInt(color[1] + color[1], 16);
+        const g = parseInt(color[2] + color[2], 16);
+        const b = parseInt(color[3] + color[3], 16);
+        return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
+    }
+    return color;
+}
+
+function vectorTitle(value) {
+    if (!value) return "";
+    const lower = String(value).toLowerCase();
+    if (lower === "round") return "Round";
+    if (lower === "square") return "Square";
+    if (lower === "bevel") return "Bevel";
+    if (lower === "butt") return "Butt";
+    if (lower === "miter") return "Miter";
+    return "";
+}
+
+function drawVectorCommands(p, commands, x0, y0, sx, sy) {
+    let cx = 0, cy = 0;
+    for (const command of commands) {
+        if (command[0] === "M") {
+            cx = command[1] * sx; cy = command[2] * sy;
+            p.MoveTo(x0 + cx, y0 + cy);
+        } else if (command[0] === "L") {
+            cx = command[1] * sx; cy = command[2] * sy;
+            p.LineTo(x0 + cx, y0 + cy);
+        } else if (command[0] === "C") {
+            p.CurveTo(x0 + command[1] * sx, y0 + command[2] * sy,
+                      x0 + command[3] * sx, y0 + command[4] * sy,
+                      x0 + command[5] * sx, y0 + command[6] * sy);
+            cx = command[5] * sx; cy = command[6] * sy;
+        } else if (command[0] === "Q") {
+            const qx = command[1] * sx, qy = command[2] * sy;
+            const ex = command[3] * sx, ey = command[4] * sy;
+            p.CurveTo(x0 + cx + (qx - cx) * 2 / 3,
+                      y0 + cy + (qy - cy) * 2 / 3,
+                      x0 + ex + (qx - ex) * 2 / 3,
+                      y0 + ey + (qy - ey) * 2 / 3,
+                      x0 + ex, y0 + ey);
+            cx = ex; cy = ey;
+        } else if (command[0] === "Z") {
+            p.ClosePath();
+        }
+    }
+}
+
+function drawVector(p, s) {
+    const vector = s.vector;
+    if (!vector || !vector.parts || !vector.parts.length) {
+        p.Color = "#f6f8fa";
+        p.Rectangle(s.x, s.y, s.w, s.h);
+        p.Fill();
+        p.Color = "#adb5bd";
+        p.LineWidth = 1;
+        p.Rectangle(s.x, s.y, s.w, s.h);
+        p.Stroke();
+        return;
+    }
+
+    const sx = s.w / Math.max(1, vector.w);
+    const sy = s.h / Math.max(1, vector.h);
+    const lineScale = Math.min(sx, sy);
+    p.Push();
+    for (const part of vector.parts) {
+        const commands = vectorCommands(part.d || "");
+        if (!commands.length) continue;
+
+        if (part.fill) {
+            p.Color = colorWithAlpha(
+                vectorColor(part.fillColor, s, s.fill || DEFAULT_FILL),
+                part.fillAlpha === undefined ? 1 : part.fillAlpha);
+            drawVectorCommands(p, commands, s.x, s.y, sx, sy);
+            p.Fill();
+        }
+        if (part.stroke) {
+            p.Color = colorWithAlpha(
+                vectorColor(part.strokeColor, s, s.stroke || DEFAULT_STROKE),
+                part.strokeAlpha === undefined ? 1 : part.strokeAlpha);
+            p.LineWidth = part.width > 0
+                ? Math.max(0.5, part.width * lineScale)
+                : (s.strokeWidth || 1.5);
+            p.LineDash = (part.dash || []).map((n) => n * lineScale);
+            const join = vectorTitle(part.join);
+            const cap = vectorTitle(part.cap);
+            if (join) p.LineJoin = join;
+            if (cap) p.LineCap = cap;
+            drawVectorCommands(p, commands, s.x, s.y, sx, sy);
+            p.Stroke();
+            p.LineDash = [];
+        }
+    }
+    p.Pop();
+}
+
 function imageBitmap(s) {
     if (!s.image) return null;
     if (imageCache.has(s.image)) return imageCache.get(s.image);
@@ -271,6 +428,13 @@ function drawShape(p, s) {
     }
 
     if (s.kind === "text") {
+        labelInShape(p, s);
+        if (turn) p.Pop();
+        return;
+    }
+
+    if (s.kind === "vector") {
+        drawVector(p, s);
         labelInShape(p, s);
         if (turn) p.Pop();
         return;

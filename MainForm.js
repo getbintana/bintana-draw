@@ -1586,7 +1586,7 @@ export class MainForm extends Form {
                 textColor: s.textColor, fontSize: s.fontSize, radius: s.radius,
                 textBold: s.textBold, textItalic: s.textItalic,
                 textAlign: s.textAlign, textVAlign: s.textVAlign,
-                image: s.image || "",
+                image: s.image || "", vector: s.vector || null,
             });
         }
 
@@ -1653,7 +1653,7 @@ export class MainForm extends Form {
                   textItalic: raw.textItalic, textAlign: raw.textAlign,
                   textVAlign: raw.textVAlign, group: group,
                   rotation: raw.rotation, image: raw.image,
-                  layer: this.activeLayer });
+                  vector: raw.vector, layer: this.activeLayer });
             renamed.set(raw.id, shape.id);
             ids.push(shape.id);
         }

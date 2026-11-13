@@ -16,7 +16,8 @@ export const SHAPE_KINDS = ["rect", "round", "ellipse", "diamond",
                             "terminator", "data", "cylinder", "note", "text",
                             "triangle", "hexagon", "document", "manualinput",
                             "predefined", "storage", "delay", "onpage",
-                            "offpage", "looplimit", "manualop", "image"];
+                            "offpage", "looplimit", "manualop", "image",
+                            "vector"];
 
 export const DEFAULT_FILL   = "#dae8fc";
 export const DEFAULT_STROKE = "#6c8ebf";
@@ -40,8 +41,37 @@ function kind(value) {
     return SHAPE_KINDS.indexOf(value) >= 0 ? value : "rect";
 }
 
-function copyShape(s) {
+function copyVector(value) {
+    if (!value || typeof value !== "object" || !Array.isArray(value.parts))
+        return null;
+    const parts = [];
+    for (const part of value.parts) {
+        if (!part || typeof part !== "object") continue;
+        const dash = Array.isArray(part.dash)
+            ? part.dash.map((n) => number(n, 0)).filter((n) => n > 0) : [];
+        parts.push({
+            d: text(part.d, ""),
+            fill: part.fill === true,
+            stroke: part.stroke === true,
+            fillColor: text(part.fillColor, ""),
+            strokeColor: text(part.strokeColor, ""),
+            fillAlpha: number(part.fillAlpha, 1),
+            strokeAlpha: number(part.strokeAlpha, 1),
+            width: Math.max(0, number(part.width, 0)),
+            dash: dash,
+            join: text(part.join, ""),
+            cap: text(part.cap, ""),
+        });
+    }
     return {
+        w: Math.max(1, number(value.w, 100)),
+        h: Math.max(1, number(value.h, 100)),
+        parts: parts,
+    };
+}
+
+function copyShape(s) {
+    const shape = {
         id: s.id, kind: s.kind, layer: s.layer, group: s.group,
         x: s.x, y: s.y, w: s.w, h: s.h, rotation: s.rotation,
         text: s.text, fill: s.fill, stroke: s.stroke,
@@ -51,6 +81,8 @@ function copyShape(s) {
         textAlign: s.textAlign, textVAlign: s.textVAlign,
         image: s.image || "",
     };
+    if (s.vector) shape.vector = copyVector(s.vector);
+    return shape;
 }
 
 function copyPort(port) {
@@ -241,6 +273,7 @@ export class Diagram {
             textAlign: text(o.textAlign, ""),
             textVAlign: text(o.textVAlign, ""),
             image: text(o.image, ""),
+            vector: copyVector(o.vector),
         };
         this.shapes.push(shape);
         return shape;
@@ -482,6 +515,7 @@ export class Diagram {
                 textAlign: text(raw.textAlign, ""),
                 textVAlign: text(raw.textVAlign, ""),
                 image: text(raw.image, ""),
+                vector: copyVector(raw.vector),
             };
             diagram.shapes.push(shape);
         }

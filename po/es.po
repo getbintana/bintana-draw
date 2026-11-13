@@ -509,8 +509,8 @@ msgstr "Elemento"
 msgid "This stencil is compressed. Export it as uncompressed XML and import that."
 msgstr "Este esténcil está comprimido. Exportalo como XML sin comprimir e importá ese archivo."
 
-msgid "Draw.io stencil paths are not supported yet."
-msgstr "Las rutas de esténciles de draw.io todavía no son compatibles."
+msgid "Stencil"
+msgstr "Esténcil"
 
 msgid "Unknown library format."
 msgstr "Formato de biblioteca desconocido."

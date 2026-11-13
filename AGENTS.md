@@ -21,6 +21,8 @@ BINTANA=/path/to/build/bintana tests/run.sh
   imports no widget and is exercised with no display.
 - `Library.js` — the shape library: normalized stamps, insertion, and the
   `.btlib` / `.draw` / `.drawio` / `.mxlibrary` importers.
+- `Stencil.js` — a draw.io stencil set (`<shapes>`) read as vector library
+  items: paths, rects, ellipses, paint colours and arcs as cubic Béziers.
 - `DrawioImport.js` — an uncompressed draw.io file mapped onto a `Diagram`.
   Compressed pages are refused on purpose; there is no deflate verb here.
 - `Render.js` — the only painter code. The screen and the export are the same
@@ -88,9 +90,17 @@ BINTANA=/path/to/build/bintana tests/run.sh
   The file dialog and a dropped image both call `insertImage`. A draw.io style
   is split at semicolons, so `styleMap` joins the two halves of an inline
   `data:image/...;base64,...` before reading the key.
+- **A stencil is a vector, not a picture.** `Stencil.js` reads a draw.io
+  `<shape>` into `vector: { w, h, parts }`: path text in the stencil's own
+  box, with the fill/stroke decision and colours saved per part. `Render`
+  parses that path once per text, scales it into the shape's box and offsets it
+  by `s.x`/`s.y` — forgetting that offset draws every stencil at the origin.
+  Arcs are converted to cubic Béziers at import because the painter has no
+  elliptical arc.
 - **A shape kind is one case in `shapePath`.** There are no per-shape classes:
   add the name to `SHAPE_KINDS` in `Diagram.js`, a case in `Render.js`
-  (`shapePath`, plus any inner lines in `drawShape`), a default size in
+  (`shapePath`, plus any inner lines in `drawShape`, or a branch in
+  `drawShape` for a picture or a vector), a default size in
   `MainForm.defaultSize`, and either a toggle button or an entry in the
   `CmbMoreShapes` list. The long tail lives in that combo so the palette stays
   one screen tall.
