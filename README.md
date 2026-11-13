@@ -38,6 +38,9 @@ The window is started with a blank canvas and the shape palette on the left.
   Shift constrains a move to one axis.
 - **Style** — fill and line colour apply to the selection, and set the default
   for the next shape when nothing is selected.
+- **Alignment** — while a shape is moved or resized, its edges and centre snap
+  to the other shapes and a dotted guide shows why. `Edit > Align` lines up a
+  selection; `Edit > Distribute` spaces its centres.
 - **Undo and redo** — every gesture is one step: a drag through forty motions is
   one thing to take back, not forty. The title bar's dot is the unsaved mark.
 - **View** — zoom in and out from the toolbar or with `+`/`-`, fit the diagram,
@@ -134,9 +137,9 @@ handler whose control name is misspelled is silently dead.
 
 This is a first editor, not a draw.io replacement. Missing, in the order they
 would change what a person can draw: custom shape libraries and stencils,
-alignment guides and distribute commands, layers and multiple pages, curved
-connectors with movable waypoints, images and icons, system-clipboard
-interchange with other applications, SVG import/export, and collaboration.
+layers and multiple pages, curved connectors with movable waypoints, images and
+icons, system-clipboard interchange with other applications, SVG import/export,
+and collaboration.
 There is no autosave and no recovery file; the unsaved-changes question is the
 whole of the safety net.
 

@@ -371,6 +371,33 @@ function drawConnectPreview(p, preview) {
     p.Fill();
 }
 
+/* The lines an alignment snap is following, across the visible canvas. */
+function drawGuides(p, guides, view, width, height) {
+    if (!guides) return;
+    const vertical = guides.vertical || [];
+    const horizontal = guides.horizontal || [];
+    if (!vertical.length && !horizontal.length) return;
+
+    const left = -view.panX / view.zoom;
+    const right = (width - view.panX) / view.zoom;
+    const top = -view.panY / view.zoom;
+    const bottom = (height - view.panY) / view.zoom;
+
+    p.Color = "rgba(53,132,228,0.8)";
+    p.LineWidth = 1 / view.zoom;
+    p.LineDash = [5 / view.zoom, 4 / view.zoom];
+    for (const x of vertical) {
+        p.MoveTo(x, top);
+        p.LineTo(x, bottom);
+    }
+    for (const y of horizontal) {
+        p.MoveTo(left, y);
+        p.LineTo(right, y);
+    }
+    p.Stroke();
+    p.LineDash = [];
+}
+
 function drawBand(p, band) {
     p.Color = "rgba(53,132,228,0.12)";
     p.Rectangle(band.x, band.y, band.w, band.h);
@@ -395,6 +422,7 @@ export function drawCanvas(p, diagram, view, width, height) {
     p.Scale(view.zoom);
 
     drawContent(p, diagram, view.selected, view.zoom);
+    drawGuides(p, view.guides, view, width, height);
     if (view.createPreview) drawCreatePreview(p, view.createPreview);
     if (view.connectPreview) drawConnectPreview(p, view.connectPreview);
     if (view.band) drawBand(p, view.band);

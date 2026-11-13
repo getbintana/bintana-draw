@@ -37,6 +37,11 @@ BINTANA=/path/to/build/bintana tests/run.sh
   self-check asserts every handler in `wiring()` from the form side.
 - **One gesture is one undo step.** Snapshot on the press, `pushUndo` on the
   release; never per `MouseMove`.
+- **Alignment guides are a second snap, after the grid.** `guideMove` and
+  `guideResize` nudge a grid-snapped rectangle onto a neighbour's edge or
+  centre; the alignment wins, so a snapped shape may sit off the 10-unit grid.
+  The guide lines live in `this.guides` and are cleared on release, cancel and
+  Escape.
 - **Menu accelerators must not take keys from the inline editor.**
   `editingOwnsKeys()` guards cut, copy, paste, delete, duplicate, select-all,
   undo and redo.

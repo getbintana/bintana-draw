@@ -74,6 +74,36 @@ msgstr "Eliminar"
 msgid "Select All"
 msgstr "Seleccionar todo"
 
+msgid "Align"
+msgstr "Alinear"
+
+msgid "Align Left"
+msgstr "Alinear a la izquierda"
+
+msgid "Align Center"
+msgstr "Centrar horizontalmente"
+
+msgid "Align Right"
+msgstr "Alinear a la derecha"
+
+msgid "Align Top"
+msgstr "Alinear arriba"
+
+msgid "Align Middle"
+msgstr "Centrar verticalmente"
+
+msgid "Align Bottom"
+msgstr "Alinear abajo"
+
+msgid "Distribute"
+msgstr "Distribuir"
+
+msgid "Distribute Horizontally"
+msgstr "Distribuir horizontalmente"
+
+msgid "Distribute Vertically"
+msgstr "Distribuir verticalmente"
+
 msgid "Zoom In"
 msgstr "Acercar"
 

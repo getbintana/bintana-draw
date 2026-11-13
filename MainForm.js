@@ -72,6 +72,7 @@ export class MainForm extends Form {
     grid   = true;
     drag   = null;
     editing = null;
+    guides = null;
 
     undo   = null;
     clipboard = null;
@@ -226,6 +227,7 @@ export class MainForm extends Form {
             createPreview: createPreview,
             connectPreview: connectPreview,
             band: band,
+            guides: this.guides,
         }, width, height);
     }
 
@@ -306,6 +308,128 @@ export class MainForm extends Form {
         return this.doc.edges.filter((e) => this.sel.indexOf(e.id) >= 0);
     }
 
+    /* ------------------------------------------------------------ alignment */
+
+    /*
+     * The guide arithmetic. Every other shape offers three vertical lines (its
+     * left, its centre and its right) and three horizontal ones; the moving
+     * rectangle offers the same three. The closest pair inside the tolerance
+     * wins, the move is nudged by that difference, and the line is kept so the
+     * canvas can draw it while the drag lasts.
+     */
+    shapesBounds(shapes) {
+        if (!shapes.length) return null;
+        let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+        for (const s of shapes) {
+            x0 = Math.min(x0, s.x);
+            y0 = Math.min(y0, s.y);
+            x1 = Math.max(x1, s.x + s.w);
+            y1 = Math.max(y1, s.y + s.h);
+        }
+        return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+    }
+
+    guideTargets(exclude) {
+        const vertical = [], horizontal = [];
+        for (const s of this.doc.shapes) {
+            if (exclude.has(s.id)) continue;
+            vertical.push(s.x, s.x + s.w / 2, s.x + s.w);
+            horizontal.push(s.y, s.y + s.h / 2, s.y + s.h);
+        }
+        return { vertical: vertical, horizontal: horizontal };
+    }
+
+    nearestDelta(anchors, targets, tolerance) {
+        let best = null;
+        for (const a of anchors) {
+            for (const t of targets) {
+                const delta = t - a;
+                if (Math.abs(delta) > tolerance) continue;
+                if (best === null || Math.abs(delta) < Math.abs(best))
+                    best = delta;
+            }
+        }
+        return best;
+    }
+
+    matchingLines(rect, targets) {
+        const vertical = [], horizontal = [];
+        const vAnchors = [rect.x, rect.x + rect.w / 2, rect.x + rect.w];
+        const hAnchors = [rect.y, rect.y + rect.h / 2, rect.y + rect.h];
+
+        for (const line of targets.vertical) {
+            for (const a of vAnchors) {
+                if (Math.abs(line - a) < 0.25 && vertical.indexOf(line) < 0) {
+                    vertical.push(line);
+                    break;
+                }
+            }
+        }
+        for (const line of targets.horizontal) {
+            for (const a of hAnchors) {
+                if (Math.abs(line - a) < 0.25 && horizontal.indexOf(line) < 0) {
+                    horizontal.push(line);
+                    break;
+                }
+            }
+        }
+        return { vertical: vertical, horizontal: horizontal };
+    }
+
+    guideMove(rect, targets, tolerance, lockX, lockY) {
+        const vAnchors = [rect.x, rect.x + rect.w / 2, rect.x + rect.w];
+        const hAnchors = [rect.y, rect.y + rect.h / 2, rect.y + rect.h];
+        const dx = lockX ? 0 : (this.nearestDelta(vAnchors, targets.vertical,
+                                                  tolerance) || 0);
+        const dy = lockY ? 0 : (this.nearestDelta(hAnchors, targets.horizontal,
+                                                  tolerance) || 0);
+        const moved = { x: rect.x + dx, y: rect.y + dy, w: rect.w, h: rect.h };
+        const guides = this.matchingLines(moved, targets);
+        if (lockX) guides.horizontal = [];
+        if (lockY) guides.vertical = [];
+        return { dx: dx, dy: dy, guides: guides };
+    }
+
+    guideResize(rect, dir, targets, tolerance) {
+        let x = rect.x, y = rect.y, w = rect.w, h = rect.h;
+        const right = x + w, bottom = y + h;
+        const vertical = [], horizontal = [];
+
+        if (dir.indexOf("e") >= 0) {
+            const d = this.nearestDelta([right], targets.vertical, tolerance);
+            if (d !== null && w + d >= MIN_SIZE) {
+                w += d;
+                vertical.push(right + d);
+            }
+        }
+        if (dir.indexOf("w") >= 0) {
+            const d = this.nearestDelta([x], targets.vertical, tolerance);
+            if (d !== null && right - (x + d) >= MIN_SIZE) {
+                x += d;
+                w = right - x;
+                vertical.push(x);
+            }
+        }
+        if (dir.indexOf("s") >= 0) {
+            const d = this.nearestDelta([bottom], targets.horizontal, tolerance);
+            if (d !== null && h + d >= MIN_SIZE) {
+                h += d;
+                horizontal.push(bottom + d);
+            }
+        }
+        if (dir.indexOf("n") >= 0) {
+            const d = this.nearestDelta([y], targets.horizontal, tolerance);
+            if (d !== null && bottom - (y + d) >= MIN_SIZE) {
+                y += d;
+                h = bottom - y;
+                horizontal.push(y);
+            }
+        }
+
+        return { x: x, y: y, w: w, h: h,
+                 guides: { vertical: vertical, horizontal: horizontal } };
+    }
+
     select(ids) {
         this.sel = ids.slice();
         this.syncColors();
@@ -362,6 +486,7 @@ export class MainForm extends Form {
     Canvas_MouseDown(x, y, button, ctrl, shift) {
         this.Canvas.SetFocus();
         this.lastMouse = { x: x, y: y };
+        this.guides = null;
 
         if (button === 2) {
             this.drag = { kind: "pan", sx: x, sy: y,
@@ -460,10 +585,36 @@ export class MainForm extends Form {
         if (d.kind === "move") {
             let dx = this.snap(world.x - d.start.x);
             let dy = this.snap(world.y - d.start.y);
+            let lockX = false, lockY = false;
             if (shift) {
-                if (Math.abs(dx) >= Math.abs(dy)) dy = 0;
-                else dx = 0;
+                if (Math.abs(dx) >= Math.abs(dy)) { dy = 0; lockY = true; }
+                else { dx = 0; lockX = true; }
             }
+
+            /* The grid gives the coarse position; a neighbour's edge or centre
+             * gets the last few units, which is what makes boxes line up. */
+            const moving = new Set();
+            let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+            for (const item of d.items) {
+                const shape = this.doc.shapeById(item.id);
+                if (!shape) continue;
+                moving.add(item.id);
+                x0 = Math.min(x0, item.x);
+                y0 = Math.min(y0, item.y);
+                x1 = Math.max(x1, item.x + shape.w);
+                y1 = Math.max(y1, item.y + shape.h);
+            }
+
+            if (moving.size) {
+                const rect = { x: x0 + dx, y: y0 + dy, w: x1 - x0, h: y1 - y0 };
+                const snap = this.guideMove(
+                    rect, this.guideTargets(moving), 6 / this.zoom,
+                    lockX, lockY);
+                dx += snap.dx;
+                dy += snap.dy;
+                this.guides = snap.guides;
+            }
+
             for (const item of d.items) {
                 const shape = this.doc.shapeById(item.id);
                 if (!shape) continue;
@@ -504,6 +655,7 @@ export class MainForm extends Form {
         if (!this.drag) return;
         const d = this.drag;
         this.drag = null;
+        this.guides = null;
 
         if (d.kind === "pan") {
             this.Canvas.Cursor = this.tool === "select" ? "Arrow" : "Crosshair";
@@ -538,6 +690,7 @@ export class MainForm extends Form {
     Canvas_MouseCancel() {
         const d = this.drag;
         this.drag = null;
+        this.guides = null;
         this.Canvas.Cursor = this.tool === "select" ? "Arrow" : "Crosshair";
         if (d && d.before) this.applySnapshot(d.before);
         else this.Canvas.Redraw();
@@ -603,7 +756,14 @@ export class MainForm extends Form {
             h = o.y + o.h - y;
         }
 
-        shape.x = x; shape.y = y; shape.w = w; shape.h = h;
+        const targets = this.guideTargets(new Set([shape.id]));
+        const aligned = this.guideResize({ x: x, y: y, w: w, h: h }, d.dir,
+                                          targets, 6 / this.zoom);
+        shape.x = aligned.x;
+        shape.y = aligned.y;
+        shape.w = aligned.w;
+        shape.h = aligned.h;
+        this.guides = aligned.guides;
     }
 
     finishCreate(d, end) {
@@ -860,6 +1020,7 @@ export class MainForm extends Form {
 
     applySnapshot(json) {
         this.cancelEdit();
+        this.guides = null;
         this.doc = Diagram.fromJSON(JSON.parse(json));
         this.sel = this.sel.filter((id) => !!this.doc.find(id));
         this.refreshAll();
@@ -893,6 +1054,7 @@ export class MainForm extends Form {
         this.doc = new Diagram();
         this.path = "";
         this.sel = [];
+        this.guides = null;
         this.undo.Clear();
         this.zoom = 1;
         this.panX = 40;
@@ -913,6 +1075,7 @@ export class MainForm extends Form {
         this.doc = doc;
         this.path = path;
         this.sel = [];
+        this.guides = null;
         this.undo.Clear();
         this.pendingFit = true;
         if (this.Stage.Bounds().Width > 2) {
@@ -1078,6 +1241,10 @@ export class MainForm extends Form {
     refreshActions() {
         if (!this.undo) return;
         const selected = this.sel.length > 0;
+        const shapeCount = this.selectedShapes().length;
+        const canAlign = shapeCount >= 2;
+        const canDistribute = shapeCount >= 3;
+
         this.ActUndo.Enabled      = this.undo.CanUndo;
         this.ActRedo.Enabled      = this.undo.CanRedo;
         this.ActCut.Enabled       = selected;
@@ -1085,6 +1252,15 @@ export class MainForm extends Form {
         this.ActDelete.Enabled    = selected;
         this.ActDuplicate.Enabled = selected;
         this.ActPaste.Enabled     = !!this.clipboard;
+
+        this.ActAlignLeft.Enabled   = canAlign;
+        this.ActAlignCenter.Enabled = canAlign;
+        this.ActAlignRight.Enabled  = canAlign;
+        this.ActAlignTop.Enabled    = canAlign;
+        this.ActAlignMiddle.Enabled = canAlign;
+        this.ActAlignBottom.Enabled = canAlign;
+        this.ActDistributeHorizontal.Enabled = canDistribute;
+        this.ActDistributeVertical.Enabled   = canDistribute;
     }
 
     syncColors() {
@@ -1199,6 +1375,72 @@ export class MainForm extends Form {
         this.select(ids);
     }
 
+    alignSelection(mode) {
+        const shapes = this.selectedShapes();
+        if (shapes.length < 2) return;
+        const bounds = this.shapesBounds(shapes);
+        const before = this.snapshot();
+
+        for (const s of shapes) {
+            if (mode === "left")
+                s.x = bounds.x;
+            else if (mode === "center")
+                s.x = bounds.x + bounds.w / 2 - s.w / 2;
+            else if (mode === "right")
+                s.x = bounds.x + bounds.w - s.w;
+            else if (mode === "top")
+                s.y = bounds.y;
+            else if (mode === "middle")
+                s.y = bounds.y + bounds.h / 2 - s.h / 2;
+            else if (mode === "bottom")
+                s.y = bounds.y + bounds.h - s.h;
+        }
+
+        this.pushUndo(Locale.Text("Align"), before);
+        this.refreshAll();
+    }
+
+    distributeSelection(axis) {
+        const shapes = this.selectedShapes();
+        if (shapes.length < 3) return;
+
+        const sorted = shapes.slice().sort((a, b) => {
+            return axis === "horizontal"
+                ? (a.x + a.w / 2) - (b.x + b.w / 2)
+                : (a.y + a.h / 2) - (b.y + b.h / 2);
+        });
+
+        const first = axis === "horizontal"
+            ? sorted[0].x + sorted[0].w / 2
+            : sorted[0].y + sorted[0].h / 2;
+        const last = axis === "horizontal"
+            ? sorted[sorted.length - 1].x + sorted[sorted.length - 1].w / 2
+            : sorted[sorted.length - 1].y + sorted[sorted.length - 1].h / 2;
+        const step = (last - first) / (sorted.length - 1);
+
+        const before = this.snapshot();
+        for (let i = 1; i < sorted.length - 1; i++) {
+            const s = sorted[i];
+            if (axis === "horizontal")
+                s.x = first + step * i - s.w / 2;
+            else
+                s.y = first + step * i - s.h / 2;
+        }
+
+        this.pushUndo(Locale.Text("Distribute"), before);
+        this.refreshAll();
+    }
+
+    ActAlignLeft_Execute()   { this.alignSelection("left"); }
+    ActAlignCenter_Execute() { this.alignSelection("center"); }
+    ActAlignRight_Execute()  { this.alignSelection("right"); }
+    ActAlignTop_Execute()    { this.alignSelection("top"); }
+    ActAlignMiddle_Execute() { this.alignSelection("middle"); }
+    ActAlignBottom_Execute() { this.alignSelection("bottom"); }
+
+    ActDistributeHorizontal_Execute() { this.distributeSelection("horizontal"); }
+    ActDistributeVertical_Execute()   { this.distributeSelection("vertical"); }
+
     ActZoomIn_Execute() { this.zoomBy(1.2); }
 
     ActZoomOut_Execute() { this.zoomBy(1 / 1.2); }
@@ -1265,6 +1507,7 @@ export class MainForm extends Form {
             if (this.drag) {
                 const drag = this.drag;
                 this.drag = null;
+                this.guides = null;
                 this.Canvas.Cursor = this.tool === "select" ? "Arrow" : "Crosshair";
                 if (drag.before) this.applySnapshot(drag.before);
                 else this.Canvas.Redraw();

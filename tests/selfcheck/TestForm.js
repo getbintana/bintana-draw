@@ -206,6 +206,9 @@ class TestForm extends Form {
         fm.deleteSelection();
         this.eq("delete all empties the canvas", fm.doc.shapes.length, 0);
 
+        this.alignment(fm);
+        this.guides(fm);
+
         /* The grid is a view setting, and the menu item is its state. */
         fm.MnuGrid.Value = false;
         fm.MnuGrid_Click();
@@ -222,6 +225,102 @@ class TestForm extends Form {
 
         fm.forceClose = true;
         fm.Close();
+    }
+
+    alignment(fm) {
+        fm.doc = new Diagram();
+        fm.sel = [];
+        fm.undo.Clear();
+
+        const a = fm.doc.addShape("rect", 0, 0, 100, 50);
+        const b = fm.doc.addShape("rect", 200, 100, 80, 40);
+        const c = fm.doc.addShape("rect", 400, 200, 120, 60);
+        fm.select([a.id, b.id, c.id]);
+
+        this.check("two shapes can align", fm.ActAlignLeft.Enabled);
+        this.check("three shapes can distribute",
+                   fm.ActDistributeHorizontal.Enabled);
+
+        fm.ActAlignLeft_Execute();
+        this.eq("align left: first", a.x, 0);
+        this.eq("align left: second", b.x, 0);
+        this.eq("align left: third", c.x, 0);
+
+        fm.ActAlignCenter_Execute();
+        this.eq("align center: same centre a/b",
+                Math.round(a.x + a.w / 2), Math.round(b.x + b.w / 2));
+        this.eq("align center: same centre b/c",
+                Math.round(b.x + b.w / 2), Math.round(c.x + c.w / 2));
+
+        fm.ActAlignTop_Execute();
+        this.eq("align top: first", a.y, 0);
+        this.eq("align top: second", b.y, 0);
+        this.eq("align top: third", c.y, 0);
+
+        fm.ActAlignBottom_Execute();
+        this.eq("align bottom: same bottom a/b",
+                Math.round(a.y + a.h), Math.round(b.y + b.h));
+        this.eq("align bottom: same bottom b/c",
+                Math.round(b.y + b.h), Math.round(c.y + c.h));
+
+        fm.doc = new Diagram();
+        fm.sel = [];
+        const d = fm.doc.addShape("rect", 0, 0, 100, 50);
+        const e = fm.doc.addShape("rect", 200, 0, 100, 50);
+        const f = fm.doc.addShape("rect", 600, 0, 100, 50);
+        fm.select([d.id, e.id, f.id]);
+        fm.ActDistributeHorizontal_Execute();
+        this.eq("distribute: first centre", Math.round(d.x + d.w / 2), 50);
+        this.eq("distribute: middle centre", Math.round(e.x + e.w / 2), 350);
+        this.eq("distribute: last centre", Math.round(f.x + f.w / 2), 650);
+
+        /* Undo goes back to where the middle one was. */
+        const id = e.id;
+        fm.ActUndo_Execute();
+        this.eq("undo took the distribution back",
+                fm.doc.shapeById(id).x, 200);
+    }
+
+    guides(fm) {
+        fm.doc = new Diagram();
+        fm.sel = [];
+        fm.undo.Clear();
+        fm.panX = 0;
+        fm.panY = 0;
+        fm.zoom = 1;
+
+        const other = fm.doc.addShape("rect", 103, 100, 100, 50);
+        const moving = fm.doc.addShape("rect", 300, 300, 100, 50);
+        fm.select([moving.id]);
+
+        fm.Canvas_MouseDown(350, 325, 1, false, false);
+        fm.Canvas_MouseMove(154, 325, 1, false, false);
+
+        const moved = fm.doc.shapeById(moving.id);
+        this.eq("the drag snapped to the other shape's left edge",
+                moved.x, other.x);
+        this.check("the guide line is showing",
+                   fm.guides && fm.guides.vertical.indexOf(103) >= 0);
+
+        fm.Canvas_MouseUp(154, 325, 1, false, false);
+        this.check("the guide is gone when the button comes up",
+                   fm.guides === null);
+
+        /* A resize snaps the edge being dragged, not the whole rectangle. */
+        fm.doc = new Diagram();
+        fm.sel = [];
+        const neighbour = fm.doc.addShape("rect", 303, 100, 100, 50);
+        const sized = fm.doc.addShape("rect", 100, 300, 80, 50);
+        fm.select([sized.id]);
+
+        fm.Canvas_MouseDown(180, 325, 1, false, false);
+        fm.Canvas_MouseMove(299, 325, 1, false, false);
+        const resized = fm.doc.shapeById(sized.id);
+        this.eq("the resized edge snapped to the neighbour",
+                Math.round(resized.x + resized.w), neighbour.x);
+        this.check("the resize guide is showing",
+                   fm.guides && fm.guides.vertical.indexOf(303) >= 0);
+        fm.Canvas_MouseUp(299, 325, 1, false, false);
     }
 
     confirmDialog() {
@@ -271,9 +370,14 @@ class TestForm extends Form {
             ActUndo: ["Execute"], ActRedo: ["Execute"], ActCut: ["Execute"],
             ActCopy: ["Execute"], ActPaste: ["Execute"],
             ActDuplicate: ["Execute"], ActDelete: ["Execute"],
-            ActSelectAll: ["Execute"], ActZoomIn: ["Execute"],
-            ActZoomOut: ["Execute"], ActZoomReset: ["Execute"],
-            ActZoomFit: ["Execute"],
+            ActSelectAll: ["Execute"],
+            ActAlignLeft: ["Execute"], ActAlignCenter: ["Execute"],
+            ActAlignRight: ["Execute"], ActAlignTop: ["Execute"],
+            ActAlignMiddle: ["Execute"], ActAlignBottom: ["Execute"],
+            ActDistributeHorizontal: ["Execute"],
+            ActDistributeVertical: ["Execute"],
+            ActZoomIn: ["Execute"], ActZoomOut: ["Execute"],
+            ActZoomReset: ["Execute"], ActZoomFit: ["Execute"],
             MnuGrid: ["Click"], MnuShortcuts: ["Click"], MnuAbout: ["Click"],
         };
 

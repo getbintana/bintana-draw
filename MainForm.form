@@ -28,6 +28,14 @@
     { "name": "ActDuplicate", "text": "Duplicate", "shortcut": "<Control>d", "enabled": false },
     { "name": "ActDelete", "text": "Delete", "shortcut": "Delete", "enabled": false },
     { "name": "ActSelectAll", "text": "Select All", "shortcut": "<Control>a" },
+    { "name": "ActAlignLeft", "text": "Align Left", "enabled": false },
+    { "name": "ActAlignCenter", "text": "Align Center", "enabled": false },
+    { "name": "ActAlignRight", "text": "Align Right", "enabled": false },
+    { "name": "ActAlignTop", "text": "Align Top", "enabled": false },
+    { "name": "ActAlignMiddle", "text": "Align Middle", "enabled": false },
+    { "name": "ActAlignBottom", "text": "Align Bottom", "enabled": false },
+    { "name": "ActDistributeHorizontal", "text": "Distribute Horizontally", "enabled": false },
+    { "name": "ActDistributeVertical", "text": "Distribute Vertically", "enabled": false },
     { "name": "ActZoomIn", "text": "Zoom In" },
     { "name": "ActZoomOut", "text": "Zoom Out" },
     { "name": "ActZoomReset", "text": "Actual Size" },
@@ -63,7 +71,29 @@
         { "action": "ActDuplicate" },
         { "action": "ActDelete" },
         { "separator": true },
-        { "action": "ActSelectAll" }
+        { "action": "ActSelectAll" },
+        { "separator": true },
+        {
+          "name": "MnuAlign",
+          "text": "Align",
+          "children": [
+            { "action": "ActAlignLeft" },
+            { "action": "ActAlignCenter" },
+            { "action": "ActAlignRight" },
+            { "separator": true },
+            { "action": "ActAlignTop" },
+            { "action": "ActAlignMiddle" },
+            { "action": "ActAlignBottom" }
+          ]
+        },
+        {
+          "name": "MnuDistribute",
+          "text": "Distribute",
+          "children": [
+            { "action": "ActDistributeHorizontal" },
+            { "action": "ActDistributeVertical" }
+          ]
+        }
       ]
     },
     {
