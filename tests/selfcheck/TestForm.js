@@ -1172,6 +1172,10 @@ class TestForm extends Form {
         fm.select([]);
         fm.LstLibrary.Index = 0;
         fm.refreshLibraryButtons();
+        this.eq("library: the preview builds the stamp",
+                fm.libraryPreviewDiagram().shapes.length, 2);
+        this.eq("library: and its connector",
+                fm.libraryPreviewDiagram().edges.length, 1);
         const before = fm.doc.shapes.length;
         fm.BtnLibraryInsert_Click();
         this.eq("library: insert adds both shapes",
@@ -1232,6 +1236,8 @@ class TestForm extends Form {
         fm.LstLibrary.Index = 0;
         fm.BtnLibraryDelete_Click();
         this.eq("library: delete empties it", fm.library.items.length, 0);
+        this.eq("library: and the preview goes quiet",
+                fm.libraryPreviewDiagram(), null);
     }
 
     confirmDialog() {
@@ -1288,6 +1294,7 @@ class TestForm extends Form {
             BtnLayerAssign: ["Click"],
             TxtLayerName: ["Activate", "LostFocus"],
             LstLibrary: ["Select", "Activate"],
+            LibraryPreview: ["Draw"],
             BtnLibraryAdd: ["Click"], BtnLibraryInsert: ["Click"],
             BtnLibraryDelete: ["Click"], BtnLibraryImport: ["Click"],
             BtnLibraryExport: ["Click"],

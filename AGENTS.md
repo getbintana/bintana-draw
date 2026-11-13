@@ -58,7 +58,8 @@ BINTANA=/path/to/build/bintana tests/run.sh
   subtracts the top-left corner, keeps shape ids for its own edges, and
   `insert` remaps those ids and every group id into the target page. The
   library is UI state under `Application.ConfigDirectory`, not part of the
-  document and not undoable.
+  document and not undoable. The preview is a scratch `Diagram` built the same
+  way, so it renders with `drawExport` instead of a second painter.
 - **The right panel is a Notebook now.** `LayersPage` and `LibraryPage` are
   sibling pages; controls keep their names, but a new right-side panel must be
   added as a page rather than as another sibling of `RightTabs`.

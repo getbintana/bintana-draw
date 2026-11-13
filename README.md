@@ -35,11 +35,11 @@ The window is started with a blank canvas and the shape palette on the left.
   references, loop limit and manual operation. Pick one and click for the
   default size or drag to size it.
 - **Shape library** — the **Library** tab saves the current selection as a
-  reusable stamp, inserts it at the centre of the view, and deletes it. The
-  library lives in the application's config directory and can be exported as
-  `.btlib`. **Import** accepts a `.btlib`, a `.draw`, an uncompressed
-  `.drawio`/XML diagram, or a draw.io `.mxlibrary` with uncompressed `xml`
-  entries.
+  reusable stamp, shows it in a preview, inserts it at the centre of the view,
+  and deletes it. The library lives in the application's config directory and
+  can be exported as `.btlib`. **Import** accepts a `.btlib`, a `.draw`, an
+  uncompressed `.drawio`/XML diagram, or a draw.io `.mxlibrary` with
+  uncompressed `xml` entries.
 - **Connectors** — the connector tool, dragged from one shape to another,
   produces an orthogonal route that follows both shapes when they move or
   resize. Connectors can be labelled and can be dashed.

@@ -1246,6 +1246,16 @@
                   ]
                 },
                 {
+                  "type": "DrawingArea",
+                  "name": "LibraryPreview",
+                  "properties": {
+                    "HAlign": "Fill",
+                    "Height": 120,
+                    "AccessibleName": "Library preview",
+                    "Style": "draw-preview"
+                  }
+                },
+                {
                   "type": "Panel",
                   "name": "LibraryRow1",
                   "properties": {

@@ -2289,6 +2289,41 @@ export class MainForm extends Form {
             this.LstLibrary.Index = select;
         this.syncingLibrary = false;
         this.refreshLibraryButtons();
+        this.refreshLibraryPreview();
+    }
+
+    /* A preview is a page nobody saved: the stamp inserted at the centre of a
+     * scratch diagram puts every piece back where the item keeps it. */
+    libraryPreviewDiagram() {
+        if (!this.library || !this.LstLibrary) return null;
+        const index = this.LstLibrary.Index;
+        if (index < 0 || index >= this.library.items.length) return null;
+        const item = this.library.items[index];
+        const preview = new Diagram();
+        this.library.insert(preview, index, item.w / 2, item.h / 2,
+                            preview.layers[0].id);
+        return preview;
+    }
+
+    refreshLibraryPreview() {
+        if (this.LibraryPreview) this.LibraryPreview.Redraw();
+    }
+
+    LibraryPreview_Draw(p, width, height) {
+        p.Color = "#ffffff";
+        p.Rectangle(0, 0, width, height);
+        p.Fill();
+
+        const preview = this.libraryPreviewDiagram();
+        if (!preview) {
+            const text = Locale.Text("No item selected");
+            p.Color = "#6e7781";
+            p.Font = "Sans 11";
+            p.Text(text, (width - p.TextWidth(text)) / 2,
+                   (height - p.TextHeight(text)) / 2);
+            return;
+        }
+        drawExport(p, preview, width, height, 8);
     }
 
     refreshLibraryButtons() {
@@ -2304,6 +2339,7 @@ export class MainForm extends Form {
     LstLibrary_Select() {
         if (this.syncingLibrary) return;
         this.refreshLibraryButtons();
+        this.refreshLibraryPreview();
     }
 
     LstLibrary_Activate() { this.insertLibraryItem(); }

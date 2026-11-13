@@ -671,7 +671,7 @@ export function drawCanvas(p, diagram, view, width, height) {
     p.Pop();
 }
 
-export function drawExport(p, diagram, width, height) {
+export function drawExport(p, diagram, width, height, padding) {
     p.Color = "#ffffff";
     p.Rectangle(0, 0, width, height);
     p.Fill();
@@ -679,7 +679,7 @@ export function drawExport(p, diagram, width, height) {
     const bounds = diagram.bounds();
     if (!bounds) return;
 
-    const pad = 28;
+    const pad = padding === undefined ? 28 : padding;
     const zoom = Math.min((width - pad * 2) / Math.max(1, bounds.w),
                           (height - pad * 2) / Math.max(1, bounds.h), 4);
     const safe = Math.max(0.01, zoom);
