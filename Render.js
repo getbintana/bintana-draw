@@ -99,6 +99,49 @@ function notePath(p, s) {
                s.x + s.w, s.y + s.h, s.x, s.y + s.h]);
 }
 
+function gateBubble(s) {
+    return (s.kind === "nand" || s.kind === "nor")
+        ? Math.min(10, s.h * 0.14) : 0;
+}
+
+function andGatePath(p, s) {
+    const bubble = gateBubble(s);
+    const inset = bubble * 2;
+    const right = s.x + s.w - inset;
+    const r = Math.min(s.h / 2, (right - s.x) * 0.55);
+    const cx = right - r;
+    const cy = s.y + s.h / 2;
+    const ry = s.h / 2;
+
+    p.MoveTo(cx, s.y);
+    p.LineTo(s.x, s.y);
+    p.LineTo(s.x, s.y + s.h);
+    p.LineTo(cx, s.y + s.h);
+    p.CurveTo(cx + r * KAPPA, s.y + s.h, right,
+              cy + ry * KAPPA, right, cy);
+    p.CurveTo(right, cy - ry * KAPPA, cx + r * KAPPA, s.y, cx, s.y);
+    p.ClosePath();
+}
+
+function orGatePath(p, s) {
+    const bubble = gateBubble(s);
+    const w = s.w - bubble * 2;
+    const right = s.x + w;
+    const cy = s.y + s.h / 2;
+    const top = s.x + w * 0.35;
+    const left = s.x + w * 0.12;
+
+    p.MoveTo(top, s.y);
+    p.CurveTo(s.x + w * 0.62, s.y + s.h * 0.1, right - w * 0.1,
+              s.y + s.h * 0.35, right, cy);
+    p.CurveTo(right - w * 0.1, s.y + s.h * 0.65,
+              s.x + w * 0.62, s.y + s.h * 0.9, top, s.y + s.h);
+    p.LineTo(left, s.y + s.h);
+    p.CurveTo(s.x + w * 0.32, s.y + s.h * 0.7,
+              s.x + w * 0.32, s.y + s.h * 0.3, left, s.y);
+    p.ClosePath();
+}
+
 function shapePath(p, s) {
     switch (s.kind) {
     case "round":      roundRectPath(p, s.x, s.y, s.w, s.h, s.radius); break;
@@ -159,6 +202,11 @@ function shapePath(p, s) {
         p.Polygon([s.x, s.y, s.x + s.w, s.y,
                    s.x + s.w * 0.8, s.y + s.h, s.x + s.w * 0.2, s.y + s.h]);
         break;
+    case "and":
+    case "nand":       andGatePath(p, s); break;
+    case "or":
+    case "nor":
+    case "xor":        orGatePath(p, s); break;
     default:           p.Rectangle(s.x, s.y, s.w, s.h); break;
     }
 }
@@ -495,6 +543,29 @@ function drawShape(p, s) {
         p.MoveTo(s.x + s.w - fold, s.y);
         p.LineTo(s.x + s.w - fold, s.y + fold);
         p.LineTo(s.x + s.w, s.y + fold);
+        p.Stroke();
+        p.LineDash = [];
+    } else if (s.kind === "nand" || s.kind === "nor") {
+        const r = gateBubble(s);
+        const cx = s.x + s.w - r;
+        const cy = s.y + s.h / 2;
+        p.Color = s.fill || DEFAULT_FILL;
+        p.Arc(cx, cy, r, 0, 360);
+        p.Fill();
+        p.Color = s.stroke || DEFAULT_STROKE;
+        p.LineWidth = s.strokeWidth || 1.5;
+        p.LineDash = dashPattern(s.dash, false);
+        p.Arc(cx, cy, r, 0, 360);
+        p.Stroke();
+        p.LineDash = [];
+    } else if (s.kind === "xor") {
+        p.Color = s.stroke || DEFAULT_STROKE;
+        p.LineWidth = s.strokeWidth || 1.5;
+        p.LineDash = dashPattern(s.dash, false);
+        p.MoveTo(s.x + s.w * 0.02, s.y);
+        p.CurveTo(s.x + s.w * 0.28, s.y + s.h * 0.3,
+                  s.x + s.w * 0.28, s.y + s.h * 0.7,
+                  s.x + s.w * 0.02, s.y + s.h);
         p.Stroke();
         p.LineDash = [];
     }

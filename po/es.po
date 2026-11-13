@@ -635,6 +635,21 @@ msgstr "Oficina: dispositivos"
 msgid "Unknown library format."
 msgstr "Formato de biblioteca desconocido."
 
+msgid "AND gate"
+msgstr "Compuerta AND"
+
+msgid "OR gate"
+msgstr "Compuerta OR"
+
+msgid "XOR gate"
+msgstr "Compuerta XOR"
+
+msgid "NAND gate"
+msgstr "Compuerta NAND"
+
+msgid "NOR gate"
+msgstr "Compuerta NOR"
+
 msgid "More shapes"
 msgstr "Más formas"
 

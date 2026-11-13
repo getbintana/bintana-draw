@@ -32,8 +32,8 @@ The window is started with a blank canvas and the shape palette on the left.
   terminator, data parallelogram, database cylinder, note and free text in the
   palette, plus a **More shapes** list: triangle, hexagon, document, manual
   input, predefined process, internal storage, delay, on-page and off-page
-  references, loop limit and manual operation. Pick one and click for the
-  default size or drag to size it.
+  references, loop limit, manual operation and AND/OR/XOR/NAND/NOR logic
+  gates. Pick one and click for the default size or drag to size it.
 - **Images** — **Image…** in the toolbar embeds a PNG, JPEG, WebP, TIFF, BMP
   or SVG (where the runtime can read it) into the diagram as a shape: it moves,
   resizes, rotates and saves with the file, and dropping an image on the window

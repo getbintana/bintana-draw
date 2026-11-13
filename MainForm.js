@@ -33,7 +33,7 @@ const DEFAULT_STROKE_COLOR = "#6c8ebf";
 
 const MORE_KINDS = ["triangle", "hexagon", "document", "manualinput",
                     "predefined", "storage", "delay", "onpage", "offpage",
-                    "looplimit", "manualop"];
+                    "looplimit", "manualop", "and", "or", "xor", "nand", "nor"];
 
 function clamp(value, low, high) {
     return Math.max(low, Math.min(high, value));
@@ -171,6 +171,11 @@ export class MainForm extends Form {
         this.CmbMoreShapes.Add(Locale.Text("Off-page reference"), "offpage");
         this.CmbMoreShapes.Add(Locale.Text("Loop limit"), "looplimit");
         this.CmbMoreShapes.Add(Locale.Text("Manual operation"), "manualop");
+        this.CmbMoreShapes.Add(Locale.Text("AND gate"), "and");
+        this.CmbMoreShapes.Add(Locale.Text("OR gate"), "or");
+        this.CmbMoreShapes.Add(Locale.Text("XOR gate"), "xor");
+        this.CmbMoreShapes.Add(Locale.Text("NAND gate"), "nand");
+        this.CmbMoreShapes.Add(Locale.Text("NOR gate"), "nor");
         this.CmbMoreShapes.Index = 0;
         this.syncingTools = false;
 
@@ -784,6 +789,11 @@ export class MainForm extends Form {
         case "offpage":    return { w: 140, h: 90 };
         case "looplimit":  return { w: 150, h: 90 };
         case "manualop":   return { w: 150, h: 80 };
+        case "and":        return { w: 120, h: 80 };
+        case "or":         return { w: 120, h: 80 };
+        case "xor":        return { w: 130, h: 80 };
+        case "nand":       return { w: 130, h: 80 };
+        case "nor":        return { w: 130, h: 80 };
         case "image":      return { w: 180, h: 140 };
         default:           return { w: 150, h: 80 };
         }

@@ -1042,7 +1042,8 @@ class TestForm extends Form {
         fm.resetDocument();
         const kinds = ["triangle", "hexagon", "document", "manualinput",
                        "predefined", "storage", "delay", "onpage", "offpage",
-                       "looplimit", "manualop"];
+                       "looplimit", "manualop", "and", "or", "xor", "nand",
+                       "nor"];
         let x = 0, y = 0;
         for (const kind of kinds) {
             const shape = fm.doc.addShape(kind, x, y, 150, 80, {

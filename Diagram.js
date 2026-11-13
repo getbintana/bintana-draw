@@ -17,7 +17,7 @@ export const SHAPE_KINDS = ["rect", "round", "ellipse", "diamond",
                             "triangle", "hexagon", "document", "manualinput",
                             "predefined", "storage", "delay", "onpage",
                             "offpage", "looplimit", "manualop", "image",
-                            "vector"];
+                            "vector", "and", "or", "xor", "nand", "nor"];
 
 export const DEFAULT_FILL   = "#dae8fc";
 export const DEFAULT_STROKE = "#6c8ebf";
