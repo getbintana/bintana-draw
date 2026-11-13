@@ -1,0 +1,37 @@
+<mxfile host="app.diagrams.net" modified="2026-11-12T00:00:00.000Z" agent="Bintana Draw" version="24.0.0" type="device">
+  <diagram id="flow" name="Flow">
+    <mxGraphModel dx="800" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="start" value="Start" style="shape=terminator;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1f2937;" vertex="1" parent="1">
+          <mxGeometry x="40" y="160" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="read" value="Read the file" style="rounded=0;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#1f2937;" vertex="1" parent="1">
+          <mxGeometry x="260" y="155" width="170" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="valid" value="Valid?" style="rhombus;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#1f2937;" vertex="1" parent="1">
+          <mxGeometry x="500" y="140" width="170" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="done" value="Done" style="ellipse;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1f2937;" vertex="1" parent="1">
+          <mxGeometry x="740" y="150" width="150" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="note" value="A note about the error" style="shape=note;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#1f2937;" vertex="1" parent="1">
+          <mxGeometry x="500" y="310" width="170" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#495057;" edge="1" source="start" target="read" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#495057;" edge="1" source="read" target="valid" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="yes" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#495057;" edge="1" source="valid" target="done" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="no" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#495057;" edge="1" source="valid" target="note" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

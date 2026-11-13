@@ -2,3 +2,5 @@ dist/
 tests/selfcheck/roundtrip.draw
 tests/selfcheck/export.png
 tests/selfcheck/export.pdf
+tests/selfcheck/import.drawio
+tests/selfcheck/imported.draw

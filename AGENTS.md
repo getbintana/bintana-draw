@@ -14,10 +14,12 @@ BINTANA=/path/to/build/bintana tests/run.sh
 
 `tests/run.sh` runs both checks and then the self-check under `xvfb-run`.
 
-## The four files that matter
+## The files that matter
 
 - `Diagram.js` — the document and its geometry. It imports no widget and is
   exercised with no display.
+- `DrawioImport.js` — an uncompressed draw.io file mapped onto a `Diagram`.
+  Compressed pages are refused on purpose; there is no deflate verb here.
 - `Render.js` — the only painter code. The screen and the export are the same
   routine with different transforms.
 - `MainForm.js` — the tool, the selection, the gesture, the file and the undo
@@ -49,6 +51,9 @@ BINTANA=/path/to/build/bintana tests/run.sh
   `Locale.Text` as a single string; the extractor cannot see a concatenation.
 - **The self-check references the real sources with `../../`**, not copies:
   `bintana check` scans the whole tree and duplicate exports are a warning.
+- **An imported `.drawio` is not the save path.** `this.path` stays empty and
+  `importedFrom` keeps the source for the title and the Save As name; otherwise
+  Ctrl+S would write JSON over the original XML.
 
 ## Style
 

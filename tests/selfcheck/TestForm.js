@@ -208,6 +208,7 @@ class TestForm extends Form {
 
         this.alignment(fm);
         this.guides(fm);
+        this.drawio(fm);
 
         /* The grid is a view setting, and the menu item is its state. */
         fm.MnuGrid.Value = false;
@@ -321,6 +322,93 @@ class TestForm extends Form {
         this.check("the resize guide is showing",
                    fm.guides && fm.guides.vertical.indexOf(303) >= 0);
         fm.Canvas_MouseUp(299, 325, 1, false, false);
+    }
+
+    drawio(fm) {
+        this.check("libxml2 is available", Xml.Available);
+
+        const xml = `<mxfile host="test"><diagram id="p1" name="Page-1"><mxGraphModel><root>
+            <mxCell id="0"/>
+            <mxCell id="1" parent="0"/>
+            <mxCell id="a" value="&lt;b&gt;Start&lt;/b&gt;&lt;br&gt;now" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;" vertex="1" parent="1"><mxGeometry x="10" y="20" width="120" height="60" as="geometry"/></mxCell>
+            <mxCell id="b" value="Yes?" style="rhombus;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="200" y="10" width="100" height="80" as="geometry"/></mxCell>
+            <mxCell id="c" value="Done" style="ellipse;" vertex="1" parent="1"><mxGeometry x="380" y="20" width="100" height="60" as="geometry"/></mxCell>
+            <mxCell id="e" value="ok" style="dashed=1;strokeColor=#ff0000;fontSize=13;" edge="1" source="a" target="b" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+            <mxCell id="e2" edge="1" source="b" target="c" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        </root></mxGraphModel></diagram></mxfile>`;
+
+        const parsed = DrawioImport.parse(xml);
+        this.eq("draw.io: one page", parsed.pages, 1);
+        this.eq("draw.io: three shapes", parsed.diagram.shapes.length, 3);
+        this.eq("draw.io: two edges", parsed.diagram.edges.length, 2);
+        this.eq("draw.io: rounded becomes rounded",
+                parsed.diagram.shapes[0].kind, "round");
+        this.eq("draw.io: the HTML label is plain text",
+                parsed.diagram.shapes[0].text, "Start\nnow");
+        this.eq("draw.io: the fill colour survives",
+                parsed.diagram.shapes[0].fill, "#dae8fc");
+        this.eq("draw.io: the font size survives",
+                parsed.diagram.shapes[0].fontSize, 14);
+        this.eq("draw.io: rhombus becomes decision",
+                parsed.diagram.shapes[1].kind, "diamond");
+        this.eq("draw.io: ellipse becomes ellipse",
+                parsed.diagram.shapes[2].kind, "ellipse");
+        this.eq("draw.io: the dashed edge is dashed",
+                parsed.diagram.edges[0].dashed, true);
+        this.eq("draw.io: the edge label survives",
+                parsed.diagram.edges[0].text, "ok");
+        this.eq("draw.io: the edge colour survives",
+                parsed.diagram.edges[0].stroke, "#ff0000");
+        this.eq("draw.io: the edge ends where it should",
+                parsed.diagram.shapeById(parsed.diagram.edges[1].from).kind,
+                "diamond");
+
+        /* A page without a model is the compressed form. */
+        let compressed = false;
+        try {
+            DrawioImport.parse(`<mxfile><diagram id="p">N4IgZgLg5gLgpgAgA==</diagram></mxfile>`);
+        } catch (e) { compressed = true; }
+        this.check("a compressed draw.io page is refused", compressed);
+
+        /* Two pages: the first one is imported and the count is reported. */
+        const twoPages = `<mxfile>
+            <diagram id="one" name="One"><mxGraphModel><root>
+                <mxCell id="0"/><mxCell id="1" parent="0"/>
+                <mxCell id="a" value="Only" vertex="1" parent="1"><mxGeometry x="0" y="0" width="80" height="40" as="geometry"/></mxCell>
+            </root></mxGraphModel></diagram>
+            <diagram id="two" name="Two"><mxGraphModel><root>
+                <mxCell id="0"/><mxCell id="1" parent="0"/>
+                <mxCell id="a" value="One" vertex="1" parent="1"><mxGeometry x="0" y="0" width="80" height="40" as="geometry"/></mxCell>
+                <mxCell id="b" value="Two" vertex="1" parent="1"><mxGeometry x="100" y="0" width="80" height="40" as="geometry"/></mxCell>
+            </root></mxGraphModel></diagram>
+        </mxfile>`;
+        const pages = DrawioImport.parse(twoPages);
+        this.eq("draw.io: both pages are counted", pages.pages, 2);
+        this.eq("draw.io: the first page is the one imported",
+                pages.diagram.shapes.length, 1);
+
+        /* Opening it through the window must not pretend the .drawio is a
+         * .draw: Save would overwrite the original with JSON. */
+        const source = File.Join(Application.Directory, "import.drawio");
+        File.Save(source, xml);
+        fm.resetDocument();
+        const loaded = fm.openDocument(source);
+        this.check("draw.io: the window imports it", !!loaded);
+        this.eq("draw.io: the shapes arrived", fm.doc.shapes.length, 3);
+        this.eq("draw.io: the file is not the save path", fm.path, "");
+        this.eq("draw.io: the source is remembered", fm.importedFrom, source);
+        this.check("draw.io: the title says where it came from",
+                   fm.Text.indexOf("import.drawio") >= 0);
+        this.eq("draw.io: importing is not a modification",
+                fm.undo.Modified, false);
+
+        /* The first Save goes to a .draw, and then the .draw is the document. */
+        const target = File.Join(Application.Directory, "imported.draw");
+        this.check("draw.io: the import saves as a diagram", fm.writeDocument(target));
+        this.eq("draw.io: the imported source is forgotten", fm.importedFrom, "");
+        this.eq("draw.io: the new path is the diagram", fm.path, target);
+        File.Delete(source);
+        File.Delete(target);
     }
 
     confirmDialog() {

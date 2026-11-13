@@ -64,6 +64,7 @@ export class MainForm extends Form {
 
     doc    = null;
     path   = "";
+    importedFrom = "";
     sel    = [];
     tool   = "select";
     zoom   = 1;
@@ -1053,6 +1054,7 @@ export class MainForm extends Form {
     resetDocument() {
         this.doc = new Diagram();
         this.path = "";
+        this.importedFrom = "";
         this.sel = [];
         this.guides = null;
         this.undo.Clear();
@@ -1065,15 +1067,26 @@ export class MainForm extends Form {
 
     openDocument(path) {
         let doc;
+        let pages = 0;
+        const isDrawio = File.IsExtension(path, "drawio") ||
+                         File.IsExtension(path, "xml");
+
         try {
-            doc = Diagram.fromJSON(File.LoadJson(path));
+            if (isDrawio) {
+                const imported = DrawioImport.parse(File.Load(path));
+                doc = imported.diagram;
+                pages = imported.pages;
+            } else {
+                doc = Diagram.fromJSON(File.LoadJson(path));
+            }
         } catch (e) {
             Message.Error(Locale.Text("Cannot open {0}: {1}"), path, e.message);
             return null;
         }
 
         this.doc = doc;
-        this.path = path;
+        this.path = isDrawio ? "" : path;
+        this.importedFrom = isDrawio ? path : "";
         this.sel = [];
         this.guides = null;
         this.undo.Clear();
@@ -1082,7 +1095,16 @@ export class MainForm extends Form {
             this.pendingFit = false;
             this.zoomFit();
         }
-        this.setStatus(Locale.Text("Opened {0}", File.Name(path)));
+
+        if (isDrawio) {
+            if (pages > 1)
+                this.setStatus(Locale.Text("Imported page 1 of {0} from {1}",
+                                           pages, File.Name(path)));
+            else
+                this.setStatus(Locale.Text("Imported {0}", File.Name(path)));
+        } else {
+            this.setStatus(Locale.Text("Opened {0}", File.Name(path)));
+        }
         this.refreshAll();
         return doc;
     }
@@ -1096,6 +1118,7 @@ export class MainForm extends Form {
             return false;
         }
         this.path = path;
+        this.importedFrom = "";
         this.undo.MarkClean();
         this.refreshActions();
         this.refreshTitle();
@@ -1110,8 +1133,11 @@ export class MainForm extends Form {
     }
 
     saveAs(after) {
-        const folder = this.path ? File.Directory(this.path) : Application.Directory;
-        const name = this.path ? File.Name(this.path) : "diagram.draw";
+        const source = this.path || this.importedFrom;
+        const folder = source ? File.Directory(source) : Application.Directory;
+        let name = "diagram.draw";
+        if (this.path) name = File.Name(this.path);
+        else if (this.importedFrom) name = File.BaseName(this.importedFrom) + ".draw";
         Dialog.SaveFile(Locale.Text("Save diagram"), {
             Folder: folder,
             Name: name,
@@ -1119,7 +1145,9 @@ export class MainForm extends Form {
                       [Locale.Text("All files"), "*"]],
         }, (chosen) => {
             let path = chosen;
-            if (!File.Extension(path)) path += ".draw";
+            /* The document format is .draw, and only .draw: a Save As that
+             * named the imported .drawio would overwrite it with JSON. */
+            if (!File.IsExtension(path, "draw")) path += ".draw";
             if (this.writeDocument(path) && after) after();
         });
     }
@@ -1233,7 +1261,10 @@ export class MainForm extends Form {
 
     refreshTitle() {
         if (!this.undo) return;
-        const name = this.path ? File.Name(this.path) : Locale.Text("Untitled");
+        const name = this.path ? File.Name(this.path)
+                   : this.importedFrom
+                       ? Locale.Text("Imported {0}", File.Name(this.importedFrom))
+                       : Locale.Text("Untitled");
         const mark = this.undo.Modified ? "• " : "";
         this.Text = mark + name + " — " + Locale.Text("Bintana Draw");
     }
@@ -1309,6 +1340,8 @@ export class MainForm extends Form {
             Dialog.OpenFile(Locale.Text("Open diagram"), {
                 Folder: folder,
                 Filters: [[Locale.Text("Bintana Draw diagram"), "*.draw"],
+                          [Locale.Text("draw.io diagram"), "*.drawio"],
+                          [Locale.Text("XML file"), "*.xml"],
                           [Locale.Text("All files"), "*"]],
             }, (path) => this.openDocument(path));
         });

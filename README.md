@@ -18,9 +18,12 @@ With a built `bintana` (on your `PATH`, or `build/bintana` from a checkout):
 ```sh
 bintana bintana-draw
 bintana bintana-draw examples/flow.draw
+bintana bintana-draw examples/flow.drawio
 ```
 
 The file is optional; it opens that diagram, and `File > Open` opens another.
+A `.drawio` is imported and becomes an unsaved Bintana Draw diagram, so the
+first Save asks for a `.draw` name instead of overwriting the original.
 The window is started with a blank canvas and the shape palette on the left.
 
 ## What it does
@@ -46,9 +49,12 @@ The window is started with a blank canvas and the shape palette on the left.
 - **View** — zoom in and out from the toolbar or with `+`/`-`, fit the diagram,
   pan with the middle button, scroll with the wheel, and toggle the grid from
   the View menu.
-- **Files** — `.draw` is JSON, written atomically. The application asks before
-  throwing unsaved work away; a diagram dropped on the window opens. Export is
-  PNG (at twice the diagram's size) or A4 landscape PDF.
+- **Files** — `.draw` is JSON, written atomically. An uncompressed draw.io
+  file (`.drawio` or XML) can be imported and saved as a `.draw`; compressed
+  draw.io pages are refused with the sentence that says how to re-export them
+  as XML. The application asks before throwing unsaved work away; a diagram
+  dropped on the window opens. Export is PNG (at twice the diagram's size) or
+  A4 landscape PDF.
 - **Spanish** — the whole interface is in `po/es.po`; run it with
   `LANGUAGE=es bintana bintana-draw`.
 
@@ -140,6 +146,13 @@ would change what a person can draw: custom shape libraries and stencils,
 layers and multiple pages, curved connectors with movable waypoints, images and
 icons, system-clipboard interchange with other applications, SVG import/export,
 and collaboration.
+
+The draw.io import is deliberately the basic half: it reads the first page of
+an uncompressed file, maps the common shapes by style (`rounded`, `ellipse`,
+`rhombus`, `shape=note`, `shape=terminator`, `shape=parallelogram`,
+`shape=cylinder3`), keeps fill and stroke colours, labels and dashed edges. It
+does not read compressed pages, rotation, groups with their own layout, images
+or the second and later pages.
 There is no autosave and no recovery file; the unsaved-changes question is the
 whole of the safety net.
 

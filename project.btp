@@ -4,6 +4,7 @@
   "startup": "MainForm",
   "sources": [
     "Diagram.js",
+    "DrawioImport.js",
     "Render.js",
     "ConfirmForm.js",
     "MainForm.js"
