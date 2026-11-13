@@ -109,6 +109,21 @@ function absoluteRect(cell, byId) {
     };
 }
 
+/* The layer is the cell directly under the root (id "0") on the way up. */
+function layerOf(cell, byId) {
+    let id = cell.parent;
+    let layer = "";
+    const seen = new Set();
+    while (id && id !== "0" && !seen.has(id)) {
+        seen.add(id);
+        const up = byId.get(id);
+        if (!up) break;
+        layer = id;
+        id = up.parent;
+    }
+    return layer;
+}
+
 export class DrawioImport {
 
     static parse(text) {
@@ -161,6 +176,29 @@ export class DrawioImport {
 
         const diagram = new Diagram();
         const mapped = new Map();
+        const layerMap = new Map();
+
+        /* A layer is a cell whose parent is the root, with no vertex or edge of
+         * its own. The first one reuses the layer the document starts with. */
+        let firstLayer = true;
+        for (const node of nodes) {
+            if (node.Attr("parent") !== "0") continue;
+            if (!node.Attr("id") || node.Attr("id") === "0") continue;
+            if (node.Attr("vertex") === "1" || node.Attr("edge") === "1") continue;
+
+            const id = node.Attr("id");
+            const name = cleanText(node.Attr("value"));
+            let layer;
+            if (firstLayer) {
+                layer = diagram.layers[0];
+                if (name) layer.name = name;
+                firstLayer = false;
+            } else {
+                layer = diagram.addLayer(name);
+            }
+            layer.visible = node.Attr("visible") !== "0";
+            layerMap.set(id, layer.id);
+        }
 
         /* Vertices first, so an edge may point at any of them whatever the file
          * order. The ids draw.io wrote are kept in `mapped`, not in the model. */
@@ -193,6 +231,7 @@ export class DrawioImport {
                 isNaN(arcSize) ? 12 : Math.min(rect.w, rect.h) * arcSize / 100));
 
             const shape = diagram.addShape(kind, rect.x, rect.y, rect.w, rect.h, {
+                layer: layerMap.get(layerOf(cell, byId)) || diagram.layers[0].id,
                 text: cleanText(node.Attr("value")),
                 fill: fill,
                 stroke: stroke,
@@ -215,7 +254,11 @@ export class DrawioImport {
             const map = styleMap(style);
             const fontValue = parseFloat(map.fontSize || "11");
             const fontSize = (fontValue === fontValue) ? fontValue : 11;
+            const edgeCell = byId.get(node.Attr("id"));
             diagram.addEdge(source, target, {
+                layer: edgeCell
+                    ? (layerMap.get(layerOf(edgeCell, byId)) || diagram.layers[0].id)
+                    : diagram.layers[0].id,
                 text: cleanText(node.Attr("value")),
                 stroke: colour(map, "strokeColor", "#000000"),
                 dashed: map.dashed === "1",

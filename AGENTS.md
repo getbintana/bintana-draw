@@ -16,8 +16,8 @@ BINTANA=/path/to/build/bintana tests/run.sh
 
 ## The files that matter
 
-- `Diagram.js` — the document and its geometry. It imports no widget and is
-  exercised with no display.
+- `Diagram.js` — the document, its layers and its geometry. It imports no
+  widget and is exercised with no display.
 - `DrawioImport.js` — an uncompressed draw.io file mapped onto a `Diagram`.
   Compressed pages are refused on purpose; there is no deflate verb here.
 - `Render.js` — the only painter code. The screen and the export are the same
@@ -54,6 +54,12 @@ BINTANA=/path/to/build/bintana tests/run.sh
 - **An imported `.drawio` is not the save path.** `this.path` stays empty and
   `importedFrom` keeps the source for the title and the Save As name; otherwise
   Ctrl+S would write JSON over the original XML.
+- **A layer is part of the document, the active layer is not.** `Diagram.layers`
+  carries name, visibility and lock, and every shape and edge names one. The
+  active layer lives on the form; `ensureActiveLayer` puts it back after an undo
+  or an open. A hidden layer is out of the bounds and out of hit testing; a
+  locked one is drawn but `canSelect` refuses it, and an edge whose endpoint
+  hides hides with it.
 
 ## Style
 

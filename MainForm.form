@@ -474,6 +474,156 @@
               }
             }
           ]
+        },
+        {
+          "type": "Panel",
+          "name": "LayersPanel",
+          "properties": {
+            "Arrangement": "Vertical",
+            "Spacing": 6,
+            "Padding": "10",
+            "Width": 216,
+            "Style": "draw-sidebar-right"
+          },
+          "children": [
+            {
+              "type": "Label",
+              "name": "LblLayers",
+              "properties": {
+                "Text": "Layers",
+                "Style": "section-title",
+                "Height": 24
+              }
+            },
+            {
+              "type": "Scroller",
+              "name": "LayerScroll",
+              "properties": {
+                "HAlign": "Fill",
+                "VAlign": "Fill",
+                "Expand": true,
+                "Height": 160,
+                "MinHeight": 120
+              },
+              "children": [
+                {
+                  "type": "ListBox",
+                  "name": "LstLayers",
+                  "properties": {
+                    "HAlign": "Fill",
+                    "VAlign": "Start",
+                    "Width": 190,
+                    "MinHeight": 40,
+                    "AccessibleName": "Layers"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "Panel",
+              "name": "LayerAddRow",
+              "properties": {
+                "Arrangement": "Horizontal",
+                "Spacing": 4,
+                "Height": 32
+              },
+              "children": [
+                {
+                  "type": "Button",
+                  "name": "BtnLayerAdd",
+                  "properties": {
+                    "Text": "Add",
+                    "Height": 30,
+                    "Expand": true
+                  }
+                },
+                {
+                  "type": "Button",
+                  "name": "BtnLayerRemove",
+                  "properties": {
+                    "Text": "Remove",
+                    "Height": 30,
+                    "Expand": true
+                  }
+                }
+              ]
+            },
+            {
+              "type": "Panel",
+              "name": "LayerMoveRow",
+              "properties": {
+                "Arrangement": "Horizontal",
+                "Spacing": 4,
+                "Height": 32
+              },
+              "children": [
+                {
+                  "type": "Button",
+                  "name": "BtnLayerUp",
+                  "properties": {
+                    "Text": "Move up",
+                    "Height": 30,
+                    "Expand": true
+                  }
+                },
+                {
+                  "type": "Button",
+                  "name": "BtnLayerDown",
+                  "properties": {
+                    "Text": "Move down",
+                    "Height": 30,
+                    "Expand": true
+                  }
+                }
+              ]
+            },
+            {
+              "type": "ToggleButton",
+              "name": "BtnLayerVisible",
+              "properties": {
+                "Text": "Visible",
+                "Active": true,
+                "HAlign": "Fill",
+                "Height": 30
+              }
+            },
+            {
+              "type": "ToggleButton",
+              "name": "BtnLayerLocked",
+              "properties": {
+                "Text": "Locked",
+                "HAlign": "Fill",
+                "Height": 30
+              }
+            },
+            {
+              "type": "Label",
+              "name": "LblLayerName",
+              "properties": {
+                "Text": "Name",
+                "For": "TxtLayerName",
+                "Height": 22
+              }
+            },
+            {
+              "type": "TextBox",
+              "name": "TxtLayerName",
+              "properties": {
+                "HAlign": "Fill",
+                "Height": 32,
+                "AccessibleName": "Layer name"
+              }
+            },
+            {
+              "type": "Button",
+              "name": "BtnLayerAssign",
+              "properties": {
+                "Text": "Move selection here",
+                "HAlign": "Fill",
+                "Height": 34
+              }
+            }
+          ]
         }
       ]
     },

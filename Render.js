@@ -247,7 +247,7 @@ function drawSelection(p, diagram, selected, zoom) {
     const ids = new Set(selected);
 
     for (const s of diagram.shapes) {
-        if (!ids.has(s.id)) continue;
+        if (!ids.has(s.id) || !diagram.layerVisible(s)) continue;
         selectionOutline(p, s);
         p.Color = ACCENT;
         p.LineWidth = 1.5 / zoom;
@@ -272,7 +272,7 @@ function drawSelection(p, diagram, selected, zoom) {
     }
 
     for (const e of diagram.edges) {
-        if (!ids.has(e.id)) continue;
+        if (!ids.has(e.id) || !diagram.layerVisible(e)) continue;
         const points = edgeRoute(diagram, e);
         if (points.length < 4) continue;
         p.Color = "rgba(53,132,228,0.28)";
@@ -335,13 +335,27 @@ function drawContent(p, diagram, selected, zoom) {
     p.LineCap = "Round";
     p.LineJoin = "Round";
 
-    for (const s of diagram.shapes) drawShape(p, s);
+    /* Layers are the paint order: the last one in the document is the one on
+     * top, so the canvas walks them from the end back to the first. */
+    const firstLayer = diagram.layers && diagram.layers.length
+        ? diagram.layers[0].id : "";
+    const layerOf = (object) => object.layer || firstLayer;
 
-    for (const e of diagram.edges)
-        drawEdgeLine(p, e, edgeRoute(diagram, e));
+    for (let i = diagram.layers.length - 1; i >= 0; i--) {
+        const layer = diagram.layers[i];
+        if (!layer.visible) continue;
 
-    for (const e of diagram.edges)
-        edgeLabel(p, e, edgeRoute(diagram, e));
+        for (const s of diagram.shapes)
+            if (layerOf(s) === layer.id) drawShape(p, s);
+
+        for (const e of diagram.edges)
+            if (layerOf(e) === layer.id && diagram.layerVisible(e))
+                drawEdgeLine(p, e, edgeRoute(diagram, e));
+
+        for (const e of diagram.edges)
+            if (layerOf(e) === layer.id && diagram.layerVisible(e))
+                edgeLabel(p, e, edgeRoute(diagram, e));
+    }
 
     if (selected && selected.length)
         drawSelection(p, diagram, selected, zoom);

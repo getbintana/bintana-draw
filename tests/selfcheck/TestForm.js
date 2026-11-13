@@ -209,6 +209,7 @@ class TestForm extends Form {
         this.alignment(fm);
         this.guides(fm);
         this.drawio(fm);
+        this.layers(fm);
 
         /* The grid is a view setting, and the menu item is its state. */
         fm.MnuGrid.Value = false;
@@ -330,17 +331,24 @@ class TestForm extends Form {
         const xml = `<mxfile host="test"><diagram id="p1" name="Page-1"><mxGraphModel><root>
             <mxCell id="0"/>
             <mxCell id="1" parent="0"/>
+            <mxCell id="2" value="Annotations" parent="0"/>
             <mxCell id="a" value="&lt;b&gt;Start&lt;/b&gt;&lt;br&gt;now" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;" vertex="1" parent="1"><mxGeometry x="10" y="20" width="120" height="60" as="geometry"/></mxCell>
             <mxCell id="b" value="Yes?" style="rhombus;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="200" y="10" width="100" height="80" as="geometry"/></mxCell>
             <mxCell id="c" value="Done" style="ellipse;" vertex="1" parent="1"><mxGeometry x="380" y="20" width="100" height="60" as="geometry"/></mxCell>
             <mxCell id="e" value="ok" style="dashed=1;strokeColor=#ff0000;fontSize=13;" edge="1" source="a" target="b" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
             <mxCell id="e2" edge="1" source="b" target="c" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+            <mxCell id="n" value="On another layer" style="shape=note;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="2"><mxGeometry x="200" y="150" width="120" height="70" as="geometry"/></mxCell>
         </root></mxGraphModel></diagram></mxfile>`;
 
         const parsed = DrawioImport.parse(xml);
         this.eq("draw.io: one page", parsed.pages, 1);
-        this.eq("draw.io: three shapes", parsed.diagram.shapes.length, 3);
+        this.eq("draw.io: four shapes", parsed.diagram.shapes.length, 4);
         this.eq("draw.io: two edges", parsed.diagram.edges.length, 2);
+        this.eq("draw.io: two layers", parsed.diagram.layers.length, 2);
+        this.eq("draw.io: the second layer is named",
+                parsed.diagram.layers[1].name, "Annotations");
+        this.eq("draw.io: the note stays on its layer",
+                parsed.diagram.shapes[3].layer, parsed.diagram.layers[1].id);
         this.eq("draw.io: rounded becomes rounded",
                 parsed.diagram.shapes[0].kind, "round");
         this.eq("draw.io: the HTML label is plain text",
@@ -394,7 +402,8 @@ class TestForm extends Form {
         fm.resetDocument();
         const loaded = fm.openDocument(source);
         this.check("draw.io: the window imports it", !!loaded);
-        this.eq("draw.io: the shapes arrived", fm.doc.shapes.length, 3);
+        this.eq("draw.io: the shapes arrived", fm.doc.shapes.length, 4);
+        this.eq("draw.io: the layers arrived", fm.doc.layers.length, 2);
         this.eq("draw.io: the file is not the save path", fm.path, "");
         this.eq("draw.io: the source is remembered", fm.importedFrom, source);
         this.check("draw.io: the title says where it came from",
@@ -409,6 +418,113 @@ class TestForm extends Form {
         this.eq("draw.io: the new path is the diagram", fm.path, target);
         File.Delete(source);
         File.Delete(target);
+    }
+
+    layers(fm) {
+        fm.resetDocument();
+        const base = fm.doc.layers[0];
+        const a = fm.doc.addShape("rect", 0, 0, 100, 50, { text: "Base" });
+        fm.refreshAll();
+        this.eq("layers: one to start", fm.doc.layers.length, 1);
+        this.eq("layers: the first shape is on it", a.layer, base.id);
+
+        fm.BtnLayerAdd_Click();
+        this.eq("layers: add makes a second", fm.doc.layers.length, 2);
+        this.eq("layers: the new one is active", fm.activeLayer,
+                fm.doc.layers[1].id);
+
+        fm.chooseTool("ellipse", fm.BtnToolEllipse);
+        fm.Canvas_MouseDown(300, 200, 1, false, false);
+        fm.Canvas_MouseUp(300, 200, 1, false, false);
+        this.eq("layers: a new shape goes to the active layer",
+                fm.doc.shapes.length, 2);
+        this.eq("layers: and names it",
+                fm.doc.shapes[1].layer, fm.doc.layers[1].id);
+
+        const cross = fm.doc.addEdge(a.id, fm.doc.shapes[1].id,
+                                     { layer: base.id });
+
+        /* Hiding takes it out of the picture and out of the selection. */
+        fm.BtnLayerVisible.Active = false;
+        fm.BtnLayerVisible_Click();
+        this.eq("layers: hiding is a state", fm.doc.layers[1].visible, false);
+        this.eq("layers: hiding clears its selection", fm.sel.length, 0);
+        this.check("layers: hidden shapes are not in the bounds",
+                   fm.doc.bounds().w === 100);
+        this.check("layers: an edge to a hidden shape hides too",
+                   !fm.doc.layerVisible(cross));
+
+        fm.BtnLayerVisible.Active = true;
+        fm.BtnLayerVisible_Click();
+        this.eq("layers: showing it again", fm.doc.layers[1].visible, true);
+
+        /* Locking an active layer refuses the next drawing gesture. */
+        fm.BtnLayerLocked.Active = true;
+        fm.BtnLayerLocked_Click();
+        const count = fm.doc.shapes.length;
+        fm.chooseTool("rect", fm.BtnToolRect);
+        fm.Canvas_MouseDown(420, 260, 1, false, false);
+        fm.Canvas_MouseUp(420, 260, 1, false, false);
+        this.eq("layers: a locked layer refuses new shapes",
+                fm.doc.shapes.length, count);
+        fm.BtnLayerLocked.Active = false;
+        fm.BtnLayerLocked_Click();
+
+        /* Rename, reorder, and send a selection to another layer. */
+        fm.TxtLayerName.Text = "Notes";
+        fm.renameActiveLayer();
+        this.eq("layers: rename works", fm.doc.layers[1].name, "Notes");
+
+        fm.moveActiveLayer(-1);
+        this.eq("layers: moving down changes the order",
+                fm.doc.layers[0].name, "Notes");
+        fm.moveActiveLayer(1);
+        this.eq("layers: moving up changes it back",
+                fm.doc.layers[1].name, "Notes");
+
+        fm.select([a.id]);
+        fm.BtnLayerAssign_Click();
+        this.eq("layers: a selection moves here", fm.doc.shapeById(a.id).layer,
+                fm.doc.layers[1].id);
+
+        const round = Diagram.fromJSON(JSON.parse(JSON.stringify(fm.doc.toJSON())));
+        this.eq("layers: the round trip keeps both", round.layers.length, 2);
+        this.eq("layers: and the name", round.layers[1].name, "Notes");
+        this.eq("layers: and the shape's layer",
+                round.shapeById(a.id).layer, round.layers[1].id);
+
+        /* Removing the layer takes its shapes and connectors with it. */
+        fm.select([a.id]);
+        const attached = fm.doc.addEdge(a.id, fm.doc.shapes[1].id,
+            { layer: fm.doc.layers[1].id });
+        this.check("layers: a connector was made", !!attached);
+        const removed = fm.doc.layers[1].id;
+        fm.BtnLayerRemove_Click();
+        this.eq("layers: remove leaves one", fm.doc.layers.length, 1);
+        this.eq("layers: its shapes are gone", fm.doc.shapes.length, 0);
+        this.eq("layers: its connectors are gone", fm.doc.edges.length, 0);
+        this.check("layers: and it is not active", fm.activeLayer !== removed);
+
+        /* The topmost painted copy is the one the pointer picks. */
+        const hit = new Diagram();
+        const low = hit.addShape("rect", 0, 0, 100, 50);
+        const highLayer = hit.addLayer("High");
+        const high = hit.addShape("rect", 0, 0, 100, 50,
+                                  { layer: highLayer.id });
+        this.eq("layers: hit testing follows the paint order",
+                hit.shapeAt(10, 10).id, high.id);
+        highLayer.locked = true;
+        this.eq("layers: a locked top layer lets the one below be picked",
+                hit.shapeAt(10, 10).id, low.id);
+
+        /* A .draw written before layers existed still opens. */
+        const legacy = Diagram.fromJSON({
+            format: "bintana-draw/1", version: 1, edges: [],
+            shapes: [{ id: "s1", kind: "rect", x: 0, y: 0, w: 10, h: 10 }],
+        });
+        this.eq("layers: an old file gets one layer", legacy.layers.length, 1);
+        this.eq("layers: and its shape lands there",
+                legacy.shapes[0].layer, legacy.layers[0].id);
     }
 
     confirmDialog() {
@@ -452,6 +568,12 @@ class TestForm extends Form {
             BtnToolNote: ["Click"],
             BtnToolText: ["Click"], BtnToolConnect: ["Click"],
             BtnFill: ["Change"], BtnLine: ["Change"],
+            LstLayers: ["Select", "Activate"],
+            BtnLayerAdd: ["Click"], BtnLayerRemove: ["Click"],
+            BtnLayerUp: ["Click"], BtnLayerDown: ["Click"],
+            BtnLayerVisible: ["Click"], BtnLayerLocked: ["Click"],
+            BtnLayerAssign: ["Click"],
+            TxtLayerName: ["Activate", "LostFocus"],
             ActNew: ["Execute"], ActOpen: ["Execute"], ActSave: ["Execute"],
             ActSaveAs: ["Execute"], ActExportPng: ["Execute"],
             ActExportPdf: ["Execute"], ActQuit: ["Execute"],

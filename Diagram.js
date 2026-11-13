@@ -4,10 +4,11 @@
  * project (or the self-check) exercise it with no display at all.
  *
  * A diagram is a list of shapes with an id, a rectangle and a kind, plus a list
- * of edges that name two shape ids. **Nothing is cached**: an edge's route is
- * computed from the two rectangles every time it is asked for, so moving or
- * resizing a shape moves its connectors with it and there is no second copy to
- * keep in step.
+ * of edges that name two shape ids. A shape and an edge also name a layer, and
+ * the layers carry the visibility and the lock the canvas obeys. **Nothing is
+ * cached**: an edge's route is computed from the two rectangles every time it
+ * is asked for, so moving or resizing a shape moves its connectors with it and
+ * there is no second copy to keep in step.
  */
 "use strict";
 
@@ -38,7 +39,8 @@ function kind(value) {
 
 function copyShape(s) {
     return {
-        id: s.id, kind: s.kind, x: s.x, y: s.y, w: s.w, h: s.h,
+        id: s.id, kind: s.kind, layer: s.layer,
+        x: s.x, y: s.y, w: s.w, h: s.h,
         text: s.text, fill: s.fill, stroke: s.stroke,
         textColor: s.textColor, fontSize: s.fontSize, radius: s.radius,
     };
@@ -46,7 +48,7 @@ function copyShape(s) {
 
 function copyEdge(e) {
     return {
-        id: e.id, from: e.from, to: e.to, text: e.text,
+        id: e.id, from: e.from, to: e.to, layer: e.layer, text: e.text,
         stroke: e.stroke, dashed: e.dashed, fontSize: e.fontSize,
     };
 }
@@ -56,15 +58,100 @@ export class Diagram {
     constructor() {
         this.shapes    = [];
         this.edges     = [];
+        this.layers    = [{
+            id: "l1",
+            name: Locale.Text("Layer {0}", 1),
+            visible: true,
+            locked: false,
+        }];
         this.nextShape = 1;
         this.nextEdge  = 1;
+        this.nextLayer = 2;
+    }
+
+    addLayer(name) {
+        const hierarchy = this.layers.length + 1;
+        const layer = {
+            id: "l" + (this.nextLayer++),
+            name: (typeof name === "string" && name.trim())
+                ? name : Locale.Text("Layer {0}", hierarchy),
+            visible: true,
+            locked: false,
+        };
+        this.layers.push(layer);
+        return layer;
+    }
+
+    layerById(id) {
+        for (const layer of this.layers) if (layer.id === id) return layer;
+        return null;
+    }
+
+    /* An object from before layers, or a hand-edited one, belongs to the first
+     * layer rather than to nobody. */
+    layerOf(object) {
+        return this.layerById(object && object.layer) || this.layers[0] || null;
+    }
+
+    layerVisible(object) {
+        const layer = this.layerOf(object);
+        if (!layer || !layer.visible) return false;
+        /* An edge whose endpoint is on a hidden layer would read as a line
+         * arriving from nowhere; it goes with its shape. */
+        if (object && object.from) {
+            const from = this.shapeById(object.from);
+            const to = this.shapeById(object.to);
+            if (from && !this.layerVisible(from)) return false;
+            if (to && !this.layerVisible(to)) return false;
+        }
+        return true;
+    }
+
+    canSelect(objectOrId) {
+        const object = typeof objectOrId === "string"
+            ? this.find(objectOrId)
+            : objectOrId;
+        if (!object) return false;
+        const layer = this.layerOf(object);
+        if (!layer || !layer.visible || layer.locked) return false;
+        return this.layerVisible(object);
+    }
+
+    layerShapeCount(id) {
+        let count = 0;
+        for (const s of this.shapes) if (s.layer === id) count++;
+        return count;
+    }
+
+    moveLayer(id, delta) {
+        const at = this.layers.findIndex((l) => l.id === id);
+        const to = at + delta;
+        if (at < 0 || to < 0 || to >= this.layers.length) return false;
+        const layer = this.layers[at];
+        this.layers.splice(at, 1);
+        this.layers.splice(to, 0, layer);
+        return true;
+    }
+
+    removeLayer(id) {
+        if (this.layers.length < 2) return null;
+        const layer = this.layerById(id);
+        if (!layer) return null;
+        const ids = [];
+        for (const s of this.shapes) if (s.layer === id) ids.push(s.id);
+        for (const e of this.edges) if (e.layer === id) ids.push(e.id);
+        this.remove(ids);
+        this.layers = this.layers.filter((l) => l.id !== id);
+        return layer;
     }
 
     addShape(kindName, x, y, w, h, options) {
         const o = options || {};
+        const layer = this.layerById(o.layer) ? o.layer : this.layers[0].id;
         const shape = {
             id: "s" + (this.nextShape++),
             kind: kind(kindName),
+            layer: layer,
             x: Math.round(number(x, 0)),
             y: Math.round(number(y, 0)),
             w: Math.max(MIN_SIZE, Math.round(number(w, 140))),
@@ -83,10 +170,12 @@ export class Diagram {
     addEdge(from, to, options) {
         const o = options || {};
         if (!this.shapeById(from) || !this.shapeById(to)) return null;
+        const layer = this.layerById(o.layer) ? o.layer : this.layers[0].id;
         const edge = {
             id: "e" + (this.nextEdge++),
             from: from,
             to: to,
+            layer: layer,
             text: text(o.text, ""),
             stroke: text(o.stroke, DEFAULT_EDGE),
             dashed: o.dashed === true,
@@ -110,22 +199,37 @@ export class Diagram {
         return this.shapeById(id) || this.edgeById(id);
     }
 
-    /* The topmost shape under a point, in the same order the canvas paints. */
+    /* The topmost shape under a point, in the same order the canvas paints:
+     * the last layer first, and inside it the last shape first. */
     shapeAt(x, y) {
-        for (let i = this.shapes.length - 1; i >= 0; i--) {
-            if (pointInShape(this.shapes[i], x, y)) return this.shapes[i];
+        const firstLayer = this.layers.length ? this.layers[0].id : "";
+        for (let l = this.layers.length - 1; l >= 0; l--) {
+            const layer = this.layers[l];
+            if (!layer.visible || layer.locked) continue;
+            for (let i = this.shapes.length - 1; i >= 0; i--) {
+                const shape = this.shapes[i];
+                if ((shape.layer || firstLayer) !== layer.id) continue;
+                if (pointInShape(shape, x, y)) return shape;
+            }
         }
         return null;
     }
 
-    /* An edge under a point, within `tolerance` world units. */
+    /* An edge under a point, within `tolerance` world units, top layer first. */
     edgeAt(x, y, tolerance) {
-        let best = null, bestAt = tolerance;
-        for (let i = this.edges.length - 1; i >= 0; i--) {
-            const d = distanceToPolyline(edgeRoute(this, this.edges[i]), x, y);
-            if (d <= bestAt) { best = this.edges[i]; bestAt = d; }
+        const firstLayer = this.layers.length ? this.layers[0].id : "";
+        for (let l = this.layers.length - 1; l >= 0; l--) {
+            const layer = this.layers[l];
+            if (!layer.visible || layer.locked) continue;
+            for (let i = this.edges.length - 1; i >= 0; i--) {
+                const edge = this.edges[i];
+                if ((edge.layer || firstLayer) !== layer.id) continue;
+                if (!this.layerVisible(edge)) continue;
+                if (distanceToPolyline(edgeRoute(this, edge), x, y) <= tolerance)
+                    return edge;
+            }
         }
-        return best;
+        return null;
     }
 
     /* What Delete removes: the named shapes and edges, and every edge left
@@ -143,11 +247,13 @@ export class Diagram {
         if (!this.shapes.length) return null;
         let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
         for (const s of this.shapes) {
+            if (!this.layerVisible(s)) continue;
             x0 = Math.min(x0, s.x);
             y0 = Math.min(y0, s.y);
             x1 = Math.max(x1, s.x + s.w);
             y1 = Math.max(y1, s.y + s.h);
         }
+        if (x0 === Infinity) return null;
         return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
     }
 
@@ -155,6 +261,10 @@ export class Diagram {
         return {
             format: "bintana-draw/1",
             version: 1,
+            layers: this.layers.map((l) => ({
+                id: l.id, name: l.name,
+                visible: l.visible, locked: l.locked,
+            })),
             shapes: this.shapes.map(copyShape),
             edges: this.edges.map(copyEdge),
         };
@@ -168,6 +278,28 @@ export class Diagram {
         const used    = new Set();
         const renamed = new Map();
 
+        /* Version 1 had no layers; its shapes become the first layer. */
+        if (Array.isArray(data.layers) && data.layers.length) {
+            const layers = [];
+            const layerIds = new Set();
+            for (const raw of data.layers) {
+                if (!raw || typeof raw !== "object") continue;
+                let id = text(raw.id, "");
+                if (!id || layerIds.has(id)) id = "l" + (diagram.nextLayer++);
+                layerIds.add(id);
+                layers.push({
+                    id: id,
+                    name: (typeof raw.name === "string" && raw.name.trim())
+                        ? raw.name
+                        : Locale.Text("Layer {0}", layers.length + 1),
+                    visible: raw.visible !== false,
+                    locked: raw.locked === true,
+                });
+            }
+            if (layers.length) diagram.layers = layers;
+            while (diagram.layerById("l" + diagram.nextLayer)) diagram.nextLayer++;
+        }
+
         const shapes = Array.isArray(data.shapes) ? data.shapes : [];
         for (const raw of shapes) {
             if (!raw || typeof raw !== "object") continue;
@@ -180,6 +312,8 @@ export class Diagram {
             const shape = {
                 id: id,
                 kind: kind(raw.kind),
+                layer: diagram.layerById(text(raw.layer, ""))
+                    ? raw.layer : diagram.layers[0].id,
                 x: Math.round(number(raw.x, 0)),
                 y: Math.round(number(raw.y, 0)),
                 w: Math.max(MIN_SIZE, Math.round(number(raw.w, 140))),
@@ -208,6 +342,8 @@ export class Diagram {
                 id: id,
                 from: from,
                 to: to,
+                layer: diagram.layerById(text(raw.layer, ""))
+                    ? raw.layer : diagram.layers[0].id,
                 text: text(raw.text, ""),
                 stroke: text(raw.stroke, DEFAULT_EDGE),
                 dashed: raw.dashed === true,

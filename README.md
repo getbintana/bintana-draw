@@ -36,6 +36,11 @@ The window is started with a blank canvas and the shape palette on the left.
   resize. Connectors can be labelled and can be dashed.
 - **Text** — double-click a shape or a connector and the editor opens over it.
   Enter or clicking away keeps the text; Escape puts it back.
+- **Layers** — the panel on the right adds, removes and reorders layers, and
+  names, hides or locks the active one. New shapes and connectors go to the
+  active layer; a hidden layer is not drawn, hit-tested or exported, and a
+  locked one is visible but cannot be selected. A selection can be sent to the
+  active layer in one click.
 - **Selection** — click, Shift-click, or drag a rubber band. Drag a selected
   shape to move the selection; drag a handle to resize the one shape selected.
   Shift constrains a move to one axis.
@@ -83,13 +88,18 @@ One object, two arrays, and numbers in canvas units on an unbounded plane:
 {
   "format": "bintana-draw/1",
   "version": 1,
+  "layers": [
+    { "id": "l1", "name": "Flow", "visible": true, "locked": false },
+    { "id": "l2", "name": "Annotations", "visible": true, "locked": false }
+  ],
   "shapes": [
-    { "id": "s1", "kind": "rect", "x": 40, "y": 40, "w": 160, "h": 70,
+    { "id": "s1", "kind": "rect", "layer": "l1",
+      "x": 40, "y": 40, "w": 160, "h": 70,
       "text": "Start", "fill": "#dae8fc", "stroke": "#6c8ebf",
       "textColor": "#1f2937", "fontSize": 12, "radius": 12 }
   ],
   "edges": [
-    { "id": "e1", "from": "s1", "to": "s2", "text": "yes",
+    { "id": "e1", "from": "s1", "to": "s2", "layer": "l1", "text": "yes",
       "stroke": "#6c8ebf", "dashed": false, "fontSize": 11 }
   ]
 }
@@ -143,16 +153,16 @@ handler whose control name is misspelled is silently dead.
 
 This is a first editor, not a draw.io replacement. Missing, in the order they
 would change what a person can draw: custom shape libraries and stencils,
-layers and multiple pages, curved connectors with movable waypoints, images and
-icons, system-clipboard interchange with other applications, SVG import/export,
-and collaboration.
+multiple pages, curved connectors with movable waypoints, images and icons,
+system-clipboard interchange with other applications, SVG import/export, and
+collaboration.
 
 The draw.io import is deliberately the basic half: it reads the first page of
 an uncompressed file, maps the common shapes by style (`rounded`, `ellipse`,
 `rhombus`, `shape=note`, `shape=terminator`, `shape=parallelogram`,
-`shape=cylinder3`), keeps fill and stroke colours, labels and dashed edges. It
-does not read compressed pages, rotation, groups with their own layout, images
-or the second and later pages.
+`shape=cylinder3`), keeps fill and stroke colours, labels, dashed edges and the
+draw.io layers. It does not read compressed pages, rotation, groups with their
+own layout, images or the second and later pages.
 There is no autosave and no recovery file; the unsaved-changes question is the
 whole of the safety net.
 

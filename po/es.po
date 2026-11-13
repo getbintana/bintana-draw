@@ -250,6 +250,77 @@ msgstr[1] "{0} formas"
 
 # --- files -------------------------------------------------------------------
 
+
+# --- layers ------------------------------------------------------------------
+msgid "Layer {0}"
+msgstr "Capa {0}"
+
+msgid "Layers"
+msgstr "Capas"
+
+msgid "Add"
+msgstr "Agregar"
+
+msgid "Remove"
+msgstr "Quitar"
+
+msgid "Move up"
+msgstr "Subir"
+
+msgid "Move down"
+msgstr "Bajar"
+
+msgid "Visible"
+msgstr "Visible"
+
+msgid "Locked"
+msgstr "Bloqueada"
+
+msgid "Name"
+msgstr "Nombre"
+
+msgid "Layer name"
+msgstr "Nombre de la capa"
+
+msgid "Move selection here"
+msgstr "Mover la selección acá"
+
+msgid "Add layer"
+msgstr "Agregar capa"
+
+msgid "Delete layer"
+msgstr "Eliminar capa"
+
+msgid "Move layer"
+msgstr "Mover capa"
+
+msgid "Layer visibility"
+msgstr "Visibilidad de la capa"
+
+msgid "Layer lock"
+msgstr "Bloqueo de la capa"
+
+msgid "Rename layer"
+msgstr "Renombrar capa"
+
+msgid "Move to layer"
+msgstr "Mover a la capa"
+
+msgid "There is no active layer."
+msgstr "No hay una capa activa."
+
+msgid "The active layer is hidden."
+msgstr "La capa activa está oculta."
+
+msgid "The active layer is locked."
+msgstr "La capa activa está bloqueada."
+
+msgid "hidden"
+msgstr "oculta"
+
+msgid "locked"
+msgstr "bloqueada"
+
 msgid "Not a draw.io diagram."
 msgstr "No es un diagrama de draw.io."
 
@@ -307,8 +378,8 @@ msgstr "Imagen PNG"
 msgid "PDF document"
 msgstr "Documento PDF"
 
-msgid "The diagram is empty."
-msgstr "El diagrama está vacío."
+msgid "There is nothing visible to export."
+msgstr "No hay nada visible para exportar."
 
 msgid "Exported {0}"
 msgstr "Se exportó {0}"

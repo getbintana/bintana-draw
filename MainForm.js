@@ -65,6 +65,7 @@ export class MainForm extends Form {
     doc    = null;
     path   = "";
     importedFrom = "";
+    activeLayer = "";
     sel    = [];
     tool   = "select";
     zoom   = 1;
@@ -85,6 +86,7 @@ export class MainForm extends Form {
     syncingColors = false;
     syncingGrid   = false;
     syncingTools  = false;
+    syncingLayers = false;
     exporting     = false;
     forceClose    = false;
     pendingFit    = false;
@@ -94,6 +96,7 @@ export class MainForm extends Form {
 
     Form_Open() {
         this.doc  = new Diagram();
+        this.activeLayer = this.defaultActiveLayer(this.doc);
         this.sel  = [];
         this.tool = "select";
         this.zoom = 1;
@@ -130,7 +133,7 @@ export class MainForm extends Form {
         Timer.After(0, () => {
             this.fitCanvas();
             this.Canvas.SetFocus();
-            if (this.pendingFit) { this.pendingFit = false; this.zoomFit(); }
+            this.fitPending();
         });
     }
 
@@ -162,10 +165,17 @@ export class MainForm extends Form {
      * was up can finally measure the stage. */
     Canvas_Allocated() {
         this.fitCanvas();
-        if (this.pendingFit) {
-            this.pendingFit = false;
-            this.zoomFit();
-        }
+        this.fitPending();
+    }
+
+    /* A file opened before the window was up asks to fit once the stage has a
+     * real width. The fallback in `viewport` is for a question asked too early,
+     * never for the fit itself. */
+    fitPending() {
+        if (!this.pendingFit) return;
+        if (this.Stage.Bounds().Width <= 2) return;
+        this.pendingFit = false;
+        this.zoomFit();
     }
 
     Form_Close() {
@@ -185,6 +195,7 @@ export class MainForm extends Form {
 
     Stage_Allocated() {
         this.fitCanvas();
+        this.fitPending();
     }
 
     /* -------------------------------------------------------------- drawing */
@@ -307,6 +318,108 @@ export class MainForm extends Form {
 
     selectedEdges() {
         return this.doc.edges.filter((e) => this.sel.indexOf(e.id) >= 0);
+    }
+
+    /* ---------------------------------------------------------------- layers */
+
+    defaultActiveLayer(doc) {
+        for (const layer of doc.layers)
+            if (layer.visible && !layer.locked) return layer.id;
+        return doc.layers.length ? doc.layers[0].id : "";
+    }
+
+    ensureActiveLayer() {
+        if (!this.doc) return;
+        if (!this.doc.layerById(this.activeLayer)) {
+            this.activeLayer = this.defaultActiveLayer(this.doc);
+        }
+    }
+
+    activeLayerObject() {
+        return this.doc ? this.doc.layerById(this.activeLayer) : null;
+    }
+
+    canEditActiveLayer() {
+        const layer = this.activeLayerObject();
+        if (!layer) {
+            this.setStatus(Locale.Text("There is no active layer."));
+            return false;
+        }
+        if (!layer.visible) {
+            this.setStatus(Locale.Text("The active layer is hidden."));
+            return false;
+        }
+        if (layer.locked) {
+            this.setStatus(Locale.Text("The active layer is locked."));
+            return false;
+        }
+        return true;
+    }
+
+    pruneSelection() {
+        if (!this.doc) return;
+        this.sel = this.sel.filter((id) => this.doc.canSelect(id));
+    }
+
+    layerLabel(layer) {
+        let label = layer.name + " (" + this.doc.layerShapeCount(layer.id) + ")";
+        if (!layer.visible) label += " · " + Locale.Text("hidden");
+        if (layer.locked) label += " · " + Locale.Text("locked");
+        return label;
+    }
+
+    refreshLayerControls() {
+        if (!this.BtnLayerVisible) return;
+        this.ensureActiveLayer();
+        const layer = this.activeLayerObject();
+
+        this.syncingLayers = true;
+        this.TxtLayerName.Text = layer ? layer.name : "";
+        this.BtnLayerVisible.Active = layer ? layer.visible : false;
+        this.BtnLayerLocked.Active = layer ? layer.locked : false;
+        this.syncingLayers = false;
+
+        const index = layer ? this.doc.layers.indexOf(layer) : -1;
+        this.BtnLayerRemove.Enabled = this.doc.layers.length > 1 && !!layer;
+        this.BtnLayerUp.Enabled = index >= 0 && index < this.doc.layers.length - 1;
+        this.BtnLayerDown.Enabled = index > 0;
+        this.BtnLayerAssign.Enabled = !!layer && layer.visible && !layer.locked &&
+                                      this.sel.length > 0;
+    }
+
+    refreshLayers() {
+        if (!this.LstLayers) return;
+        this.ensureActiveLayer();
+        const layer = this.activeLayerObject();
+
+        this.syncingLayers = true;
+
+        /* Keep the rows when only a count or a name changed: a rebuild would
+         * put the scroll back at the top after every drag. */
+        let sameRows = this.LstLayers.Count === this.doc.layers.length;
+        if (sameRows) {
+            for (let i = 0; i < this.doc.layers.length; i++) {
+                const item = this.doc.layers[this.doc.layers.length - 1 - i];
+                if (this.LstLayers.KeyAt(i) !== item.id) { sameRows = false; break; }
+            }
+        }
+        if (sameRows) {
+            for (let i = 0; i < this.doc.layers.length; i++) {
+                const item = this.doc.layers[this.doc.layers.length - 1 - i];
+                this.LstLayers.SetText(i, this.layerLabel(item));
+            }
+        } else {
+            this.LstLayers.Clear();
+            /* The list reads top first, the array paints bottom first. */
+            for (let i = this.doc.layers.length - 1; i >= 0; i--) {
+                const item = this.doc.layers[i];
+                this.LstLayers.Add(this.layerLabel(item), item.id);
+            }
+        }
+        if (layer) this.LstLayers.Key = layer.id;
+        this.syncingLayers = false;
+
+        this.refreshLayerControls();
     }
 
     /* ------------------------------------------------------------ alignment */
@@ -432,20 +545,23 @@ export class MainForm extends Form {
     }
 
     select(ids) {
-        this.sel = ids.slice();
+        this.sel = ids.filter((id) => this.doc.canSelect(id));
         this.syncColors();
         this.updateStatus();
         this.refreshActions();
+        this.refreshLayerControls();
         if (this.Canvas) this.Canvas.Redraw();
     }
 
     toggleSelection(id) {
+        if (!this.doc.canSelect(id)) return;
         const at = this.sel.indexOf(id);
         if (at >= 0) this.sel.splice(at, 1);
         else this.sel.push(id);
         this.syncColors();
         this.updateStatus();
         this.refreshActions();
+        this.refreshLayerControls();
         if (this.Canvas) this.Canvas.Redraw();
     }
 
@@ -515,13 +631,14 @@ export class MainForm extends Form {
 
         if (this.tool === "connect") {
             const from = this.doc.shapeAt(world.x, world.y);
-            if (from)
+            if (from && this.canEditActiveLayer())
                 this.drag = { kind: "connect", from: from.id,
                               at: world, target: null };
             return;
         }
 
         if (this.tool !== "select") {
+            if (!this.canEditActiveLayer()) return;
             this.drag = { kind: "create", tool: this.tool,
                           start: world, at: world };
             return;
@@ -768,6 +885,7 @@ export class MainForm extends Form {
     }
 
     finishCreate(d, end) {
+        if (!this.canEditActiveLayer()) return;
         const r = rectOf(d.start, end);
         const before = this.snapshot();
         let x, y, w, h;
@@ -785,8 +903,9 @@ export class MainForm extends Form {
             h = Math.max(MIN_SIZE, this.snap(r.h));
         }
 
-        const shape = this.doc.addShape(d.tool, x, y, w, h,
-                                        this.shapeOptions(d.tool));
+        const options = this.shapeOptions(d.tool);
+        options.layer = this.activeLayer;
+        const shape = this.doc.addShape(d.tool, x, y, w, h, options);
         this.select([shape.id]);
         this.pushUndo(Locale.Text("Create shape"), before);
         this.chooseTool("select", this.BtnToolSelect);
@@ -796,6 +915,7 @@ export class MainForm extends Form {
     }
 
     finishConnect(d) {
+        if (!this.canEditActiveLayer()) return;
         if (!d.target || d.target === d.from) {
             this.statusText = Locale.Text("Drop the connector on another shape.");
             this.updateStatus();
@@ -805,7 +925,8 @@ export class MainForm extends Form {
 
         const before = this.snapshot();
         const edge = this.doc.addEdge(d.from, d.target,
-                                      { stroke: this.defaultStroke });
+                                      { stroke: this.defaultStroke,
+                                        layer: this.activeLayer });
         if (!edge) return;
 
         this.select([edge.id]);
@@ -954,6 +1075,7 @@ export class MainForm extends Form {
         const outEdges = [];
         for (const e of this.doc.edges) {
             if (!ids.has(e.from) || !ids.has(e.to)) continue;
+            if (!this.doc.canSelect(e)) continue;
             outEdges.push({
                 id: e.id, from: e.from, to: e.to, text: e.text,
                 stroke: e.stroke, dashed: e.dashed, fontSize: e.fontSize,
@@ -973,6 +1095,7 @@ export class MainForm extends Form {
 
     pasteData(data, dx, dy) {
         if (!data || !data.shapes || !data.shapes.length) return;
+        if (!this.canEditActiveLayer()) return;
         const before = this.snapshot();
         const renamed = new Map();
         const ids = [];
@@ -982,7 +1105,7 @@ export class MainForm extends Form {
                 raw.kind, raw.x + dx, raw.y + dy, raw.w, raw.h,
                 { text: raw.text, fill: raw.fill, stroke: raw.stroke,
                   textColor: raw.textColor, fontSize: raw.fontSize,
-                  radius: raw.radius });
+                  radius: raw.radius, layer: this.activeLayer });
             renamed.set(raw.id, shape.id);
             ids.push(shape.id);
         }
@@ -993,7 +1116,8 @@ export class MainForm extends Form {
             if (!from || !to) continue;
             const edge = this.doc.addEdge(from, to,
                 { text: raw.text, stroke: raw.stroke,
-                  dashed: raw.dashed, fontSize: raw.fontSize });
+                  dashed: raw.dashed, fontSize: raw.fontSize,
+                  layer: this.activeLayer });
             if (edge) ids.push(edge.id);
         }
 
@@ -1023,7 +1147,8 @@ export class MainForm extends Form {
         this.cancelEdit();
         this.guides = null;
         this.doc = Diagram.fromJSON(JSON.parse(json));
-        this.sel = this.sel.filter((id) => !!this.doc.find(id));
+        this.ensureActiveLayer();
+        this.sel = this.sel.filter((id) => this.doc.canSelect(id));
         this.refreshAll();
     }
 
@@ -1055,6 +1180,7 @@ export class MainForm extends Form {
         this.doc = new Diagram();
         this.path = "";
         this.importedFrom = "";
+        this.activeLayer = this.defaultActiveLayer(this.doc);
         this.sel = [];
         this.guides = null;
         this.undo.Clear();
@@ -1085,16 +1211,14 @@ export class MainForm extends Form {
         }
 
         this.doc = doc;
+        this.activeLayer = this.defaultActiveLayer(doc);
         this.path = isDrawio ? "" : path;
         this.importedFrom = isDrawio ? path : "";
         this.sel = [];
         this.guides = null;
         this.undo.Clear();
         this.pendingFit = true;
-        if (this.Stage.Bounds().Width > 2) {
-            this.pendingFit = false;
-            this.zoomFit();
-        }
+        this.fitPending();
 
         if (isDrawio) {
             if (pages > 1)
@@ -1155,7 +1279,7 @@ export class MainForm extends Form {
     exportDiagram(kind) {
         if (this.editing) this.commitEdit();
         if (!this.doc.bounds()) {
-            Message.Warning(Locale.Text("The diagram is empty."));
+            Message.Warning(Locale.Text("There is nothing visible to export."));
             return;
         }
 
@@ -1251,6 +1375,9 @@ export class MainForm extends Form {
     /* -------------------------------------------------------------- the rest */
 
     refreshAll() {
+        this.ensureActiveLayer();
+        this.pruneSelection();
+        this.refreshLayers();
         this.refreshTitle();
         this.refreshActions();
         this.syncColors();
@@ -1329,6 +1456,116 @@ export class MainForm extends Form {
         this.updateStatus();
     }
 
+    /* ------------------------------------------------------------ layer verbs */
+
+    LstLayers_Select() {
+        if (this.syncingLayers) return;
+        const id = this.LstLayers.Key;
+        if (!id || !this.doc.layerById(id)) return;
+        this.activeLayer = id;
+        this.refreshLayerControls();
+        this.refreshActions();
+        this.Canvas.Redraw();
+    }
+
+    LstLayers_Activate() {
+        this.TxtLayerName.SetFocus();
+        this.TxtLayerName.SelectAll();
+    }
+
+    BtnLayerAdd_Click() {
+        const before = this.snapshot();
+        const layer = this.doc.addLayer();
+        this.activeLayer = layer.id;
+        this.pushUndo(Locale.Text("Add layer"), before);
+        this.refreshAll();
+        this.TxtLayerName.SetFocus();
+        this.TxtLayerName.SelectAll();
+    }
+
+    BtnLayerRemove_Click() {
+        if (this.doc.layers.length < 2) return;
+        const before = this.snapshot();
+        this.doc.removeLayer(this.activeLayer);
+        this.activeLayer = this.defaultActiveLayer(this.doc);
+        this.pushUndo(Locale.Text("Delete layer"), before);
+        this.refreshAll();
+    }
+
+    BtnLayerUp_Click()   { this.moveActiveLayer(1); }
+    BtnLayerDown_Click() { this.moveActiveLayer(-1); }
+
+    moveActiveLayer(delta) {
+        const before = this.snapshot();
+        if (!this.doc.moveLayer(this.activeLayer, delta)) return;
+        this.pushUndo(Locale.Text("Move layer"), before);
+        this.refreshAll();
+    }
+
+    BtnLayerVisible_Click() {
+        if (this.syncingLayers) return;
+        const layer = this.activeLayerObject();
+        if (!layer) return;
+        const before = this.snapshot();
+        layer.visible = this.BtnLayerVisible.Active;
+        this.pruneSelection();
+        this.pushUndo(Locale.Text("Layer visibility"), before);
+        this.refreshAll();
+    }
+
+    BtnLayerLocked_Click() {
+        if (this.syncingLayers) return;
+        const layer = this.activeLayerObject();
+        if (!layer) return;
+        const before = this.snapshot();
+        layer.locked = this.BtnLayerLocked.Active;
+        this.pruneSelection();
+        this.pushUndo(Locale.Text("Layer lock"), before);
+        this.refreshAll();
+    }
+
+    renameActiveLayer() {
+        if (this.syncingLayers) return;
+        const layer = this.activeLayerObject();
+        if (!layer) return;
+        const name = this.TxtLayerName.Text.trim();
+        if (!name) {
+            this.TxtLayerName.Text = layer.name;
+            return;
+        }
+        if (name === layer.name) return;
+        const before = this.snapshot();
+        layer.name = name;
+        this.pushUndo(Locale.Text("Rename layer"), before);
+        this.refreshAll();
+    }
+
+    TxtLayerName_Activate() { this.renameActiveLayer(); }
+
+    TxtLayerName_LostFocus() { this.renameActiveLayer(); }
+
+    BtnLayerAssign_Click() {
+        const layer = this.activeLayerObject();
+        if (!layer || !layer.visible || layer.locked) return;
+
+        const shapes = this.selectedShapes();
+        const edges = this.selectedEdges();
+        if (!shapes.length && !edges.length) return;
+
+        const before = this.snapshot();
+        const selected = new Set();
+        for (const s of shapes) { selected.add(s.id); s.layer = layer.id; }
+        for (const e of edges) e.layer = layer.id;
+        for (const e of this.doc.edges) {
+            if (!selected.has(e.from) || !selected.has(e.to)) continue;
+            if (!this.doc.canSelect(e)) continue;
+            e.layer = layer.id;
+        }
+
+        this.pushUndo(Locale.Text("Move to layer"), before);
+        this.refreshAll();
+    }
+
     /* --------------------------------------------------------------- actions */
 
     ActNew_Execute() { this.guard(() => this.resetDocument()); }
@@ -1403,8 +1640,10 @@ export class MainForm extends Form {
     ActSelectAll_Execute() {
         if (this.editingOwnsKeys()) return;
         const ids = [];
-        for (const s of this.doc.shapes) ids.push(s.id);
-        for (const e of this.doc.edges) ids.push(e.id);
+        for (const s of this.doc.shapes)
+            if (this.doc.canSelect(s)) ids.push(s.id);
+        for (const e of this.doc.edges)
+            if (this.doc.canSelect(e)) ids.push(e.id);
         this.select(ids);
     }
 
