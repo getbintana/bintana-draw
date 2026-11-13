@@ -65,10 +65,11 @@ The window is started with a blank canvas and the shape palette on the left.
   its text, hit-test, bounds and connector anchors follow. A rotated shape has
   no resize handles: set `Rotate` back to 0 to resize it.
 - **Free lines and arrows** — the `Line` and `Arrow` tools draw a segment with
-  no shapes attached. A free line can be selected, dragged by its body, moved
-  with the arrows, labelled, styled, copied, pasted, and it is included in the
-  bounds and the export. The endpoint handles are not there yet: to change just
-  one end, draw it again.
+  no shapes attached. A selected free line shows a handle at each end: drag one
+  to move just that end, drag the body to move both, and double-click an end to
+  put or take away its arrowhead. `Edit > Arrowheads` and the context menu set
+  none, start, end or both on any selected connector. Lines can be labelled,
+  styled, copied, pasted, and are included in the bounds and the export.
 - **Connector routes** — a selected connector has a `Route` choice:
   orthogonal (the automatic right-angled path), straight, or curved. Select a
   connector and drag the hollow circle at its middle to add a bend; drag a bend
@@ -102,6 +103,7 @@ The window is started with a blank canvas and the shape palette on the left.
 | `Delete` | Delete the selection |
 | `Ctrl+A` | Select all shapes and connectors |
 | `Ctrl+G` / `Ctrl+Shift+G` | Group / ungroup the selection |
+| Double-click a line end | Toggle that end's arrowhead |
 | Arrow keys / `Shift`+arrows | Move the selection 10 / 1 units |
 | `+` / `-` / `0` | Zoom in, zoom out, actual size |
 | Middle drag | Pan |
@@ -138,6 +140,7 @@ One object, two arrays, and numbers in canvas units on an unbounded plane:
       "edges": [
         { "id": "e1", "from": "s1", "to": "s2", "layer": "l1", "text": "yes",
           "route": "orthogonal", "waypoints": [],
+          "arrowStart": false, "arrowEnd": true,
           "stroke": "#6c8ebf", "strokeWidth": 2, "dash": "solid",
           "fontSize": 11, "textBold": false, "textItalic": false }
       ]
@@ -195,8 +198,8 @@ handler whose control name is misspelled is silently dead.
 
 This is a first editor, not a draw.io replacement. Missing, in the order they
 would change what a person can draw: custom shape libraries and stencils,
-endpoint editing on free lines, images and icons, system-clipboard interchange
-with other applications, SVG import/export, and collaboration.
+attaching a free line's ends to shapes, images and icons, system-clipboard
+interchange with other applications, SVG import/export, and collaboration.
 
 The draw.io import is deliberately the basic half: it reads every uncompressed
 page of a file, maps the common shapes by style (`rounded`, `ellipse`,

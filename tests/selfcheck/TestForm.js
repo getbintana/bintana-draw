@@ -873,9 +873,42 @@ class TestForm extends Form {
         const arrow = fm.doc.edges[1];
         this.eq("lines: the arrow keeps its head", arrow.arrowEnd, true);
 
+        /* The two ends have their own handles. */
+        fm.select([line.id]);
+        let handles = edgeHandlePoints(fm.doc, fm.doc.edgeById(line.id));
+        this.eq("ends: a free line has two endpoint handles",
+                handles.ends.length, 2);
+        const start = handles.ends[0];
+        fm.Canvas_MouseDown(start.x, start.y, 1, false, false);
+        fm.Canvas_MouseMove(start.x + 20, start.y + 10, 1, false, false);
+        fm.Canvas_MouseUp(start.x + 20, start.y + 10, 1, false, false);
+        this.eq("ends: dragging the start moves only the start",
+                fm.doc.edgeById(line.id).x1, fm.snap(start.x + 20));
+        this.eq("ends: the end stayed",
+                fm.doc.edgeById(line.id).x2, line.x2);
+
+        const moved = edgeHandlePoints(fm.doc, fm.doc.edgeById(line.id)).ends[0];
+        fm.Canvas_DblClick(moved.x, moved.y);
+        this.eq("ends: double-click puts an arrow at the start",
+                fm.doc.edgeById(line.id).arrowStart, true);
+        fm.Canvas_DblClick(moved.x, moved.y);
+        this.eq("ends: double-click takes it away",
+                fm.doc.edgeById(line.id).arrowStart, false);
+
+        fm.select([line.id]);
+        fm.ActArrowBoth_Execute();
+        this.eq("ends: arrows at both ends", fm.doc.edgeById(line.id).arrowStart,
+                true);
+        this.eq("ends: and at the end", fm.doc.edgeById(line.id).arrowEnd, true);
+        fm.ActArrowNone_Execute();
+        this.eq("ends: no arrow at the start", fm.doc.edgeById(line.id).arrowStart,
+                false);
+        this.eq("ends: no arrow at the end", fm.doc.edgeById(line.id).arrowEnd,
+                false);
+
         /* A free line can be dragged by its body. */
         fm.select([line.id]);
-        const x = line.x1;
+        const x = fm.doc.edgeById(line.id).x1;
         fm.Canvas_MouseDown(200, 110, 1, false, false);
         fm.Canvas_MouseMove(240, 110, 1, false, false);
         fm.Canvas_MouseUp(240, 110, 1, false, false);
@@ -1112,6 +1145,8 @@ class TestForm extends Form {
             ActDistributeVertical: ["Execute"],
             BtnToolLine: ["Click"], BtnToolArrow: ["Click"],
             ActGroup: ["Execute"], ActUngroup: ["Execute"],
+            ActArrowNone: ["Execute"], ActArrowEnd: ["Execute"],
+            ActArrowStart: ["Execute"], ActArrowBoth: ["Execute"],
             ActBringFront: ["Execute"], ActSendBack: ["Execute"],
             ActBringForward: ["Execute"], ActSendBackward: ["Execute"],
             ActZoomIn: ["Execute"], ActZoomOut: ["Execute"],

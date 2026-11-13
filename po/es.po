@@ -468,6 +468,28 @@ msgstr "Límite de bucle"
 msgid "Manual operation"
 msgstr "Operación manual"
 
+
+msgid "No Arrowheads"
+msgstr "Sin puntas de flecha"
+
+msgid "Arrow at End"
+msgstr "Flecha al final"
+
+msgid "Arrow at Start"
+msgstr "Flecha al inicio"
+
+msgid "Arrowheads at Both Ends"
+msgstr "Flechas en ambos extremos"
+
+msgid "Arrowheads"
+msgstr "Puntas de flecha"
+
+msgid "Arrowhead"
+msgstr "Punta de flecha"
+
+msgid "Move endpoint"
+msgstr "Mover extremo"
+
 msgid "Orthogonal"
 msgstr "Ortogonal"
 

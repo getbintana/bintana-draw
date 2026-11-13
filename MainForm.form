@@ -30,6 +30,10 @@
     { "name": "ActSelectAll", "text": "Select All", "shortcut": "<Control>a" },
     { "name": "ActGroup", "text": "Group", "shortcut": "<Control>g", "enabled": false },
     { "name": "ActUngroup", "text": "Ungroup", "shortcut": "<Control><Shift>g", "enabled": false },
+    { "name": "ActArrowNone", "text": "No Arrowheads", "enabled": false },
+    { "name": "ActArrowEnd", "text": "Arrow at End", "enabled": false },
+    { "name": "ActArrowStart", "text": "Arrow at Start", "enabled": false },
+    { "name": "ActArrowBoth", "text": "Arrowheads at Both Ends", "enabled": false },
     { "name": "ActBringFront", "text": "Bring to Front", "enabled": false },
     { "name": "ActSendBack", "text": "Send to Back", "enabled": false },
     { "name": "ActBringForward", "text": "Bring Forward", "enabled": false },
@@ -112,6 +116,16 @@
             { "action": "ActSendBack" },
             { "action": "ActBringForward" },
             { "action": "ActSendBackward" }
+          ]
+        },
+        {
+          "name": "MnuArrowheads",
+          "text": "Arrowheads",
+          "children": [
+            { "action": "ActArrowNone" },
+            { "action": "ActArrowEnd" },
+            { "action": "ActArrowStart" },
+            { "action": "ActArrowBoth" }
           ]
         }
       ]
@@ -637,6 +651,15 @@
                       { "action": "ActSendBack" },
                       { "action": "ActBringForward" },
                       { "action": "ActSendBackward" }
+                    ]
+                  },
+                  {
+                    "text": "Arrowheads",
+                    "children": [
+                      { "action": "ActArrowNone" },
+                      { "action": "ActArrowEnd" },
+                      { "action": "ActArrowStart" },
+                      { "action": "ActArrowBoth" }
                     ]
                   }
                 ]

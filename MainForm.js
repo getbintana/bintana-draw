@@ -698,6 +698,13 @@ export class MainForm extends Form {
     edgeHandleAt(x, y) {
         for (const edge of this.selectedEdges()) {
             const handles = edgeHandlePoints(this.doc, edge);
+            for (const point of handles.ends) {
+                const sx = this.panX + point.x * this.zoom;
+                const sy = this.panY + point.y * this.zoom;
+                if (Math.abs(x - sx) <= HANDLE_HIT &&
+                    Math.abs(y - sy) <= HANDLE_HIT)
+                    return { kind: "endpoint", id: edge.id, end: point.end };
+            }
             for (let i = 0; i < handles.waypoints.length; i++) {
                 const point = handles.waypoints[i];
                 const sx = this.panX + point.x * this.zoom;
@@ -831,7 +838,10 @@ export class MainForm extends Form {
             const edge = this.doc.edgeById(bend.id);
             if (!edge) return;
             const before = this.snapshot();
-            if (bend.kind === "addBend") {
+            if (bend.kind === "endpoint") {
+                this.drag = { kind: "endpoint", id: edge.id,
+                              end: bend.end, before: before };
+            } else if (bend.kind === "addBend") {
                 this.drag = { kind: "addBend", id: edge.id,
                               point: bend.point, before: before,
                               inserted: false };
@@ -954,6 +964,17 @@ export class MainForm extends Form {
             return;
         }
 
+        if (d.kind === "endpoint") {
+            const edge = this.doc.edgeById(d.id);
+            if (edge) {
+                const x = this.snap(world.x), y = this.snap(world.y);
+                if (d.end === "start") { edge.x1 = x; edge.y1 = y; }
+                else { edge.x2 = x; edge.y2 = y; }
+            }
+            this.Canvas.Redraw();
+            return;
+        }
+
         if (d.kind === "addBend") {
             const edge = this.doc.edgeById(d.id);
             if (!edge) return;
@@ -1046,13 +1067,14 @@ export class MainForm extends Form {
 
         if (d.kind === "move" || d.kind === "resize" ||
             d.kind === "moveLine" || d.kind === "bend" ||
-            d.kind === "addBend") {
+            d.kind === "addBend" || d.kind === "endpoint") {
             const after = this.snapshot();
             if (d.before !== after) {
                 let step = Locale.Text("Move");
                 if (d.kind === "resize") step = Locale.Text("Resize");
                 else if (d.kind === "bend") step = Locale.Text("Move bend");
                 else if (d.kind === "addBend") step = Locale.Text("Add bend");
+                else if (d.kind === "endpoint") step = Locale.Text("Move endpoint");
                 this.pushUndo(step, d.before);
             }
             this.refreshAll();
@@ -1102,6 +1124,19 @@ export class MainForm extends Form {
                 const before = this.snapshot();
                 edge.waypoints.splice(handle.index, 1);
                 this.pushUndo(Locale.Text("Remove bend"), before);
+                this.refreshAll();
+            }
+            return;
+        }
+        if (handle && handle.kind === "endpoint") {
+            const edge = this.doc.edgeById(handle.id);
+            if (edge) {
+                const before = this.snapshot();
+                if (handle.end === "start")
+                    edge.arrowStart = edge.arrowStart !== true;
+                else
+                    edge.arrowEnd = edge.arrowEnd === false;
+                this.pushUndo(Locale.Text("Arrowhead"), before);
                 this.refreshAll();
             }
             return;
@@ -1809,6 +1844,11 @@ export class MainForm extends Form {
         this.ActDistributeHorizontal.Enabled = canDistribute;
         this.ActDistributeVertical.Enabled   = canDistribute;
 
+        const edgeCount = this.selectedEdges().length;
+        this.ActArrowNone.Enabled  = edgeCount > 0;
+        this.ActArrowEnd.Enabled   = edgeCount > 0;
+        this.ActArrowStart.Enabled = edgeCount > 0;
+        this.ActArrowBoth.Enabled  = edgeCount > 0;
         this.ActGroup.Enabled         = shapeCount >= 2;
         this.ActUngroup.Enabled       = this.selectedShapes()
                                             .some((s) => s.group);
@@ -2421,6 +2461,23 @@ export class MainForm extends Form {
         this.pushUndo(step, before);
         this.refreshAll();
     }
+
+    setArrows(start, end) {
+        const edges = this.selectedEdges();
+        if (!edges.length) return;
+        const before = this.snapshot();
+        for (const edge of edges) {
+            edge.arrowStart = start;
+            edge.arrowEnd = end;
+        }
+        this.pushUndo(Locale.Text("Arrowheads"), before);
+        this.refreshAll();
+    }
+
+    ActArrowNone_Execute()  { this.setArrows(false, false); }
+    ActArrowEnd_Execute()   { this.setArrows(false, true); }
+    ActArrowStart_Execute() { this.setArrows(true, false); }
+    ActArrowBoth_Execute()  { this.setArrows(true, true); }
 
     ActBringFront_Execute()   { this.zOrder("front"); }
     ActSendBack_Execute()     { this.zOrder("back"); }

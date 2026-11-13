@@ -317,6 +317,12 @@ function drawEdgeLine(p, e, points) {
     p.Stroke();
     p.LineDash = [];
     if (e.arrowEnd !== false) arrowHead(p, points, color, width);
+    if (e.arrowStart === true) {
+        const reverse = [];
+        for (let i = points.length - 2; i >= 0; i -= 2)
+            reverse.push(points[i], points[i + 1]);
+        arrowHead(p, reverse, color, width);
+    }
 }
 
 /* ------------------------------------------------------------------ handles */
@@ -351,7 +357,13 @@ export function edgeHandlePoints(diagram, edge) {
         const middle = edgeMidpoint(edgeRoute(diagram, edge));
         if (middle) midpoints.push(middle);
     }
-    return { waypoints: waypoints, midpoints: midpoints };
+
+    const ends = [];
+    if (!edge.from && !edge.to && edge.x1 !== undefined) {
+        ends.push({ x: edge.x1, y: edge.y1, end: "start" });
+        ends.push({ x: edge.x2, y: edge.y2, end: "end" });
+    }
+    return { waypoints: waypoints, midpoints: midpoints, ends: ends };
 }
 
 function drawSelection(p, diagram, selected, zoom) {
@@ -450,6 +462,15 @@ function drawSelection(p, diagram, selected, zoom) {
             p.Arc(point.x, point.y, 3.5 / zoom, 0, 360);
             p.Color = ACCENT;
             p.LineWidth = 1.2 / zoom;
+            p.Stroke();
+        }
+        for (const point of handles.ends) {
+            p.Arc(point.x, point.y, 4.5 / zoom, 0, 360);
+            p.Color = "#ffffff";
+            p.Fill();
+            p.Arc(point.x, point.y, 4.5 / zoom, 0, 360);
+            p.Color = ACCENT;
+            p.LineWidth = 1.5 / zoom;
             p.Stroke();
         }
     }

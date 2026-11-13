@@ -282,6 +282,8 @@ function importModel(model) {
             layer: layer,
             route: route,
             waypoints: waypoints,
+            arrowStart: map.startArrow && map.startArrow !== "none",
+            arrowEnd: map.endArrow !== "none",
             text: cleanText(node.Attr("value")),
             stroke: colour(map, "strokeColor", "#000000"),
             strokeWidth: edgeWidth === edgeWidth ? edgeWidth : 2,
@@ -312,7 +314,6 @@ function importModel(model) {
             }
         }
         if (sx !== null && tx !== null) {
-            common.arrowEnd = map.endArrow !== "none";
             diagram.addLine(sx, sy, tx, ty, common);
         }
     }

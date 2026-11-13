@@ -73,6 +73,7 @@ function copyEdge(e) {
     return {
         id: e.id, from: e.from, to: e.to, layer: e.layer, text: e.text,
         x1: e.x1, y1: e.y1, x2: e.x2, y2: e.y2,
+        arrowStart: e.arrowStart === true,
         arrowEnd: e.arrowEnd !== false,
         route: e.route || "orthogonal",
         waypoints: copyWaypoints(e.waypoints),
@@ -244,6 +245,8 @@ export class Diagram {
             route: o.route === "straight" || o.route === "curved"
                 ? o.route : "orthogonal",
             waypoints: copyWaypoints(o.waypoints),
+            arrowStart: o.arrowStart === true,
+            arrowEnd: o.arrowEnd !== false,
             text: text(o.text, ""),
             stroke: text(o.stroke, DEFAULT_EDGE),
             strokeWidth: Math.max(0.5, number(o.strokeWidth, 2)),
@@ -274,6 +277,7 @@ export class Diagram {
             y1: number(y1, 0),
             x2: number(x2, 0),
             y2: number(y2, 0),
+            arrowStart: o.arrowStart === true,
             arrowEnd: o.arrowEnd !== false,
             route: o.route === "straight" || o.route === "curved"
                 ? o.route : "orthogonal",
@@ -479,6 +483,7 @@ export class Diagram {
                 y1: free ? number(raw.y1, 0) : undefined,
                 x2: free ? number(raw.x2, 0) : undefined,
                 y2: free ? number(raw.y2, 0) : undefined,
+                arrowStart: raw.arrowStart === true,
                 arrowEnd: raw.arrowEnd !== false,
                 route: raw.route === "straight" || raw.route === "curved"
                     ? raw.route : "orthogonal",
