@@ -46,6 +46,8 @@ The window is started with a blank canvas and the shape palette on the left.
   uncompressed `.drawio`/XML diagram, a draw.io stencil set (`<shapes>`), or a
   draw.io `.mxlibrary` with uncompressed `xml` entries. Stencil geometry is
   kept as vector paths, so the imported shapes resize without a picture.
+  **Get stencils…** downloads a curated set into the library and shows its
+  license before the request.
 
 - **Connectors** — the connector tool, dragged from one shape to another,
   produces an orthogonal route that follows both shapes when they move or
@@ -179,6 +181,8 @@ documentation.
 ```
 Diagram.js       the document and its geometry -- no widgets
 Stencil.js       draw.io stencil sets, read as vector library items
+StencilCatalog.js what the stencil downloader may offer, and its terms
+StencilsForm.*   the downloader's window: set, license, one request
 Library.js       saved stamps, their insertion and every library importer
 DrawioImport.js  an uncompressed draw.io diagram mapped onto a page
 Render.js        the canvas and the export, as one painter routine
@@ -221,7 +225,7 @@ handler whose control name is misspelled is silently dead.
 
 This is a first editor, not a draw.io replacement. Missing, in the order they
 would change what a person can draw: a draw.io diagram that names a stencil
-without carrying its XML, library thumbnails, a built-in icon set,
+without carrying its XML, library thumbnails, AWS/Azure/GCP icon libraries,
 system-clipboard interchange with other applications, SVG import/export, and
 collaboration.
 
@@ -236,6 +240,25 @@ carries no geometry for it. It does not read compressed pages, rotation, images
 referred to by a path or URL, or a group cell's own label and style.
 There is no autosave and no recovery file; the unsaved-changes question is the
 whole of the safety net.
+
+## Third-party stencils
+
+The downloader is deliberately curated. It offers the generic draw.io sets,
+Kubernetes (Apache 2.0 or CC BY 4.0) and IBM Cloud (Apache 2.0), with the
+license and source beside each one. AWS, Azure and Google Cloud sets are not
+offered: their terms allow architecture diagrams and documentation, not
+redistribution as an application's asset library. The draw.io stencil terms are
+not Apache 2.0 and carry an Atlassian-product restriction; they travel in
+`StencilCatalog.js` and are shown in the window.
+
+The catalog points at the public draw.io endpoint:
+
+```text
+https://viewer.diagrams.net/stencils/
+```
+
+Names are in `StencilCatalog.js`. A set that is not there is not downloaded by
+the application, even if the endpoint has it.
 
 ## Licence
 

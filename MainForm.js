@@ -2444,6 +2444,16 @@ export class MainForm extends Form {
         this.refreshLibrary(Math.min(index, this.library.items.length - 1));
     }
 
+    BtnLibraryDownload_Click() {
+        StencilsForm.show((items, entry) => {
+            this.library.addItems(items);
+            if (!this.saveLibrary()) return;
+            this.refreshLibrary(this.library.items.length - items.length);
+            this.setStatus(Locale.Text("Downloaded {0} shapes from {1}.",
+                                       items.length, entry.name));
+        });
+    }
+
     BtnLibraryImport_Click() {
         const folder = this.path ? File.Directory(this.path)
                                  : Application.Directory;

@@ -6,6 +6,8 @@
     "Diagram.js",
     "DrawioImport.js",
     "Stencil.js",
+    "StencilCatalog.js",
+    "StencilsForm.js",
     "Library.js",
     "Render.js",
     "ConfirmForm.js",

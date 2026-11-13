@@ -1,0 +1,107 @@
+{
+  "format": "bintana-form/1",
+  "class": "StencilsForm",
+  "properties": {
+    "Text": "Stencil libraries",
+    "Width": 680,
+    "Height": 560,
+    "Resizable": false
+  },
+  "children": [
+    {
+      "type": "Label",
+      "name": "LblIntro",
+      "properties": {
+        "X": 18,
+        "Y": 14,
+        "Width": 644,
+        "Height": 34,
+        "Wrap": true,
+        "Text": "Download a set into the library. Only sets whose license allows it are listed."
+      }
+    },
+    {
+      "type": "Scroller",
+      "name": "Scroller",
+      "properties": {
+        "X": 18,
+        "Y": 56,
+        "Width": 644,
+        "Height": 250,
+        "Arrangement": "Vertical",
+        "Scrollbars": "Vertical"
+      },
+      "children": [
+        {
+          "type": "ListBox",
+          "name": "LstStencils",
+          "properties": {
+            "HAlign": "Fill",
+            "VAlign": "Fill",
+            "Width": 620,
+            "MinHeight": 40,
+            "AccessibleName": "Stencil libraries",
+            "HExpand": true,
+            "VExpand": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "Label",
+      "name": "LblLicense",
+      "properties": {
+        "X": 18,
+        "Y": 316,
+        "Width": 644,
+        "Height": 120,
+        "Wrap": true,
+        "VAlign": "Start"
+      }
+    },
+    {
+      "type": "Label",
+      "name": "LblStatus",
+      "properties": {
+        "X": 18,
+        "Y": 442,
+        "Width": 644,
+        "Height": 28,
+        "Wrap": true
+      }
+    },
+    {
+      "type": "Button",
+      "name": "BtnDownload",
+      "properties": {
+        "X": 330,
+        "Y": 486,
+        "Width": 150,
+        "Height": 34,
+        "Text": "Download",
+        "Style": "suggested-action"
+      }
+    },
+    {
+      "type": "Button",
+      "name": "BtnClose",
+      "properties": {
+        "X": 492,
+        "Y": 486,
+        "Width": 170,
+        "Height": 34,
+        "Text": "Close",
+        "Cancel": true
+      }
+    }
+  ],
+  "components": [
+    {
+      "type": "HttpClient",
+      "name": "Api",
+      "properties": {
+        "Timeout": 60000
+      }
+    }
+  ]
+}

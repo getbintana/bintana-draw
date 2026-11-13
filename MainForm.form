@@ -1242,7 +1242,9 @@
                     "VAlign": "Fill",
                     "Expand": true,
                     "Height": 160,
-                    "MinHeight": 120
+                    "MinHeight": 120,
+                    "Arrangement": "Vertical",
+                    "Scrollbars": "Vertical"
                   },
                   "children": [
                     {
@@ -1250,10 +1252,12 @@
                       "name": "LstLibrary",
                       "properties": {
                         "HAlign": "Fill",
-                        "VAlign": "Start",
+                        "VAlign": "Fill",
                         "Width": 190,
                         "MinHeight": 40,
-                        "AccessibleName": "Library"
+                        "AccessibleName": "Library",
+                        "HExpand": true,
+                        "VExpand": true
                       }
                     }
                   ]
@@ -1325,6 +1329,15 @@
                       }
                     }
                   ]
+                },
+                {
+                  "type": "Button",
+                  "name": "BtnLibraryDownload",
+                  "properties": {
+                    "Text": "Get stencils…",
+                    "HAlign": "Fill",
+                    "Height": 30
+                  }
                 },
                 {
                   "type": "Button",

@@ -313,16 +313,16 @@ function entriesFromStencil(root) {
     return items;
 }
 
-export function importLibrary(path) {
-    const extension = File.Extension(path).toLowerCase();
+/* The text form is what a downloader has: an answer from the network is not a
+ * file, and writing it to one only to read it back would be a detour. */
+export function importLibraryText(text, extension) {
+    const kind = (extension || "").toLowerCase();
 
-    if (extension === "btlib") {
-        const library = ShapeLibrary.fromJSON(File.LoadJson(path));
-        return library.items;
-    }
+    if (kind === "btlib")
+        return ShapeLibrary.fromJSON(JSON.parse(text)).items;
 
-    if (extension === "draw") {
-        const book = Document.fromJSON(File.LoadJson(path));
+    if (kind === "draw") {
+        const book = Document.fromJSON(JSON.parse(text));
         const library = new ShapeLibrary();
         let items = [];
         for (const page of book.pages)
@@ -330,9 +330,7 @@ export function importLibrary(path) {
         return items;
     }
 
-    if (extension === "drawio" || extension === "xml" ||
-        extension === "mxlibrary") {
-        const text = File.Load(path);
+    if (kind === "drawio" || kind === "xml" || kind === "mxlibrary") {
         const document = Xml.Parse(text);
         if (document.Root && document.Root.Name === "mxlibrary")
             return entriesFromStencil(document.Root);
@@ -347,6 +345,19 @@ export function importLibrary(path) {
             items = items.concat(library.itemsFromDiagram(page));
         return items;
     }
+
+    throw new Error(Locale.Text("Unknown library format."));
+}
+
+export function importLibrary(path) {
+    const extension = File.Extension(path).toLowerCase();
+
+    if (extension === "btlib" || extension === "draw")
+        return importLibraryText(File.Load(path), extension);
+
+    if (extension === "drawio" || extension === "xml" ||
+        extension === "mxlibrary")
+        return importLibraryText(File.Load(path), extension);
 
     throw new Error(Locale.Text("Unknown library format."));
 }

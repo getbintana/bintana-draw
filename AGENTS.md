@@ -23,6 +23,9 @@ BINTANA=/path/to/build/bintana tests/run.sh
   `.btlib` / `.draw` / `.drawio` / `.mxlibrary` importers.
 - `Stencil.js` — a draw.io stencil set (`<shapes>`) read as vector library
   items: paths, rects, ellipses, paint colours and arcs as cubic Béziers.
+- `StencilCatalog.js` — the curated, license-checked URLs the downloader may
+  fetch. AWS, Azure and GCP are absent on purpose.
+- `StencilsForm.*` — the downloader's modal form and its `HttpClient` part.
 - `DrawioImport.js` — an uncompressed draw.io file mapped onto a `Diagram`.
   Compressed pages are refused on purpose; there is no deflate verb here.
 - `Render.js` — the only painter code. The screen and the export are the same
@@ -42,6 +45,14 @@ BINTANA=/path/to/build/bintana tests/run.sh
   same guard.
 - **A handler whose control name is misspelled is silently dead.** The
   self-check asserts every handler in `wiring()` from the form side.
+- **A form another class opens needs its `.form` beside the project too.** The
+  self-check has symlinks for the main forms; a new form without one is a class
+  with no controls (`LstStencils` was undefined until `StencilsForm.form` was
+  linked into `tests/selfcheck`).
+- **A `ListBox` in a `Scroller` needs a vertical arrangement and `VExpand`.**
+  Without `Arrangement: "Vertical"`, `VExpand: true` and `VAlign: "Fill"` the
+  list is only two rows tall and the rest is blank. `LibraryScroll` and the
+  stencil list both set them.
 - **One gesture is one undo step.** Snapshot on the press, `pushUndo` on the
   release; never per `MouseMove`.
 - **Alignment guides are a second snap, after the grid.** `guideMove` and

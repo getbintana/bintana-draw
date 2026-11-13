@@ -218,6 +218,7 @@ class TestForm extends Form {
         this.moreShapes(fm);
         this.images(fm);
         this.stencils(fm);
+        this.stencilForm(fm);
         this.library(fm);
         this.layers(fm);
         this.pages(fm);
@@ -1307,7 +1308,18 @@ class TestForm extends Form {
         File.Save(file, xml);
         const imported = importLibrary(file);
         this.eq("stencil: an .xml set imports", imported.length, 4);
+        const fromText = importLibraryText(xml, "xml");
+        this.eq("stencil: the downloader path imports too",
+                fromText.length, 4);
         File.Delete(file);
+
+        this.check("catalog: every set is a draw.io XML",
+                   STENCIL_SETS.length > 0 && STENCIL_SETS.every((entry) =>
+                       entry.url.indexOf("https://viewer.diagrams.net/stencils/") === 0 &&
+                       entry.extension === "xml" && entry.license.length > 0));
+        this.check("catalog: Kubernetes and IBM are offered",
+                   STENCIL_SETS.some((entry) => entry.id === "kubernetes") &&
+                   STENCIL_SETS.some((entry) => entry.id === "ibm_cloud"));
 
         const mx = File.Join(Application.Directory, "test-stencil.mxlibrary");
         File.Save(mx, '<mxlibrary>[{"title":"Mx Star","xml":"&lt;shape name=&apos;Star&apos; w=&apos;100&apos; h=&apos;100&apos;&gt;&lt;background&gt;&lt;path&gt;&lt;move x=&apos;50&apos; y=&apos;0&apos;/&gt;&lt;line x=&apos;100&apos; y=&apos;50&apos;/&gt;&lt;line x=&apos;50&apos; y=&apos;100&apos;/&gt;&lt;line x=&apos;0&apos; y=&apos;50&apos;/&gt;&lt;close/&gt;&lt;/path&gt;&lt;/background&gt;&lt;foreground&gt;&lt;fillstroke/&gt;&lt;/foreground&gt;&lt;/shape&gt;"}]</mxlibrary>');
@@ -1317,6 +1329,18 @@ class TestForm extends Form {
         this.eq("stencil: and its geometry",
                 mxItems[0].shapes[0].vector.parts.length, 1);
         File.Delete(mx);
+    }
+
+    stencilForm(fm) {
+        const dialog = StencilsForm.show(null);
+        this.check("stencil form: it opens", !!dialog);
+        this.eq("stencil form: the catalog is listed",
+                dialog.LstStencils.Count, STENCIL_SETS.length);
+        this.eq("stencil form: the first set is selected",
+                dialog.LstStencils.Index, 0);
+        this.check("stencil form: its license is shown",
+                   dialog.LblLicense.Text.indexOf("draw.io") >= 0);
+        dialog.Close();
     }
 
     library(fm) {
@@ -1472,6 +1496,7 @@ class TestForm extends Form {
             LstLibrary: ["Select", "Activate"],
             LibraryPreview: ["Draw"],
             ActImage: ["Execute"],
+            BtnLibraryDownload: ["Click"],
             BtnLibraryAdd: ["Click"], BtnLibraryInsert: ["Click"],
             BtnLibraryDelete: ["Click"], BtnLibraryImport: ["Click"],
             BtnLibraryExport: ["Click"],

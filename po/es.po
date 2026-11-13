@@ -512,6 +512,90 @@ msgstr "Este esténcil está comprimido. Exportalo como XML sin comprimir e impo
 msgid "Stencil"
 msgstr "Esténcil"
 
+msgid "Stencil libraries"
+msgstr "Bibliotecas de esténciles"
+
+msgid "Download a set into the library. Only sets whose license allows it are listed."
+msgstr "Descargá un conjunto a la biblioteca. Solo aparecen los conjuntos cuya licencia lo permite."
+
+msgid "Get stencils…"
+msgstr "Obtener esténciles…"
+
+msgid "Download"
+msgstr "Descargar"
+
+msgid "Close"
+msgstr "Cerrar"
+
+msgid "Select a set to see its license."
+msgstr "Elegí un conjunto para ver su licencia."
+
+msgid "License: {0}"
+msgstr "Licencia: {0}"
+
+msgid "Source: {0}"
+msgstr "Origen: {0}"
+
+msgid "Downloading {0}…"
+msgstr "Descargando {0}…"
+
+msgid "Added {0} shapes from {1}."
+msgstr "Se agregaron {0} formas de {1}."
+
+msgid "Cannot download {0}: {1}"
+msgstr "No se pudo descargar {0}: {1}"
+
+msgid "Downloaded {0} shapes from {1}."
+msgstr "Se descargaron {0} formas de {1}."
+
+msgid "draw.io stencil terms: not for Atlassian products; end-user diagrams exempt."
+msgstr "Términos de esténciles de draw.io: no para productos de Atlassian; los diagramas del usuario están exentos."
+
+msgid "Kubernetes community, via draw.io"
+msgstr "Comunidad de Kubernetes, vía draw.io"
+
+msgid "Apache 2.0 or CC BY 4.0, Kubernetes community. Kubernetes is a Linux Foundation trademark."
+msgstr "Apache 2.0 o CC BY 4.0, comunidad de Kubernetes. Kubernetes es una marca de The Linux Foundation."
+
+msgid "IBM Cloud, via draw.io"
+msgstr "IBM Cloud, vía draw.io"
+
+msgid "Apache 2.0, IBM Cloud architecture icons. IBM and IBM Cloud are trademarks of IBM."
+msgstr "Apache 2.0, íconos de arquitectura de IBM Cloud. IBM e IBM Cloud son marcas de IBM."
+
+msgid "Basic shapes"
+msgstr "Formas básicas"
+
+msgid "Flowchart"
+msgstr "Diagramas de flujo"
+
+msgid "Networks"
+msgstr "Redes"
+
+msgid "Electrical: IEC logic gates"
+msgstr "Eléctrico: compuertas IEC"
+
+msgid "Floorplan"
+msgstr "Planos de planta"
+
+msgid "Mockup: controls"
+msgstr "Mockup: controles"
+
+msgid "Rack: general"
+msgstr "Racks: general"
+
+msgid "Signs: safety"
+msgstr "Señales: seguridad"
+
+msgid "Web icons"
+msgstr "Íconos web"
+
+msgid "P&ID: valves"
+msgstr "P&ID: válvulas"
+
+msgid "Office: devices"
+msgstr "Oficina: dispositivos"
+
 msgid "Unknown library format."
 msgstr "Formato de biblioteca desconocido."
 
