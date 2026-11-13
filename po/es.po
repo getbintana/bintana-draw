@@ -338,6 +338,16 @@ msgstr "Agregar página"
 msgid "Remove page"
 msgstr "Quitar página"
 
+
+msgid "Move page up"
+msgstr "Subir la página"
+
+msgid "Move page down"
+msgstr "Bajar la página"
+
+msgid "Move page"
+msgstr "Mover página"
+
 msgid "Page name"
 msgstr "Nombre de la página"
 

@@ -36,9 +36,9 @@ The window is started with a blank canvas and the shape palette on the left.
   resize. Connectors can be labelled and can be dashed.
 - **Text** — double-click a shape or a connector and the editor opens over it.
   Enter or clicking away keeps the text; Escape puts it back.
-- **Pages** — the bar under the canvas switches, adds, removes and names pages.
-  Every page has its own layers and shapes; the whole book is saved, and the
-  current page is what the canvas edits and the export writes.
+- **Pages** — the bar under the canvas switches, adds, removes, reorders and
+  names pages. Every page has its own layers and shapes; the whole book is
+  saved, and the current page is what the canvas edits and the export writes.
 - **Layers** — the panel on the right adds, removes and reorders layers, and
   names, hides or locks the active one. New shapes and connectors go to the
   active layer; a hidden layer is not drawn, hit-tested or exported, and a
@@ -163,9 +163,8 @@ handler whose control name is misspelled is silently dead.
 
 This is a first editor, not a draw.io replacement. Missing, in the order they
 would change what a person can draw: custom shape libraries and stencils,
-reordering pages, curved connectors with movable waypoints, images and icons,
-system-clipboard interchange with other applications, SVG import/export, and
-collaboration.
+curved connectors with movable waypoints, images and icons, system-clipboard
+interchange with other applications, SVG import/export, and collaboration.
 
 The draw.io import is deliberately the basic half: it reads every uncompressed
 page of a file, maps the common shapes by style (`rounded`, `ellipse`,

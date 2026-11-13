@@ -596,6 +596,28 @@ class TestForm extends Form {
                 fm.book.pages[1].layers.length, 2);
         File.Delete(file);
 
+        /* Moving a page is an undo step too. */
+        fm.BtnPageUp_Click();
+        this.eq("pages: moving up changes the order",
+                fm.book.pageName(0), "Second");
+        this.eq("pages: the moved page stays active", fm.activePage, 0);
+        this.check("pages: up is disabled at the top",
+                   !fm.BtnPageUp.Enabled);
+        this.check("pages: down is enabled below the top",
+                   fm.BtnPageDown.Enabled);
+
+        fm.BtnPageDown_Click();
+        this.eq("pages: moving down changes it back",
+                fm.book.pageName(1), "Second");
+        this.eq("pages: and follows the page", fm.activePage, 1);
+
+        fm.ActUndo_Execute();
+        this.eq("pages: undo takes the move back",
+                fm.book.pageName(0), "Second");
+        fm.ActRedo_Execute();
+        this.eq("pages: redo moves it again",
+                fm.book.pageName(1), "Second");
+
         /* Adding, removing and renaming are one undo step each. */
         fm.switchPage(0);
         fm.BtnPageAdd_Click();
@@ -669,7 +691,8 @@ class TestForm extends Form {
             BtnLayerAssign: ["Click"],
             TxtLayerName: ["Activate", "LostFocus"],
             CmbPage: ["Select"], BtnPageAdd: ["Click"],
-            BtnPageRemove: ["Click"],
+            BtnPageRemove: ["Click"], BtnPageUp: ["Click"],
+            BtnPageDown: ["Click"],
             TxtPageName: ["Activate", "LostFocus"],
             ActNew: ["Execute"], ActOpen: ["Execute"], ActSave: ["Execute"],
             ActSaveAs: ["Execute"], ActExportPng: ["Execute"],

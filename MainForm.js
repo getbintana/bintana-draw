@@ -1494,6 +1494,8 @@ export class MainForm extends Form {
         this.CmbPage.Index = this.activePage;
         this.TxtPageName.Text = this.book.pageName(this.activePage);
         this.BtnPageRemove.Enabled = this.book.pages.length > 1;
+        this.BtnPageUp.Enabled = this.activePage > 0;
+        this.BtnPageDown.Enabled = this.activePage < this.book.pages.length - 1;
         this.syncingPages = false;
     }
 
@@ -1547,6 +1549,19 @@ export class MainForm extends Form {
         this.pushUndo(Locale.Text("Delete page"), before);
         this.refreshAll();
         this.zoomFit();
+    }
+
+    BtnPageUp_Click()   { this.moveActivePage(-1); }
+    BtnPageDown_Click() { this.moveActivePage(1); }
+
+    moveActivePage(delta) {
+        if (this.editing) this.commitEdit();
+        const before = this.snapshot();
+        if (!this.book.movePage(this.activePage, delta)) return;
+        this.activePage = this.book.active;
+        this.doc = this.book.pages[this.activePage];
+        this.pushUndo(Locale.Text("Move page"), before);
+        this.refreshAll();
     }
 
     renameActivePage() {

@@ -673,6 +673,22 @@
           }
         },
         {
+          "type": "Button",
+          "name": "BtnPageUp",
+          "properties": {
+            "Text": "Move page up",
+            "Height": 30
+          }
+        },
+        {
+          "type": "Button",
+          "name": "BtnPageDown",
+          "properties": {
+            "Text": "Move page down",
+            "Height": 30
+          }
+        },
+        {
           "type": "Label",
           "name": "LblPageName",
           "properties": {
