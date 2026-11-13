@@ -321,20 +321,43 @@ msgstr "oculta"
 msgid "locked"
 msgstr "bloqueada"
 
+
+# --- pages -------------------------------------------------------------------
+msgid "Page {0}"
+msgstr "Página {0}"
+
+msgid "Page"
+msgstr "Página"
+
+msgid "Pages"
+msgstr "Páginas"
+
+msgid "Add page"
+msgstr "Agregar página"
+
+msgid "Remove page"
+msgstr "Quitar página"
+
+msgid "Page name"
+msgstr "Nombre de la página"
+
+msgid "Delete page"
+msgstr "Eliminar página"
+
+msgid "Rename page"
+msgstr "Renombrar página"
+
+msgid "Imported {0} pages from {1}"
+msgstr "Se importaron {0} páginas de {1}"
+
 msgid "Not a draw.io diagram."
 msgstr "No es un diagrama de draw.io."
 
 msgid "This .drawio file is compressed. In draw.io, use File > Export as > XML and open that file."
 msgstr "Este archivo .drawio está comprimido. En draw.io usá Archivo > Exportar como > XML y abrí ese archivo."
 
-msgid "The draw.io diagram has no shapes."
-msgstr "El diagrama de draw.io no tiene formas."
-
 msgid "Imported {0}"
 msgstr "Importado {0}"
-
-msgid "Imported page 1 of {0} from {1}"
-msgstr "Importada la página 1 de {0} de {1}"
 
 msgid "draw.io diagram"
 msgstr "Diagrama de draw.io"

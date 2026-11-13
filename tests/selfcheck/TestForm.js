@@ -210,6 +210,7 @@ class TestForm extends Form {
         this.guides(fm);
         this.drawio(fm);
         this.layers(fm);
+        this.pages(fm);
 
         /* The grid is a view setting, and the menu item is its state. */
         fm.MnuGrid.Value = false;
@@ -230,9 +231,7 @@ class TestForm extends Form {
     }
 
     alignment(fm) {
-        fm.doc = new Diagram();
-        fm.sel = [];
-        fm.undo.Clear();
+        fm.resetDocument();
 
         const a = fm.doc.addShape("rect", 0, 0, 100, 50);
         const b = fm.doc.addShape("rect", 200, 100, 80, 40);
@@ -265,8 +264,7 @@ class TestForm extends Form {
         this.eq("align bottom: same bottom b/c",
                 Math.round(b.y + b.h), Math.round(c.y + c.h));
 
-        fm.doc = new Diagram();
-        fm.sel = [];
+        fm.resetDocument();
         const d = fm.doc.addShape("rect", 0, 0, 100, 50);
         const e = fm.doc.addShape("rect", 200, 0, 100, 50);
         const f = fm.doc.addShape("rect", 600, 0, 100, 50);
@@ -284,9 +282,7 @@ class TestForm extends Form {
     }
 
     guides(fm) {
-        fm.doc = new Diagram();
-        fm.sel = [];
-        fm.undo.Clear();
+        fm.resetDocument();
         fm.panX = 0;
         fm.panY = 0;
         fm.zoom = 1;
@@ -309,8 +305,10 @@ class TestForm extends Form {
                    fm.guides === null);
 
         /* A resize snaps the edge being dragged, not the whole rectangle. */
-        fm.doc = new Diagram();
-        fm.sel = [];
+        fm.resetDocument();
+        fm.panX = 0;
+        fm.panY = 0;
+        fm.zoom = 1;
         const neighbour = fm.doc.addShape("rect", 303, 100, 100, 50);
         const sized = fm.doc.addShape("rect", 100, 300, 80, 50);
         fm.select([sized.id]);
@@ -392,8 +390,12 @@ class TestForm extends Form {
         </mxfile>`;
         const pages = DrawioImport.parse(twoPages);
         this.eq("draw.io: both pages are counted", pages.pages, 2);
+        this.eq("draw.io: two page objects", pages.diagrams.length, 2);
         this.eq("draw.io: the first page is the one imported",
                 pages.diagram.shapes.length, 1);
+        this.eq("draw.io: the second page came too",
+                pages.diagrams[1].shapes.length, 2);
+        this.eq("draw.io: the page names came too", pages.names[1], "Two");
 
         /* Opening it through the window must not pretend the .drawio is a
          * .draw: Save would overwrite the original with JSON. */
@@ -418,6 +420,19 @@ class TestForm extends Form {
         this.eq("draw.io: the new path is the diagram", fm.path, target);
         File.Delete(source);
         File.Delete(target);
+
+        /* A multi-page draw.io file becomes a multi-page book. */
+        const multi = File.Join(Application.Directory, "two.drawio");
+        File.Save(multi, twoPages);
+        fm.resetDocument();
+        fm.openDocument(multi);
+        this.eq("draw.io: the window keeps both pages",
+                fm.book.pages.length, 2);
+        this.eq("draw.io: the second page's shapes",
+                fm.book.pages[1].shapes.length, 2);
+        this.eq("draw.io: the second page's name",
+                fm.book.pageName(1), "Two");
+        File.Delete(multi);
     }
 
     layers(fm) {
@@ -527,6 +542,85 @@ class TestForm extends Form {
                 legacy.shapes[0].layer, legacy.layers[0].id);
     }
 
+    pages(fm) {
+        fm.resetDocument();
+        this.eq("pages: one to start", fm.book.pages.length, 1);
+        this.eq("pages: the combo has it", fm.CmbPage.Count, 1);
+        this.eq("pages: the first is active", fm.activePage, 0);
+
+        const first = fm.doc.addShape("rect", 0, 0, 100, 50, { text: "One" });
+        fm.refreshAll();
+
+        fm.BtnPageAdd_Click();
+        this.eq("pages: add makes a second", fm.book.pages.length, 2);
+        this.eq("pages: the new page is active", fm.activePage, 1);
+        this.eq("pages: the new page is blank", fm.doc.shapes.length, 0);
+        this.eq("pages: the combo follows", fm.CmbPage.Count, 2);
+        this.check("pages: remove is enabled", fm.BtnPageRemove.Enabled);
+
+        const second = fm.doc.addShape("rect", 20, 20, 80, 40, { text: "Two" });
+        fm.doc.addLayer("Extra");
+        fm.refreshAll();
+        this.eq("pages: a page has its own layers", fm.doc.layers.length, 2);
+
+        fm.TxtPageName.Text = "Second";
+        fm.renameActivePage();
+        this.eq("pages: rename works", fm.book.pageName(1), "Second");
+        this.check("pages: the title names the page",
+                   fm.Text.indexOf("Second") >= 0);
+
+        fm.switchPage(0);
+        this.eq("pages: switch goes back", fm.activePage, 0);
+        this.check("pages: the first page kept its shape",
+                   !!fm.doc.shapeById(first.id));
+        this.eq("pages: the first page kept its layers", fm.doc.layers.length, 1);
+        this.eq("pages: switching clears the selection", fm.sel.length, 0);
+
+        fm.switchPage(1);
+        this.eq("pages: switch goes forward", fm.activePage, 1);
+        this.check("pages: the second page kept its shape",
+                   !!fm.doc.shapeById(second.id));
+        this.eq("pages: the second page kept its layers", fm.doc.layers.length, 2);
+
+        /* The file holds every page, and which one was open. */
+        const file = File.Join(Application.Directory, "pages.draw");
+        this.check("pages: the book was written", fm.writeDocument(file));
+        fm.resetDocument();
+        fm.openDocument(file);
+        this.eq("pages: both pages came back", fm.book.pages.length, 2);
+        this.eq("pages: the names came back", fm.book.pageName(1), "Second");
+        this.eq("pages: the open page came back", fm.activePage, 1);
+        this.eq("pages: the first page has its shape",
+                fm.book.pages[0].shapes.length, 1);
+        this.eq("pages: the second page has its layers",
+                fm.book.pages[1].layers.length, 2);
+        File.Delete(file);
+
+        /* Adding, removing and renaming are one undo step each. */
+        fm.switchPage(0);
+        fm.BtnPageAdd_Click();
+        this.eq("pages: a third page", fm.book.pages.length, 3);
+        fm.ActUndo_Execute();
+        this.eq("pages: undo took it away", fm.book.pages.length, 2);
+        fm.ActRedo_Execute();
+        this.eq("pages: redo put it back", fm.book.pages.length, 3);
+        fm.BtnPageRemove_Click();
+        this.eq("pages: remove leaves two", fm.book.pages.length, 2);
+        fm.ActUndo_Execute();
+        this.eq("pages: undo brings the page back", fm.book.pages.length, 3);
+        fm.ActRedo_Execute();
+        this.eq("pages: redo removes it again", fm.book.pages.length, 2);
+
+        /* A diagram from before pages is one page. */
+        const old = Document.fromJSON({
+            format: "bintana-draw/1", version: 1,
+            shapes: [{ id: "s1", kind: "rect", x: 0, y: 0, w: 10, h: 10 }],
+            edges: [],
+        });
+        this.eq("pages: an old file is one page", old.pages.length, 1);
+        this.eq("pages: its shape is on that page", old.pages[0].shapes.length, 1);
+    }
+
     confirmDialog() {
         let answer = "";
         let dialog = ConfirmForm.ask("Title", "Message", "Save",
@@ -574,6 +668,9 @@ class TestForm extends Form {
             BtnLayerVisible: ["Click"], BtnLayerLocked: ["Click"],
             BtnLayerAssign: ["Click"],
             TxtLayerName: ["Activate", "LostFocus"],
+            CmbPage: ["Select"], BtnPageAdd: ["Click"],
+            BtnPageRemove: ["Click"],
+            TxtPageName: ["Activate", "LostFocus"],
             ActNew: ["Execute"], ActOpen: ["Execute"], ActSave: ["Execute"],
             ActSaveAs: ["Execute"], ActExportPng: ["Execute"],
             ActExportPdf: ["Execute"], ActQuit: ["Execute"],

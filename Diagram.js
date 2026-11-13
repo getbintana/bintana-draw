@@ -53,6 +53,17 @@ function copyEdge(e) {
     };
 }
 
+function pageJSON(page) {
+    return {
+        layers: page.layers.map((l) => ({
+            id: l.id, name: l.name,
+            visible: l.visible, locked: l.locked,
+        })),
+        shapes: page.shapes.map(copyShape),
+        edges: page.edges.map(copyEdge),
+    };
+}
+
 export class Diagram {
 
     constructor() {
@@ -261,12 +272,7 @@ export class Diagram {
         return {
             format: "bintana-draw/1",
             version: 1,
-            layers: this.layers.map((l) => ({
-                id: l.id, name: l.name,
-                visible: l.visible, locked: l.locked,
-            })),
-            shapes: this.shapes.map(copyShape),
-            edges: this.edges.map(copyEdge),
+            ...pageJSON(this),
         };
     }
 
@@ -357,6 +363,118 @@ export class Diagram {
         while (diagram.shapeById("s" + diagram.nextShape)) diagram.nextShape++;
         while (diagram.edgeById("e" + diagram.nextEdge)) diagram.nextEdge++;
         return diagram;
+    }
+}
+
+/*
+ * The book: one or more pages, each a `Diagram` with its own layers and
+ * shapes. The canvas always edits the active page; the file holds them all.
+ * A file from before pages existed is one page and opens the same way.
+ */
+export class Document {
+
+    constructor() {
+        this.pages = [new Diagram()];
+        this.names = [Locale.Text("Page {0}", 1)];
+        this.active = 0;
+    }
+
+    static fromPages(pages, names, active) {
+        const document = new Document();
+        if (!pages.length) return document;
+
+        document.pages = pages.slice();
+        document.names = [];
+        for (let i = 0; i < pages.length; i++) {
+            const name = names && typeof names[i] === "string"
+                ? names[i].trim() : "";
+            document.names.push(name || Locale.Text("Page {0}", i + 1));
+        }
+        document.active = Math.max(0, Math.min(pages.length - 1,
+                                               Math.floor(number(active, 0))));
+        return document;
+    }
+
+    addPage(name) {
+        const page = new Diagram();
+        let label = typeof name === "string" ? name.trim() : "";
+        if (!label) label = Locale.Text("Page {0}", this.pages.length + 1);
+        this.pages.push(page);
+        this.names.push(label);
+        return page;
+    }
+
+    removePage(index) {
+        if (this.pages.length < 2) return null;
+        if (index < 0 || index >= this.pages.length) return null;
+        const page = this.pages.splice(index, 1)[0];
+        this.names.splice(index, 1);
+        if (this.active >= this.pages.length) this.active = this.pages.length - 1;
+        else if (this.active > index) this.active--;
+        return page;
+    }
+
+    movePage(index, delta) {
+        const to = index + delta;
+        if (index < 0 || index >= this.pages.length ||
+            to < 0 || to >= this.pages.length) return false;
+        const page = this.pages.splice(index, 1)[0];
+        const name = this.names.splice(index, 1)[0];
+        this.pages.splice(to, 0, page);
+        this.names.splice(to, 0, name);
+        if (this.active === index) this.active = to;
+        else if (this.active === to) this.active = index;
+        return true;
+    }
+
+    setPageName(index, name) {
+        if (index < 0 || index >= this.pages.length) return;
+        const value = typeof name === "string" ? name.trim() : "";
+        if (value) this.names[index] = value;
+    }
+
+    pageName(index) {
+        return this.names[index] || "";
+    }
+
+    toJSON() {
+        return {
+            format: "bintana-draw/1",
+            version: 2,
+            active: this.active,
+            pages: this.pages.map((page, i) => ({
+                name: this.names[i],
+                ...pageJSON(page),
+            })),
+        };
+    }
+
+    static fromJSON(data) {
+        if (!data || data.format !== "bintana-draw/1")
+            throw new Error("Not a Bintana Draw diagram");
+
+        if (Array.isArray(data.pages) && data.pages.length) {
+            const pages = [];
+            const names = [];
+            for (const raw of data.pages) {
+                if (!raw || typeof raw !== "object") continue;
+                pages.push(Diagram.fromJSON({
+                    format: data.format,
+                    version: data.version,
+                    layers: raw.layers,
+                    shapes: raw.shapes,
+                    edges: raw.edges,
+                }));
+                names.push(text(raw.name, ""));
+            }
+            if (!pages.length)
+                throw new Error("Not a Bintana Draw diagram");
+            return Document.fromPages(pages, names, data.active);
+        }
+
+        /* Version 1 and everything written before pages: one flat page. */
+        const page = Diagram.fromJSON(data);
+        return Document.fromPages([page], [""], 0);
     }
 }
 

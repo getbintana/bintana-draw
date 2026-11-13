@@ -62,9 +62,11 @@ function rectsIntersect(a, b) {
 
 export class MainForm extends Form {
 
+    book   = null;
     doc    = null;
     path   = "";
     importedFrom = "";
+    activePage = 0;
     activeLayer = "";
     sel    = [];
     tool   = "select";
@@ -87,6 +89,7 @@ export class MainForm extends Form {
     syncingGrid   = false;
     syncingTools  = false;
     syncingLayers = false;
+    syncingPages  = false;
     exporting     = false;
     forceClose    = false;
     pendingFit    = false;
@@ -95,7 +98,9 @@ export class MainForm extends Form {
     /* ------------------------------------------------------------- the form */
 
     Form_Open() {
-        this.doc  = new Diagram();
+        this.book = new Document();
+        this.activePage = 0;
+        this.doc  = this.book.pages[0];
         this.activeLayer = this.defaultActiveLayer(this.doc);
         this.sel  = [];
         this.tool = "select";
@@ -1140,14 +1145,17 @@ export class MainForm extends Form {
     /* --------------------------------------------------------------- history */
 
     snapshot() {
-        return JSON.stringify(this.doc.toJSON());
+        return JSON.stringify(this.book.toJSON());
     }
 
     applySnapshot(json) {
         this.cancelEdit();
         this.guides = null;
-        this.doc = Diagram.fromJSON(JSON.parse(json));
-        this.ensureActiveLayer();
+        const book = Document.fromJSON(JSON.parse(json));
+        this.book = book;
+        this.activePage = book.active;
+        this.doc = book.pages[this.activePage];
+        this.activeLayer = this.defaultActiveLayer(this.doc);
         this.sel = this.sel.filter((id) => this.doc.canSelect(id));
         this.refreshAll();
     }
@@ -1177,7 +1185,9 @@ export class MainForm extends Form {
     }
 
     resetDocument() {
-        this.doc = new Diagram();
+        this.book = new Document();
+        this.activePage = 0;
+        this.doc = this.book.pages[0];
         this.path = "";
         this.importedFrom = "";
         this.activeLayer = this.defaultActiveLayer(this.doc);
@@ -1192,7 +1202,7 @@ export class MainForm extends Form {
     }
 
     openDocument(path) {
-        let doc;
+        let book;
         let pages = 0;
         const isDrawio = File.IsExtension(path, "drawio") ||
                          File.IsExtension(path, "xml");
@@ -1200,18 +1210,20 @@ export class MainForm extends Form {
         try {
             if (isDrawio) {
                 const imported = DrawioImport.parse(File.Load(path));
-                doc = imported.diagram;
+                book = Document.fromPages(imported.diagrams, imported.names, 0);
                 pages = imported.pages;
             } else {
-                doc = Diagram.fromJSON(File.LoadJson(path));
+                book = Document.fromJSON(File.LoadJson(path));
             }
         } catch (e) {
             Message.Error(Locale.Text("Cannot open {0}: {1}"), path, e.message);
             return null;
         }
 
-        this.doc = doc;
-        this.activeLayer = this.defaultActiveLayer(doc);
+        this.book = book;
+        this.activePage = book.active;
+        this.doc = book.pages[this.activePage];
+        this.activeLayer = this.defaultActiveLayer(this.doc);
         this.path = isDrawio ? "" : path;
         this.importedFrom = isDrawio ? path : "";
         this.sel = [];
@@ -1222,7 +1234,7 @@ export class MainForm extends Form {
 
         if (isDrawio) {
             if (pages > 1)
-                this.setStatus(Locale.Text("Imported page 1 of {0} from {1}",
+                this.setStatus(Locale.Text("Imported {0} pages from {1}",
                                            pages, File.Name(path)));
             else
                 this.setStatus(Locale.Text("Imported {0}", File.Name(path)));
@@ -1230,13 +1242,13 @@ export class MainForm extends Form {
             this.setStatus(Locale.Text("Opened {0}", File.Name(path)));
         }
         this.refreshAll();
-        return doc;
+        return this.doc;
     }
 
     writeDocument(path) {
         if (this.editing) this.commitEdit();
         try {
-            File.SaveJson(path, this.doc.toJSON());
+            File.SaveJson(path, this.book.toJSON());
         } catch (e) {
             Message.Error(Locale.Text("Cannot save {0}: {1}"), path, e.message);
             return false;
@@ -1378,6 +1390,7 @@ export class MainForm extends Form {
         this.ensureActiveLayer();
         this.pruneSelection();
         this.refreshLayers();
+        this.refreshPages();
         this.refreshTitle();
         this.refreshActions();
         this.syncColors();
@@ -1393,7 +1406,9 @@ export class MainForm extends Form {
                        ? Locale.Text("Imported {0}", File.Name(this.importedFrom))
                        : Locale.Text("Untitled");
         const mark = this.undo.Modified ? "• " : "";
-        this.Text = mark + name + " — " + Locale.Text("Bintana Draw");
+        const page = this.book && this.book.pages.length > 1
+            ? " · " + this.book.pageName(this.activePage) : "";
+        this.Text = mark + name + page + " — " + Locale.Text("Bintana Draw");
     }
 
     refreshActions() {
@@ -1455,6 +1470,104 @@ export class MainForm extends Form {
         this.statusText = text;
         this.updateStatus();
     }
+
+    /* ------------------------------------------------------------- pages */
+
+    refreshPages() {
+        if (!this.CmbPage) return;
+        this.syncingPages = true;
+
+        let sameRows = this.CmbPage.Count === this.book.pages.length;
+        if (sameRows) {
+            for (let i = 0; i < this.book.pages.length; i++) {
+                if (this.CmbPage.KeyAt(i) !== String(i)) { sameRows = false; break; }
+            }
+        }
+        if (sameRows) {
+            for (let i = 0; i < this.book.pages.length; i++)
+                this.CmbPage.SetText(i, this.book.pageName(i));
+        } else {
+            this.CmbPage.Clear();
+            for (let i = 0; i < this.book.pages.length; i++)
+                this.CmbPage.Add(this.book.pageName(i), String(i));
+        }
+        this.CmbPage.Index = this.activePage;
+        this.TxtPageName.Text = this.book.pageName(this.activePage);
+        this.BtnPageRemove.Enabled = this.book.pages.length > 1;
+        this.syncingPages = false;
+    }
+
+    switchPage(index) {
+        if (index < 0 || index >= this.book.pages.length) return;
+        if (index === this.activePage) return;
+        if (this.editing) this.commitEdit();
+
+        this.activePage = index;
+        this.book.active = index;
+        this.doc = this.book.pages[index];
+        this.activeLayer = this.defaultActiveLayer(this.doc);
+        this.sel = [];
+        this.guides = null;
+        this.refreshAll();
+        this.zoomFit();
+    }
+
+    CmbPage_Select() {
+        if (this.syncingPages) return;
+        this.switchPage(this.CmbPage.Index);
+    }
+
+    BtnPageAdd_Click() {
+        if (this.editing) this.commitEdit();
+        const before = this.snapshot();
+        const page = this.book.addPage();
+        this.activePage = this.book.pages.length - 1;
+        this.book.active = this.activePage;
+        this.doc = page;
+        this.activeLayer = this.defaultActiveLayer(this.doc);
+        this.sel = [];
+        this.guides = null;
+        this.pushUndo(Locale.Text("Add page"), before);
+        this.refreshAll();
+        this.zoomFit();
+        this.TxtPageName.SetFocus();
+        this.TxtPageName.SelectAll();
+    }
+
+    BtnPageRemove_Click() {
+        if (this.book.pages.length < 2) return;
+        if (this.editing) this.commitEdit();
+        const before = this.snapshot();
+        this.book.removePage(this.activePage);
+        this.activePage = this.book.active;
+        this.doc = this.book.pages[this.activePage];
+        this.activeLayer = this.defaultActiveLayer(this.doc);
+        this.sel = [];
+        this.guides = null;
+        this.pushUndo(Locale.Text("Delete page"), before);
+        this.refreshAll();
+        this.zoomFit();
+    }
+
+    renameActivePage() {
+        if (this.syncingPages) return;
+        const name = this.TxtPageName.Text.trim();
+        const current = this.book.pageName(this.activePage);
+        if (!name) {
+            this.TxtPageName.Text = current;
+            return;
+        }
+        if (name === current) return;
+
+        const before = this.snapshot();
+        this.book.setPageName(this.activePage, name);
+        this.pushUndo(Locale.Text("Rename page"), before);
+        this.refreshAll();
+    }
+
+    TxtPageName_Activate() { this.renameActivePage(); }
+
+    TxtPageName_LostFocus() { this.renameActivePage(); }
 
     /* ------------------------------------------------------------ layer verbs */
 

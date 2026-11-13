@@ -124,6 +124,118 @@ function layerOf(cell, byId) {
     return layer;
 }
 
+function importModel(model) {
+    const rootCell = model.Find("root");
+    if (!rootCell)
+        throw new Error(Locale.Text("Not a draw.io diagram."));
+
+    const nodes = rootCell.FindAll("mxCell");
+    const byId = new Map();
+    for (const node of nodes) {
+        const id = node.Attr("id");
+        if (!id) continue;
+        byId.set(id, {
+            node: node,
+            parent: node.Attr("parent") || "",
+            id: id,
+        });
+    }
+
+    const diagram = new Diagram();
+    const mapped = new Map();
+    const layerMap = new Map();
+
+    /* A layer is a cell whose parent is the root, with no vertex or edge of
+     * its own. The first one reuses the layer the document starts with. */
+    let firstLayer = true;
+    for (const node of nodes) {
+        if (node.Attr("parent") !== "0") continue;
+        if (!node.Attr("id") || node.Attr("id") === "0") continue;
+        if (node.Attr("vertex") === "1" || node.Attr("edge") === "1") continue;
+
+        const id = node.Attr("id");
+        const name = cleanText(node.Attr("value"));
+        let layer;
+        if (firstLayer) {
+            layer = diagram.layers[0];
+            if (name) layer.name = name;
+            firstLayer = false;
+        } else {
+            layer = diagram.addLayer(name);
+        }
+        layer.visible = node.Attr("visible") !== "0";
+        layerMap.set(id, layer.id);
+    }
+
+    /* Vertices first, so an edge may point at any of them whatever the file
+     * order. The ids draw.io wrote are kept in `mapped`, not in the model. */
+    for (const node of nodes) {
+        if (node.Attr("vertex") !== "1") continue;
+        if (node.Attr("visible") === "0") continue;
+
+        const id = node.Attr("id");
+        const cell = byId.get(id);
+        if (!id || !cell) continue;
+
+        const rect = absoluteRect(cell, byId);
+        if (!rect) continue;
+
+        const style = node.Attr("style") || "";
+        const map = styleMap(style);
+        if (map.group === "1" || (map.shape || "").indexOf("group") >= 0 ||
+            (map.shape || "").indexOf("image") >= 0) continue;
+        const kind = shapeKind(map, style);
+        const fill = kind === "text" ? "rgba(0,0,0,0)"
+                                     : colour(map, "fillColor", "#ffffff");
+        const stroke = kind === "text" ? "rgba(0,0,0,0)"
+                                       : colour(map, "strokeColor", "#000000");
+        const textColor = colour(map, "fontColor", "#000000");
+        const fontValue = parseFloat(map.fontSize || "12");
+        const fontSize = (fontValue === fontValue) ? fontValue : 12;
+        const arcSize = parseFloat(map.arcSize || "15");
+        const radius = Math.max(0, Math.min(
+            Math.min(rect.w, rect.h) / 2,
+            isNaN(arcSize) ? 12 : Math.min(rect.w, rect.h) * arcSize / 100));
+
+        const shape = diagram.addShape(kind, rect.x, rect.y, rect.w, rect.h, {
+            layer: layerMap.get(layerOf(cell, byId)) || diagram.layers[0].id,
+            text: cleanText(node.Attr("value")),
+            fill: fill,
+            stroke: stroke,
+            textColor: textColor,
+            fontSize: fontSize === fontSize ? Math.round(fontSize) : 12,
+            radius: Math.round(radius),
+        });
+        mapped.set(id, shape.id);
+    }
+
+    for (const node of nodes) {
+        if (node.Attr("edge") !== "1") continue;
+        if (node.Attr("visible") === "0") continue;
+
+        const source = mapped.get(node.Attr("source"));
+        const target = mapped.get(node.Attr("target"));
+        if (!source || !target) continue;
+
+        const style = node.Attr("style") || "";
+        const map = styleMap(style);
+        const fontValue = parseFloat(map.fontSize || "11");
+        const fontSize = (fontValue === fontValue) ? fontValue : 11;
+        const edgeCell = byId.get(node.Attr("id"));
+        diagram.addEdge(source, target, {
+            layer: edgeCell
+                ? (layerMap.get(layerOf(edgeCell, byId)) || diagram.layers[0].id)
+                : diagram.layers[0].id,
+            text: cleanText(node.Attr("value")),
+            stroke: colour(map, "strokeColor", "#000000"),
+            dashed: map.dashed === "1",
+            fontSize: fontSize === fontSize ? Math.round(fontSize) : 11,
+        });
+    }
+
+    return diagram;
+}
+
 export class DrawioImport {
 
     static parse(text) {
@@ -131,144 +243,54 @@ export class DrawioImport {
         const root = document.Root;
         if (!root) throw new Error(Locale.Text("Not a draw.io diagram."));
 
-        let model = null;
-        let pages = 1;
-        let pageName = "";
+        const compressed = Locale.Text("This .drawio file is compressed. In draw.io, use File > Export as > XML and open that file.");
+        const pages = [];
+        const names = [];
 
         if (root.Name === "mxGraphModel") {
-            model = root;
+            pages.push(importModel(root));
+            names.push("");
         } else if (root.Name === "diagram") {
-            model = root.Find("mxGraphModel");
-            pageName = root.Attr("name") || "";
+            const model = root.Find("mxGraphModel");
+            if (!model) {
+                if (root.Text.trim() !== "") throw new Error(compressed);
+                pages.push(new Diagram());
+            } else {
+                pages.push(importModel(model));
+            }
+            names.push(root.Attr("name") || "");
         } else if (root.Name === "mxfile") {
             const diagrams = root.FindAll("diagram");
-            pages = diagrams.length || 1;
-            for (const diagram of diagrams) {
-                const found = diagram.Find("mxGraphModel");
-                if (found) {
-                    model = found;
-                    pageName = diagram.Attr("name") || "";
-                    break;
+            if (!diagrams.length) {
+                const model = root.Find("mxGraphModel");
+                if (!model) throw new Error(compressed);
+                pages.push(importModel(model));
+                names.push("");
+            } else {
+                for (const diagram of diagrams) {
+                    const model = diagram.Find("mxGraphModel");
+                    const name = diagram.Attr("name") || "";
+                    if (!model) {
+                        if (diagram.Text.trim() !== "") throw new Error(compressed);
+                        pages.push(new Diagram());
+                    } else {
+                        pages.push(importModel(model));
+                    }
+                    names.push(name);
                 }
             }
-            if (!model) model = root.Find("mxGraphModel");
-        }
-
-        if (!model) {
-            throw new Error(Locale.Text("This .drawio file is compressed. In draw.io, use File > Export as > XML and open that file."));
-        }
-
-        const rootCell = model.Find("root");
-        if (!rootCell)
+        } else {
             throw new Error(Locale.Text("Not a draw.io diagram."));
-
-        const nodes = rootCell.FindAll("mxCell");
-        const byId = new Map();
-        for (const node of nodes) {
-            const id = node.Attr("id");
-            if (!id) continue;
-            byId.set(id, {
-                node: node,
-                parent: node.Attr("parent") || "",
-                id: id,
-            });
         }
 
-        const diagram = new Diagram();
-        const mapped = new Map();
-        const layerMap = new Map();
+        if (!pages.length) throw new Error(Locale.Text("Not a draw.io diagram."));
 
-        /* A layer is a cell whose parent is the root, with no vertex or edge of
-         * its own. The first one reuses the layer the document starts with. */
-        let firstLayer = true;
-        for (const node of nodes) {
-            if (node.Attr("parent") !== "0") continue;
-            if (!node.Attr("id") || node.Attr("id") === "0") continue;
-            if (node.Attr("vertex") === "1" || node.Attr("edge") === "1") continue;
-
-            const id = node.Attr("id");
-            const name = cleanText(node.Attr("value"));
-            let layer;
-            if (firstLayer) {
-                layer = diagram.layers[0];
-                if (name) layer.name = name;
-                firstLayer = false;
-            } else {
-                layer = diagram.addLayer(name);
-            }
-            layer.visible = node.Attr("visible") !== "0";
-            layerMap.set(id, layer.id);
-        }
-
-        /* Vertices first, so an edge may point at any of them whatever the file
-         * order. The ids draw.io wrote are kept in `mapped`, not in the model. */
-        for (const node of nodes) {
-            if (node.Attr("vertex") !== "1") continue;
-            if (node.Attr("visible") === "0") continue;
-
-            const id = node.Attr("id");
-            const cell = byId.get(id);
-            if (!id || !cell) continue;
-
-            const rect = absoluteRect(cell, byId);
-            if (!rect) continue;
-
-            const style = node.Attr("style") || "";
-            const map = styleMap(style);
-            if (map.group === "1" || (map.shape || "").indexOf("group") >= 0 ||
-                (map.shape || "").indexOf("image") >= 0) continue;
-            const kind = shapeKind(map, style);
-            const fill = kind === "text" ? "rgba(0,0,0,0)"
-                                         : colour(map, "fillColor", "#ffffff");
-            const stroke = kind === "text" ? "rgba(0,0,0,0)"
-                                           : colour(map, "strokeColor", "#000000");
-            const textColor = colour(map, "fontColor", "#000000");
-            const fontValue = parseFloat(map.fontSize || "12");
-            const fontSize = (fontValue === fontValue) ? fontValue : 12;
-            const arcSize = parseFloat(map.arcSize || "15");
-            const radius = Math.max(0, Math.min(
-                Math.min(rect.w, rect.h) / 2,
-                isNaN(arcSize) ? 12 : Math.min(rect.w, rect.h) * arcSize / 100));
-
-            const shape = diagram.addShape(kind, rect.x, rect.y, rect.w, rect.h, {
-                layer: layerMap.get(layerOf(cell, byId)) || diagram.layers[0].id,
-                text: cleanText(node.Attr("value")),
-                fill: fill,
-                stroke: stroke,
-                textColor: textColor,
-                fontSize: fontSize === fontSize ? Math.round(fontSize) : 12,
-                radius: Math.round(radius),
-            });
-            mapped.set(id, shape.id);
-        }
-
-        for (const node of nodes) {
-            if (node.Attr("edge") !== "1") continue;
-            if (node.Attr("visible") === "0") continue;
-
-            const source = mapped.get(node.Attr("source"));
-            const target = mapped.get(node.Attr("target"));
-            if (!source || !target) continue;
-
-            const style = node.Attr("style") || "";
-            const map = styleMap(style);
-            const fontValue = parseFloat(map.fontSize || "11");
-            const fontSize = (fontValue === fontValue) ? fontValue : 11;
-            const edgeCell = byId.get(node.Attr("id"));
-            diagram.addEdge(source, target, {
-                layer: edgeCell
-                    ? (layerMap.get(layerOf(edgeCell, byId)) || diagram.layers[0].id)
-                    : diagram.layers[0].id,
-                text: cleanText(node.Attr("value")),
-                stroke: colour(map, "strokeColor", "#000000"),
-                dashed: map.dashed === "1",
-                fontSize: fontSize === fontSize ? Math.round(fontSize) : 11,
-            });
-        }
-
-        if (!diagram.shapes.length)
-            throw new Error(Locale.Text("The draw.io diagram has no shapes."));
-
-        return { diagram: diagram, pages: pages, pageName: pageName };
+        return {
+            diagram: pages[0],
+            diagrams: pages,
+            names: names,
+            pages: pages.length,
+            pageName: names[0] || "",
+        };
     }
 }

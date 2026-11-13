@@ -4,3 +4,5 @@ tests/selfcheck/export.png
 tests/selfcheck/export.pdf
 tests/selfcheck/import.drawio
 tests/selfcheck/imported.draw
+tests/selfcheck/pages.draw
+tests/selfcheck/two.drawio

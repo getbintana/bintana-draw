@@ -629,6 +629,70 @@
     },
     {
       "type": "Panel",
+      "name": "PageBar",
+      "properties": {
+        "Arrangement": "Horizontal",
+        "Spacing": 6,
+        "Padding": "5 10",
+        "Height": 38,
+        "Style": "draw-pagebar"
+      },
+      "children": [
+        {
+          "type": "Label",
+          "name": "LblPage",
+          "properties": {
+            "Text": "Page",
+            "For": "CmbPage"
+          }
+        },
+        {
+          "type": "ComboBox",
+          "name": "CmbPage",
+          "properties": {
+            "Width": 220,
+            "Height": 32,
+            "Expand": true,
+            "AccessibleName": "Pages"
+          }
+        },
+        {
+          "type": "Button",
+          "name": "BtnPageAdd",
+          "properties": {
+            "Text": "Add page",
+            "Height": 30
+          }
+        },
+        {
+          "type": "Button",
+          "name": "BtnPageRemove",
+          "properties": {
+            "Text": "Remove page",
+            "Height": 30
+          }
+        },
+        {
+          "type": "Label",
+          "name": "LblPageName",
+          "properties": {
+            "Text": "Name",
+            "For": "TxtPageName"
+          }
+        },
+        {
+          "type": "TextBox",
+          "name": "TxtPageName",
+          "properties": {
+            "Width": 180,
+            "Height": 30,
+            "AccessibleName": "Page name"
+          }
+        }
+      ]
+    },
+    {
+      "type": "Panel",
       "name": "Status",
       "properties": {
         "Arrangement": "Horizontal",

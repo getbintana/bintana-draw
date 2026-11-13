@@ -36,6 +36,9 @@ The window is started with a blank canvas and the shape palette on the left.
   resize. Connectors can be labelled and can be dashed.
 - **Text** — double-click a shape or a connector and the editor opens over it.
   Enter or clicking away keeps the text; Escape puts it back.
+- **Pages** — the bar under the canvas switches, adds, removes and names pages.
+  Every page has its own layers and shapes; the whole book is saved, and the
+  current page is what the canvas edits and the export writes.
 - **Layers** — the panel on the right adds, removes and reorders layers, and
   names, hides or locks the active one. New shapes and connectors go to the
   active layer; a hidden layer is not drawn, hit-tested or exported, and a
@@ -87,27 +90,34 @@ One object, two arrays, and numbers in canvas units on an unbounded plane:
 ```json
 {
   "format": "bintana-draw/1",
-  "version": 1,
-  "layers": [
-    { "id": "l1", "name": "Flow", "visible": true, "locked": false },
-    { "id": "l2", "name": "Annotations", "visible": true, "locked": false }
-  ],
-  "shapes": [
-    { "id": "s1", "kind": "rect", "layer": "l1",
-      "x": 40, "y": 40, "w": 160, "h": 70,
-      "text": "Start", "fill": "#dae8fc", "stroke": "#6c8ebf",
-      "textColor": "#1f2937", "fontSize": 12, "radius": 12 }
-  ],
-  "edges": [
-    { "id": "e1", "from": "s1", "to": "s2", "layer": "l1", "text": "yes",
-      "stroke": "#6c8ebf", "dashed": false, "fontSize": 11 }
+  "version": 2,
+  "active": 0,
+  "pages": [
+    {
+      "name": "Flow",
+      "layers": [
+        { "id": "l1", "name": "Flow", "visible": true, "locked": false },
+        { "id": "l2", "name": "Annotations", "visible": true, "locked": false }
+      ],
+      "shapes": [
+        { "id": "s1", "kind": "rect", "layer": "l1",
+          "x": 40, "y": 40, "w": 160, "h": 70,
+          "text": "Start", "fill": "#dae8fc", "stroke": "#6c8ebf",
+          "textColor": "#1f2937", "fontSize": 12, "radius": 12 }
+      ],
+      "edges": [
+        { "id": "e1", "from": "s1", "to": "s2", "layer": "l1", "text": "yes",
+          "stroke": "#6c8ebf", "dashed": false, "fontSize": 11 }
+      ]
+    }
   ]
 }
 ```
 
-A file is read with `Diagram.fromJSON`, which refuses a foreign `format`,
+A file is read with `Document.fromJSON`, which refuses a foreign `format`,
 clamps sizes, drops connectors whose ends are missing and renumbers colliding
-ids. That is also the whole of the format's documentation.
+ids. A file written before pages existed has its shapes at the top level and
+opens as one page. That is also the whole of the format's documentation.
 
 ## The project
 
@@ -153,16 +163,16 @@ handler whose control name is misspelled is silently dead.
 
 This is a first editor, not a draw.io replacement. Missing, in the order they
 would change what a person can draw: custom shape libraries and stencils,
-multiple pages, curved connectors with movable waypoints, images and icons,
+reordering pages, curved connectors with movable waypoints, images and icons,
 system-clipboard interchange with other applications, SVG import/export, and
 collaboration.
 
-The draw.io import is deliberately the basic half: it reads the first page of
-an uncompressed file, maps the common shapes by style (`rounded`, `ellipse`,
+The draw.io import is deliberately the basic half: it reads every uncompressed
+page of a file, maps the common shapes by style (`rounded`, `ellipse`,
 `rhombus`, `shape=note`, `shape=terminator`, `shape=parallelogram`,
-`shape=cylinder3`), keeps fill and stroke colours, labels, dashed edges and the
-draw.io layers. It does not read compressed pages, rotation, groups with their
-own layout, images or the second and later pages.
+`shape=cylinder3`), keeps fill and stroke colours, labels, dashed edges, the
+draw.io layers and the page names. It does not read compressed pages, rotation,
+groups with their own layout or images.
 There is no autosave and no recovery file; the unsaved-changes question is the
 whole of the safety net.
 
