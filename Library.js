@@ -18,6 +18,7 @@ function shapeCopy(s) {
         textColor: s.textColor, fontSize: s.fontSize, radius: s.radius,
         textBold: s.textBold === true, textItalic: s.textItalic === true,
         textAlign: s.textAlign || "", textVAlign: s.textVAlign || "",
+        image: s.image || "",
     };
 }
 
@@ -230,7 +231,7 @@ export class ShapeLibrary {
                     radius: raw.radius, textBold: raw.textBold,
                     textItalic: raw.textItalic, textAlign: raw.textAlign,
                     textVAlign: raw.textVAlign, rotation: raw.rotation,
-                    group: group, layer: layer,
+                    image: raw.image, group: group, layer: layer,
                 });
             names.set(raw.id, shape.id);
             ids.push(shape.id);

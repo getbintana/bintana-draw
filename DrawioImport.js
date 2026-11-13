@@ -25,7 +25,15 @@ function attrNumber(node, name, fallback) {
 function styleMap(style) {
     const map = {};
     if (!style) return map;
-    for (const part of style.split(";")) {
+    const parts = style.split(";");
+    for (let i = 0; i < parts.length; i++) {
+        let part = parts[i];
+        /* An inline picture is `image=data:image/png;base64,...`: its own
+         * semicolon is not a style separator, so the two halves are joined
+         * back before the key is read. */
+        if (part.indexOf("data:image/") >= 0 && part.indexOf(",") < 0 &&
+            i + 1 < parts.length)
+            part += ";" + parts[++i];
         if (!part) continue;
         const at = part.indexOf("=");
         if (at < 0) map[part] = "1";
@@ -48,6 +56,17 @@ function cleanText(value) {
     text = text.replace(/&quot;/gi, "\"");
     text = text.replace(/&#39;/gi, "'");
     return text.replace(/\r/g, "").trim();
+}
+
+/* An image cell in an uncompressed draw.io file usually carries its pixels
+ * inline as a base64 data URI. A path or a URL is not embedded, so it cannot
+ * travel with the document and the cell is skipped as before. */
+function inlineImage(value) {
+    if (!value || value.indexOf("data:image/") !== 0) return "";
+    const comma = value.indexOf(",");
+    if (comma < 0) return "";
+    if (value.slice(0, comma).indexOf(";base64") < 0) return "";
+    return value.slice(comma + 1);
 }
 
 function colour(map, key, fallback) {
@@ -199,13 +218,15 @@ function importModel(model) {
 
         const style = node.Attr("style") || "";
         const map = styleMap(style);
-        if (map.group === "1" || (map.shape || "").indexOf("group") >= 0 ||
-            (map.shape || "").indexOf("image") >= 0) continue;
-        const kind = shapeKind(map, style);
-        const fill = kind === "text" ? "rgba(0,0,0,0)"
-                                     : colour(map, "fillColor", "#ffffff");
-        const stroke = kind === "text" ? "rgba(0,0,0,0)"
-                                       : colour(map, "strokeColor", "#000000");
+        if (map.group === "1" || (map.shape || "").indexOf("group") >= 0)
+            continue;
+        const image = inlineImage(map.image);
+        if (!image && (map.shape || "").indexOf("image") >= 0) continue;
+        const kind = image ? "image" : shapeKind(map, style);
+        const fill = (kind === "text" || kind === "image")
+            ? "rgba(0,0,0,0)" : colour(map, "fillColor", "#ffffff");
+        const stroke = (kind === "text" || kind === "image")
+            ? "rgba(0,0,0,0)" : colour(map, "strokeColor", "#000000");
         const textColor = colour(map, "fontColor", "#000000");
         const fontValue = parseFloat(map.fontSize || "12");
         const fontSize = (fontValue === fontValue) ? fontValue : 12;
@@ -237,6 +258,7 @@ function importModel(model) {
             textColor: textColor,
             fontSize: fontSize === fontSize ? Math.round(fontSize) : 12,
             radius: Math.round(radius),
+            image: image,
             textBold: (fontStyle & 1) !== 0,
             textItalic: (fontStyle & 2) !== 0,
             textAlign: map.align || "",

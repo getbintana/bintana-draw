@@ -82,6 +82,12 @@ BINTANA=/path/to/build/bintana tests/run.sh
   holds every member; resizing does not, because more than one shape is
   selected and handles only appear for one. A paste must remap group ids, or
   the copy joins the original group.
+- **An image is pixels in the document, not a path.** An `image` shape keeps
+  its base64 in `image`, so the `.draw` travels alone; `Render` decodes it once
+  per base64 text and `drawShape` fits it inside the box without distorting it.
+  The file dialog and a dropped image both call `insertImage`. A draw.io style
+  is split at semicolons, so `styleMap` joins the two halves of an inline
+  `data:image/...;base64,...` before reading the key.
 - **A shape kind is one case in `shapePath`.** There are no per-shape classes:
   add the name to `SHAPE_KINDS` in `Diagram.js`, a case in `Render.js`
   (`shapePath`, plus any inner lines in `drawShape`), a default size in

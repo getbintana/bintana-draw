@@ -83,6 +83,10 @@
       "enabled": false
     },
     {
+      "name": "ActImage",
+      "text": "Image…"
+    },
+    {
       "name": "ActDelete",
       "text": "Delete",
       "shortcut": "Delete",
@@ -504,6 +508,15 @@
           "name": "BtnZoomFit",
           "properties": {
             "Action": "ActZoomFit",
+            "Style": "flat",
+            "Height": 34
+          }
+        },
+        {
+          "type": "Button",
+          "name": "BtnImage",
+          "properties": {
+            "Action": "ActImage",
             "Style": "flat",
             "Height": 34
           }

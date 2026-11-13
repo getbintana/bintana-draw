@@ -470,6 +470,18 @@ msgstr "Se agregó {0} a la biblioteca."
 msgid "No item selected"
 msgstr "No hay elemento seleccionado"
 
+msgid "Image…"
+msgstr "Imagen…"
+
+msgid "Insert image"
+msgstr "Insertar imagen"
+
+msgid "Images"
+msgstr "Imágenes"
+
+msgid "Cannot read {0}: {1}"
+msgstr "No se pudo leer {0}: {1}"
+
 msgid "Insert from library"
 msgstr "Insertar desde la biblioteca"
 

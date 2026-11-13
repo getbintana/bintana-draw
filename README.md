@@ -34,6 +34,11 @@ The window is started with a blank canvas and the shape palette on the left.
   input, predefined process, internal storage, delay, on-page and off-page
   references, loop limit and manual operation. Pick one and click for the
   default size or drag to size it.
+- **Images** — **Image…** in the toolbar embeds a PNG, JPEG, WebP, TIFF, BMP
+  or SVG (where the runtime can read it) into the diagram as a shape: it moves,
+  resizes, rotates and saves with the file, and dropping an image on the window
+  inserts it too. The picture is kept inside the `.draw` as base64, so the file
+  travels alone.
 - **Shape library** — the **Library** tab saves the current selection as a
   reusable stamp, shows it in a preview, inserts it at the centre of the view,
   and deletes it. The library lives in the application's config directory and
@@ -159,10 +164,12 @@ One object, two arrays, and numbers in canvas units on an unbounded plane:
 }
 ```
 
-A file is read with `Document.fromJSON`, which refuses a foreign `format`,
-clamps sizes, drops connectors whose ends are missing and renumbers colliding
-ids. A file written before pages existed has its shapes at the top level and
-opens as one page. That is also the whole of the format's documentation.
+An `image` shape carries its pixels as base64 in `image`; every other kind
+leaves that field empty. A file is read with `Document.fromJSON`, which refuses
+a foreign `format`, clamps sizes, drops connectors whose ends are missing and
+renumbers colliding ids. A file written before pages existed has its shapes at
+the top level and opens as one page. That is also the whole of the format's
+documentation.
 
 ## The project
 
@@ -208,15 +215,16 @@ handler whose control name is misspelled is silently dead.
 
 This is a first editor, not a draw.io replacement. Missing, in the order they
 would change what a person can draw: full draw.io stencil path definitions,
-library thumbnails, images and icons, system-clipboard interchange with other
-applications, SVG import/export, and collaboration.
+library thumbnails, a built-in icon set, system-clipboard interchange with
+other applications, SVG import/export, and collaboration.
 
 The draw.io import is deliberately the basic half: it reads every uncompressed
 page of a file, maps the common shapes by style (`rounded`, `ellipse`,
 `rhombus`, `shape=note`, `shape=terminator`, `shape=parallelogram`,
 `shape=cylinder3`), keeps fill and stroke colours, labels, dashed edges, the
-draw.io layers, the page names and the group membership. It does not read
-compressed pages, rotation, images or a group cell's own label and style.
+draw.io layers, the page names, the group membership and image cells whose
+pixels are inline as base64. It does not read compressed pages, rotation,
+images referred to by a path or URL, or a group cell's own label and style.
 There is no autosave and no recovery file; the unsaved-changes question is the
 whole of the safety net.
 

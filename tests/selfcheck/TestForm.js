@@ -216,6 +216,7 @@ class TestForm extends Form {
         this.endpoints(fm);
         this.routing(fm);
         this.moreShapes(fm);
+        this.images(fm);
         this.library(fm);
         this.layers(fm);
         this.pages(fm);
@@ -1147,8 +1148,83 @@ class TestForm extends Form {
                    !!fm.doc.edgeById(spare.id));
     }
 
+    images(fm) {
+        fm.resetDocument();
+        const libraryFile = File.Join(Application.Directory, "test-library.btlib");
+        fm.libraryPath = () => libraryFile;
+        if (File.Exists(libraryFile)) File.Delete(libraryFile);
+        fm.panX = 0;
+        fm.panY = 0;
+        fm.zoom = 1;
+
+        const data = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+        const file = File.Join(Application.Directory, "test-image.png");
+        File.SaveBytes(file, Bytes.FromBase64(data));
+        fm.insertImage(file);
+
+        this.eq("image: the shape was added", fm.doc.shapes.length, 1);
+        const shape = fm.doc.shapes[0];
+        this.eq("image: it has its own kind", shape.kind, "image");
+        this.eq("image: its pixels travel with it", shape.image, data);
+        this.check("image: it was given a visible size",
+                   shape.w >= 20 && shape.h >= 20);
+        this.eq("image: it is selected", fm.sel[0], shape.id);
+
+        const round = Diagram.fromJSON(
+            JSON.parse(JSON.stringify(fm.doc.toJSON())));
+        this.eq("image: the file keeps the pixels",
+                round.shapeById(shape.id).image, data);
+
+        fm.copySelection();
+        fm.pasteSelection();
+        this.eq("image: a paste carries it",
+                fm.doc.shapes[1].image, data);
+
+        fm.ActUndo_Execute();
+        this.eq("image: undo takes the paste away", fm.doc.shapes.length, 1);
+
+        fm.library = new ShapeLibrary();
+        fm.select([shape.id]);
+        fm.BtnLibraryAdd_Click();
+        this.eq("image: a library stamp keeps it",
+                fm.library.items[0].shapes[0].image, data);
+        fm.LstLibrary.Index = 0;
+        fm.BtnLibraryInsert_Click();
+        this.eq("image: inserting the stamp brings it back",
+                fm.doc.shapes[1].image, data);
+        fm.ActUndo_Execute();
+
+        /* An uncompressed draw.io cell with its pixels inline. */
+        const imported = DrawioImport.parse(`<mxfile><diagram id="p"><mxGraphModel><root>
+            <mxCell id="0"/><mxCell id="1" parent="0"/>
+            <mxCell id="img" value="Logo" style="shape=image;image=data:image/png;base64,${data};" vertex="1" parent="1"><mxGeometry x="20" y="30" width="80" height="60" as="geometry"/></mxCell>
+        </root></mxGraphModel></diagram></mxfile>`);
+        this.eq("image: draw.io imports it", imported.diagram.shapes.length, 1);
+        this.eq("image: as an image shape",
+                imported.diagram.shapes[0].kind, "image");
+        this.eq("image: with its pixels",
+                imported.diagram.shapes[0].image, data);
+        this.eq("image: and its label",
+                imported.diagram.shapes[0].text, "Logo");
+
+        fm.resetDocument();
+        fm.openDropped([file]);
+        this.eq("image: a dropped picture is inserted",
+                fm.doc.shapes.length, 1);
+        this.eq("image: and it is an image",
+                fm.doc.shapes[0].kind, "image");
+
+        File.Delete(file);
+        fm.library = new ShapeLibrary();
+        fm.refreshLibrary();
+        File.Delete(libraryFile);
+    }
+
     library(fm) {
         fm.resetDocument();
+        const libraryFile = File.Join(Application.Directory, "test-library.btlib");
+        fm.libraryPath = () => libraryFile;
+        if (File.Exists(libraryFile)) File.Delete(libraryFile);
         fm.library = new ShapeLibrary();
         fm.refreshLibrary();
         this.check("library: import is always enabled",
@@ -1238,6 +1314,7 @@ class TestForm extends Form {
         this.eq("library: delete empties it", fm.library.items.length, 0);
         this.eq("library: and the preview goes quiet",
                 fm.libraryPreviewDiagram(), null);
+        File.Delete(libraryFile);
     }
 
     confirmDialog() {
@@ -1295,6 +1372,7 @@ class TestForm extends Form {
             TxtLayerName: ["Activate", "LostFocus"],
             LstLibrary: ["Select", "Activate"],
             LibraryPreview: ["Draw"],
+            ActImage: ["Execute"],
             BtnLibraryAdd: ["Click"], BtnLibraryInsert: ["Click"],
             BtnLibraryDelete: ["Click"], BtnLibraryImport: ["Click"],
             BtnLibraryExport: ["Click"],

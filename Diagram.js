@@ -16,7 +16,7 @@ export const SHAPE_KINDS = ["rect", "round", "ellipse", "diamond",
                             "terminator", "data", "cylinder", "note", "text",
                             "triangle", "hexagon", "document", "manualinput",
                             "predefined", "storage", "delay", "onpage",
-                            "offpage", "looplimit", "manualop"];
+                            "offpage", "looplimit", "manualop", "image"];
 
 export const DEFAULT_FILL   = "#dae8fc";
 export const DEFAULT_STROKE = "#6c8ebf";
@@ -49,6 +49,7 @@ function copyShape(s) {
         textColor: s.textColor, fontSize: s.fontSize, radius: s.radius,
         textBold: s.textBold, textItalic: s.textItalic,
         textAlign: s.textAlign, textVAlign: s.textVAlign,
+        image: s.image || "",
     };
 }
 
@@ -239,6 +240,7 @@ export class Diagram {
             textItalic: o.textItalic === true,
             textAlign: text(o.textAlign, ""),
             textVAlign: text(o.textVAlign, ""),
+            image: text(o.image, ""),
         };
         this.shapes.push(shape);
         return shape;
@@ -479,6 +481,7 @@ export class Diagram {
                 textItalic: raw.textItalic === true,
                 textAlign: text(raw.textAlign, ""),
                 textVAlign: text(raw.textVAlign, ""),
+                image: text(raw.image, ""),
             };
             diagram.shapes.push(shape);
         }

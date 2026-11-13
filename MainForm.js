@@ -25,6 +25,8 @@ const ZOOM_MAX     = 4;
 const HANDLE_HIT   = 8;
 const EDGE_HIT     = 8;
 const PASTE_OFFSET = 20;
+const IMAGE_MAX_W  = 260;
+const IMAGE_MAX_H  = 200;
 
 const DEFAULT_FILL_COLOR   = "#dae8fc";
 const DEFAULT_STROKE_COLOR = "#6c8ebf";
@@ -62,6 +64,12 @@ function rectOf(a, b) {
 function rectsIntersect(a, b) {
     return a.x < b.x + b.w && a.x + a.w > b.x &&
            a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+function isImagePath(path) {
+    const extension = File.Extension(path).toLowerCase();
+    return ["png", "jpg", "jpeg", "webp", "bmp", "tif", "tiff",
+            "svg"].indexOf(extension) >= 0;
 }
 
 export class MainForm extends Form {
@@ -388,6 +396,17 @@ export class MainForm extends Form {
     BtnToolConnect_Click()    { this.toolButtonClicked("connect", this.BtnToolConnect); }
     BtnToolLine_Click()       { this.toolButtonClicked("line", this.BtnToolLine); }
     BtnToolArrow_Click()      { this.toolButtonClicked("arrow", this.BtnToolArrow); }
+
+    ActImage_Execute() {
+        const folder = this.path ? File.Directory(this.path)
+                                 : Application.Directory;
+        Dialog.OpenFile(Locale.Text("Insert image"), {
+            Folder: folder,
+            Filters: [[Locale.Text("Images"),
+                       "*.png *.jpg *.jpeg *.webp *.bmp *.tif *.tiff *.svg"],
+                      [Locale.Text("All files"), "*"]],
+        }, (path) => this.insertImage(path));
+    }
 
     CmbMoreShapes_Select() {
         if (this.syncingTools) return;
@@ -765,6 +784,7 @@ export class MainForm extends Form {
         case "offpage":    return { w: 140, h: 90 };
         case "looplimit":  return { w: 150, h: 90 };
         case "manualop":   return { w: 150, h: 80 };
+        case "image":      return { w: 180, h: 140 };
         default:           return { w: 150, h: 80 };
         }
     }
@@ -775,6 +795,9 @@ export class MainForm extends Form {
             options = { fill: "#fff2cc", stroke: "#d6b656", text: "" };
         else if (kind === "text")
             options = { fill: "rgba(0,0,0,0)", stroke: "rgba(0,0,0,0)" };
+        else if (kind === "image")
+            options = { fill: "rgba(0,0,0,0)", stroke: "rgba(0,0,0,0)",
+                        text: "" };
         else
             options = { fill: this.defaultFill, stroke: this.defaultStroke };
 
@@ -788,6 +811,37 @@ export class MainForm extends Form {
         options.textVAlign = kind === "note" ? "top" : this.defaultTextVAlign;
         options.rotation = this.defaultRotation;
         return options;
+    }
+
+    insertImage(path) {
+        if (!this.canEditActiveLayer()) return;
+        let bytes, bitmap;
+        try {
+            bytes = File.LoadBytes(path);
+            bitmap = Bitmap.FromBytes(bytes);
+        } catch (e) {
+            Message.Error(Locale.Text("Cannot read {0}: {1}"),
+                          path, e.message);
+            return;
+        }
+
+        const scale = Math.min(1, IMAGE_MAX_W / Math.max(1, bitmap.Width),
+                               IMAGE_MAX_H / Math.max(1, bitmap.Height));
+        const w = Math.max(40, Math.round(bitmap.Width * scale));
+        const h = Math.max(40, Math.round(bitmap.Height * scale));
+        const box = this.viewport();
+        const at = this.toWorld(box.w / 2, box.h / 2);
+        const before = this.snapshot();
+        const shape = this.doc.addShape(
+            "image", this.snap(at.x - w / 2), this.snap(at.y - h / 2), w, h, {
+                image: bytes.ToBase64(),
+                fill: "rgba(0,0,0,0)", stroke: "rgba(0,0,0,0)",
+                text: "", layer: this.activeLayer,
+            });
+        this.select([shape.id]);
+        this.pushUndo(Locale.Text("Insert image"), before);
+        this.refreshAll();
+        this.setStatus(Locale.Text("Inserted {0}.", File.Name(path)));
     }
 
     /* ------------------------------------------------------------- pointers */
@@ -1222,6 +1276,10 @@ export class MainForm extends Form {
         if (!paths || !paths.length) return;
         const file = paths[0];
         if (!File.Exists(file)) return;
+        if (isImagePath(file)) {
+            this.guard(() => this.insertImage(file));
+            return;
+        }
         this.guard(() => this.openDocument(file));
     }
 
@@ -1528,6 +1586,7 @@ export class MainForm extends Form {
                 textColor: s.textColor, fontSize: s.fontSize, radius: s.radius,
                 textBold: s.textBold, textItalic: s.textItalic,
                 textAlign: s.textAlign, textVAlign: s.textVAlign,
+                image: s.image || "",
             });
         }
 
@@ -1593,7 +1652,8 @@ export class MainForm extends Form {
                   radius: raw.radius, textBold: raw.textBold,
                   textItalic: raw.textItalic, textAlign: raw.textAlign,
                   textVAlign: raw.textVAlign, group: group,
-                  rotation: raw.rotation, layer: this.activeLayer });
+                  rotation: raw.rotation, image: raw.image,
+                  layer: this.activeLayer });
             renamed.set(raw.id, shape.id);
             ids.push(shape.id);
         }

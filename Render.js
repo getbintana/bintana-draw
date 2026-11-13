@@ -1,7 +1,8 @@
 /*
  * Everything the canvas paints. The renderer is handed a diagram and a view
  * (`panX`, `panY`, `zoom`, what is selected, the gesture in flight) and draws
- * one frame; it keeps no state between frames.
+ * one frame; the only thing kept between frames is a cache of decoded images,
+ * keyed by the base64 text a shape carries.
  *
  * Two drawings share the same shape and edge code: the one on screen, with its
  * grid, selection and handles, and the one `Save`/`SavePdf` asks for, which is
@@ -12,6 +13,10 @@
 
 const KAPPA = 0.5522847498307936;
 const ACCENT = "#3584e4";
+
+/* A .draw carries its images as base64, so the text itself is the key: the
+ * same picture in two shapes is decoded once, and a reload makes a new map. */
+const imageCache = new Map();
 
 function dashPattern(dash, dashed) {
     if (dash === "dot") return [2, 3];
@@ -157,6 +162,43 @@ function shapePath(p, s) {
     }
 }
 
+function imageBitmap(s) {
+    if (!s.image) return null;
+    if (imageCache.has(s.image)) return imageCache.get(s.image);
+    let bitmap = null;
+    try {
+        bitmap = Bitmap.FromBytes(Bytes.FromBase64(s.image));
+    } catch (e) {
+        bitmap = null;
+    }
+    imageCache.set(s.image, bitmap);
+    return bitmap;
+}
+
+function drawImage(p, s) {
+    const bitmap = imageBitmap(s);
+    if (!bitmap) {
+        p.Color = "#f6f8fa";
+        p.Rectangle(s.x, s.y, s.w, s.h);
+        p.Fill();
+        p.Color = "#adb5bd";
+        p.LineWidth = 1;
+        p.MoveTo(s.x + 6, s.y + 6);
+        p.LineTo(s.x + s.w - 6, s.y + s.h - 6);
+        p.MoveTo(s.x + s.w - 6, s.y + 6);
+        p.LineTo(s.x + 6, s.y + s.h - 6);
+        p.Stroke();
+        return;
+    }
+
+    /* Fit inside the shape without distorting it; the box stays the handles. */
+    const scale = Math.min(s.w / Math.max(1, bitmap.Width),
+                           s.h / Math.max(1, bitmap.Height));
+    const w = bitmap.Width * scale;
+    const h = bitmap.Height * scale;
+    p.Image(bitmap, s.x + (s.w - w) / 2, s.y + (s.h - h) / 2, w, h);
+}
+
 function selectionOutline(p, s) {
     if (s.kind === "text") p.Rectangle(s.x, s.y, s.w, s.h);
     else shapePath(p, s);
@@ -229,6 +271,13 @@ function drawShape(p, s) {
     }
 
     if (s.kind === "text") {
+        labelInShape(p, s);
+        if (turn) p.Pop();
+        return;
+    }
+
+    if (s.kind === "image") {
+        drawImage(p, s);
         labelInShape(p, s);
         if (turn) p.Pop();
         return;
