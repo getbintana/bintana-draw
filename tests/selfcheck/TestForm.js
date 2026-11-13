@@ -1346,8 +1346,10 @@ class TestForm extends Form {
 
         dialog.TxtFilter.Text = "AND";
         dialog.TxtFilter_Change();
-        this.check("stencil form: AND finds the logic gates",
+        this.check("stencil form: AND finds the ANSI gates",
                    dialog.TrvStencils.Exists("set:logic"));
+        this.check("stencil form: AND finds the IEC gates",
+                   dialog.TrvStencils.Exists("set:logic_iec"));
         this.check("stencil form: AND finds the BPMN gateway",
                    dialog.TrvStencils.Exists("set:bpmn"));
         this.check("stencil form: AND hides the basic set",

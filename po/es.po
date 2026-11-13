@@ -605,6 +605,9 @@ msgstr "Diagramas de flujo"
 msgid "Networks"
 msgstr "Redes"
 
+msgid "Electrical: logic gates (ANSI)"
+msgstr "Eléctrico: compuertas lógicas (ANSI)"
+
 msgid "Electrical: IEC logic gates"
 msgstr "Eléctrico: compuertas IEC"
 
