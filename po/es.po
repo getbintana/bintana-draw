@@ -416,6 +416,13 @@ msgstr "Abajo"
 msgid "Text color"
 msgstr "Color del texto"
 
+
+msgid "Group"
+msgstr "Agrupar"
+
+msgid "Ungroup"
+msgstr "Desagrupar"
+
 msgid "Order"
 msgstr "Orden"
 

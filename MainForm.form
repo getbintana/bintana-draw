@@ -28,6 +28,8 @@
     { "name": "ActDuplicate", "text": "Duplicate", "shortcut": "<Control>d", "enabled": false },
     { "name": "ActDelete", "text": "Delete", "shortcut": "Delete", "enabled": false },
     { "name": "ActSelectAll", "text": "Select All", "shortcut": "<Control>a" },
+    { "name": "ActGroup", "text": "Group", "shortcut": "<Control>g", "enabled": false },
+    { "name": "ActUngroup", "text": "Ungroup", "shortcut": "<Control><Shift>g", "enabled": false },
     { "name": "ActBringFront", "text": "Bring to Front", "enabled": false },
     { "name": "ActSendBack", "text": "Send to Back", "enabled": false },
     { "name": "ActBringForward", "text": "Bring Forward", "enabled": false },
@@ -76,6 +78,9 @@
         { "action": "ActDelete" },
         { "separator": true },
         { "action": "ActSelectAll" },
+        { "separator": true },
+        { "action": "ActGroup" },
+        { "action": "ActUngroup" },
         { "separator": true },
         {
           "name": "MnuAlign",
@@ -594,6 +599,9 @@
                   { "action": "ActDelete" },
                   { "separator": true },
                   { "action": "ActSelectAll" },
+                  { "separator": true },
+                  { "action": "ActGroup" },
+                  { "action": "ActUngroup" },
                   { "separator": true },
                   {
                     "text": "Order",

@@ -266,6 +266,32 @@ function drawSelection(p, diagram, selected, zoom) {
         p.LineDash = [];
     }
 
+    /* A group gets one dashed box around its selected members, so a click
+     * that took two shapes reads as one object. */
+    const groups = new Map();
+    for (const s of diagram.shapes) {
+        if (!ids.has(s.id) || !s.group) continue;
+        if (!groups.has(s.group)) groups.set(s.group, []);
+        groups.get(s.group).push(s);
+    }
+    for (const members of groups.values()) {
+        if (members.length < 2) continue;
+        let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+        for (const s of members) {
+            x0 = Math.min(x0, s.x);
+            y0 = Math.min(y0, s.y);
+            x1 = Math.max(x1, s.x + s.w);
+            y1 = Math.max(y1, s.y + s.h);
+        }
+        p.Color = "rgba(53,132,228,0.5)";
+        p.LineWidth = 1 / zoom;
+        p.LineDash = [4 / zoom, 3 / zoom];
+        p.Rectangle(x0 - 5 / zoom, y0 - 5 / zoom,
+                    x1 - x0 + 10 / zoom, y1 - y0 + 10 / zoom);
+        p.Stroke();
+        p.LineDash = [];
+    }
+
     /* Handles only when one shape and nothing else is selected. */
     const shapes = diagram.shapes.filter((s) => ids.has(s.id));
     if (shapes.length === 1 && selected.length === 1) {

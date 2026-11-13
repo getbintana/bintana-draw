@@ -392,7 +392,8 @@ export class MainForm extends Form {
 
     pruneSelection() {
         if (!this.doc) return;
-        this.sel = this.sel.filter((id) => this.doc.canSelect(id));
+        this.sel = this.expandGroups(
+            this.sel.filter((id) => this.doc.canSelect(id)));
     }
 
     layerLabel(layer) {
@@ -578,8 +579,26 @@ export class MainForm extends Form {
                  guides: { vertical: vertical, horizontal: horizontal } };
     }
 
+    expandGroups(ids) {
+        const out = [];
+        const seen = new Set();
+        for (const id of ids) {
+            const object = this.doc.find(id);
+            if (!object) continue;
+            const members = object.from === undefined && object.group
+                ? this.doc.groupMembers(object.group)
+                : [object];
+            for (const member of members) {
+                if (!this.doc.canSelect(member) || seen.has(member.id)) continue;
+                seen.add(member.id);
+                out.push(member.id);
+            }
+        }
+        return out;
+    }
+
     select(ids) {
-        this.sel = ids.filter((id) => this.doc.canSelect(id));
+        this.sel = this.expandGroups(ids);
         this.syncColors();
         this.syncFormatControls();
         this.updateStatus();
@@ -589,11 +608,24 @@ export class MainForm extends Form {
     }
 
     toggleSelection(id) {
-        if (!this.doc.canSelect(id)) return;
-        const at = this.sel.indexOf(id);
-        if (at >= 0) this.sel.splice(at, 1);
-        else this.sel.push(id);
+        const object = this.doc.find(id);
+        if (!object || !this.doc.canSelect(object)) return;
+        const members = object.from === undefined && object.group
+            ? this.doc.groupMembers(object.group)
+            : [object];
+        const ids = members.filter((s) => this.doc.canSelect(s))
+                           .map((s) => s.id);
+        const all = ids.every((member) => this.sel.indexOf(member) >= 0);
+
+        if (all) {
+            this.sel = this.sel.filter((member) => ids.indexOf(member) < 0);
+        } else {
+            for (const member of ids)
+                if (this.sel.indexOf(member) < 0) this.sel.push(member);
+        }
+
         this.syncColors();
+        this.syncFormatControls();
         this.updateStatus();
         this.refreshActions();
         this.refreshLayerControls();
@@ -1119,7 +1151,8 @@ export class MainForm extends Form {
         for (const s of this.doc.shapes) {
             if (!ids.has(s.id)) continue;
             outShapes.push({
-                id: s.id, kind: s.kind, x: s.x, y: s.y, w: s.w, h: s.h,
+                id: s.id, kind: s.kind, group: s.group,
+                x: s.x, y: s.y, w: s.w, h: s.h,
                 text: s.text, fill: s.fill, stroke: s.stroke,
                 strokeWidth: s.strokeWidth, dash: s.dash,
                 textColor: s.textColor, fontSize: s.fontSize, radius: s.radius,
@@ -1157,9 +1190,16 @@ export class MainForm extends Form {
         if (!this.canEditActiveLayer()) return;
         const before = this.snapshot();
         const renamed = new Map();
+        const groups = new Map();
         const ids = [];
 
         for (const raw of data.shapes) {
+            let group = "";
+            if (raw.group) {
+                if (!groups.has(raw.group))
+                    groups.set(raw.group, this.doc.newGroup());
+                group = groups.get(raw.group);
+            }
             const shape = this.doc.addShape(
                 raw.kind, raw.x + dx, raw.y + dy, raw.w, raw.h,
                 { text: raw.text, fill: raw.fill, stroke: raw.stroke,
@@ -1167,7 +1207,8 @@ export class MainForm extends Form {
                   textColor: raw.textColor, fontSize: raw.fontSize,
                   radius: raw.radius, textBold: raw.textBold,
                   textItalic: raw.textItalic, textAlign: raw.textAlign,
-                  textVAlign: raw.textVAlign, layer: this.activeLayer });
+                  textVAlign: raw.textVAlign, group: group,
+                  layer: this.activeLayer });
             renamed.set(raw.id, shape.id);
             ids.push(shape.id);
         }
@@ -1495,6 +1536,9 @@ export class MainForm extends Form {
         this.ActDistributeHorizontal.Enabled = canDistribute;
         this.ActDistributeVertical.Enabled   = canDistribute;
 
+        this.ActGroup.Enabled         = shapeCount >= 2;
+        this.ActUngroup.Enabled       = this.selectedShapes()
+                                            .some((s) => s.group);
         this.ActBringFront.Enabled    = shapeCount > 0;
         this.ActSendBack.Enabled      = shapeCount > 0;
         this.ActBringForward.Enabled  = shapeCount > 0;
@@ -2016,6 +2060,25 @@ export class MainForm extends Form {
         }
 
         this.pushUndo(Locale.Text("Distribute"), before);
+        this.refreshAll();
+    }
+
+    ActGroup_Execute() {
+        const shapes = this.selectedShapes();
+        if (shapes.length < 2) return;
+        const before = this.snapshot();
+        const group = this.doc.newGroup();
+        for (const shape of shapes) shape.group = group;
+        this.pushUndo(Locale.Text("Group"), before);
+        this.refreshAll();
+    }
+
+    ActUngroup_Execute() {
+        const shapes = this.selectedShapes();
+        if (!shapes.some((s) => s.group)) return;
+        const before = this.snapshot();
+        for (const shape of shapes) shape.group = "";
+        this.pushUndo(Locale.Text("Ungroup"), before);
         this.refreshAll();
     }
 

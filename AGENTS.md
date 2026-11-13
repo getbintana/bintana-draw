@@ -65,6 +65,12 @@ BINTANA=/path/to/build/bintana tests/run.sh
   `s.textAlign` is `"left"`, `"center"` or `"right"`; `Painter.Text` wants
   `"Left"`, `"Center"` or `"Right"`, and a wrong one is a `RangeError` from the
   native call, not a silent fallback.
+- **A group is a selection rule, not a container.** `shape.group` is an id;
+  `select` and `toggleSelection` expand it through `expandGroups`, so every
+  gesture sees the whole group. Moving and copying work because the selection
+  holds every member; resizing does not, because more than one shape is
+  selected and handles only appear for one. A paste must remap group ids, or
+  the copy joins the original group.
 - **The format bar writes defaults as well as the selection.** A change with
   nothing selected is the style the next shape gets; a change with something
   selected is one undo step and also becomes the default. `syncingFormat`

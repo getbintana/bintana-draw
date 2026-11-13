@@ -39,7 +39,7 @@ function kind(value) {
 
 function copyShape(s) {
     return {
-        id: s.id, kind: s.kind, layer: s.layer,
+        id: s.id, kind: s.kind, layer: s.layer, group: s.group,
         x: s.x, y: s.y, w: s.w, h: s.h,
         text: s.text, fill: s.fill, stroke: s.stroke,
         strokeWidth: s.strokeWidth, dash: s.dash,
@@ -83,6 +83,7 @@ export class Diagram {
         this.nextShape = 1;
         this.nextEdge  = 1;
         this.nextLayer = 2;
+        this.nextGroup = 1;
     }
 
     addLayer(name) {
@@ -161,6 +162,22 @@ export class Diagram {
         return layer;
     }
 
+    newGroup() {
+        return "g" + (this.nextGroup++);
+    }
+
+    groupExists(id) {
+        for (const s of this.shapes) if (s.group === id) return true;
+        return false;
+    }
+
+    groupMembers(id) {
+        const out = [];
+        if (!id) return out;
+        for (const s of this.shapes) if (s.group === id) out.push(s);
+        return out;
+    }
+
     addShape(kindName, x, y, w, h, options) {
         const o = options || {};
         const layer = this.layerById(o.layer) ? o.layer : this.layers[0].id;
@@ -168,6 +185,7 @@ export class Diagram {
             id: "s" + (this.nextShape++),
             kind: kind(kindName),
             layer: layer,
+            group: text(o.group, ""),
             x: Math.round(number(x, 0)),
             y: Math.round(number(y, 0)),
             w: Math.max(MIN_SIZE, Math.round(number(w, 140))),
@@ -338,6 +356,7 @@ export class Diagram {
                 kind: kind(raw.kind),
                 layer: diagram.layerById(text(raw.layer, ""))
                     ? raw.layer : diagram.layers[0].id,
+                group: text(raw.group, ""),
                 x: Math.round(number(raw.x, 0)),
                 y: Math.round(number(raw.y, 0)),
                 w: Math.max(MIN_SIZE, Math.round(number(raw.w, 140))),
@@ -394,6 +413,7 @@ export class Diagram {
          * new one must not collide with what is already there. */
         while (diagram.shapeById("s" + diagram.nextShape)) diagram.nextShape++;
         while (diagram.edgeById("e" + diagram.nextEdge)) diagram.nextEdge++;
+        while (diagram.groupExists("g" + diagram.nextGroup)) diagram.nextGroup++;
         return diagram;
     }
 }

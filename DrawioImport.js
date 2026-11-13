@@ -109,6 +109,22 @@ function absoluteRect(cell, byId) {
     };
 }
 
+/* The nearest ancestor that draw.io marks as a group, if any. */
+function groupOf(cell, byId) {
+    let id = cell.parent;
+    const seen = new Set();
+    while (id && id !== "0" && id !== "1" && !seen.has(id)) {
+        seen.add(id);
+        const up = byId.get(id);
+        if (!up) break;
+        const map = styleMap(up.node.Attr("style") || "");
+        if (map.group === "1" || (map.shape || "").indexOf("group") >= 0)
+            return id;
+        id = up.parent;
+    }
+    return "";
+}
+
 /* The layer is the cell directly under the root (id "0") on the way up. */
 function layerOf(cell, byId) {
     let id = cell.parent;
@@ -144,6 +160,7 @@ function importModel(model) {
     const diagram = new Diagram();
     const mapped = new Map();
     const layerMap = new Map();
+    const groupMap = new Map();
 
     /* A layer is a cell whose parent is the root, with no vertex or edge of
      * its own. The first one reuses the layer the document starts with. */
@@ -199,8 +216,16 @@ function importModel(model) {
 
         const shapeWidth = parseFloat(map.strokeWidth || "1.5");
         const fontStyle = parseInt(map.fontStyle || "0", 10);
+        const oldGroup = groupOf(cell, byId);
+        let group = "";
+        if (oldGroup) {
+            if (!groupMap.has(oldGroup))
+                groupMap.set(oldGroup, diagram.newGroup());
+            group = groupMap.get(oldGroup);
+        }
         const shape = diagram.addShape(kind, rect.x, rect.y, rect.w, rect.h, {
             layer: layerMap.get(layerOf(cell, byId)) || diagram.layers[0].id,
+            group: group,
             text: cleanText(node.Attr("value")),
             fill: fill,
             stroke: stroke,

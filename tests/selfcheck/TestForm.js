@@ -211,6 +211,7 @@ class TestForm extends Form {
         this.drawio(fm);
         this.format(fm);
         this.zorder(fm);
+        this.groups(fm);
         this.layers(fm);
         this.pages(fm);
 
@@ -761,6 +762,72 @@ class TestForm extends Form {
                    !fm.ActBringFront.Enabled);
     }
 
+    groups(fm) {
+        fm.resetDocument();
+        const a = fm.doc.addShape("rect", 0, 0, 100, 50, { text: "A" });
+        const b = fm.doc.addShape("rect", 150, 0, 100, 50, { text: "B" });
+        const c = fm.doc.addShape("rect", 300, 0, 100, 50, { text: "C" });
+        fm.refreshAll();
+
+        fm.select([a.id, b.id]);
+        this.check("groups: the action is enabled", fm.ActGroup.Enabled);
+        fm.ActGroup_Execute();
+        const group = fm.doc.shapeById(a.id).group;
+        this.check("groups: both got an id", group !== "");
+        this.eq("groups: they share it", fm.doc.shapeById(b.id).group, group);
+        this.eq("groups: both are selected", fm.sel.length, 2);
+
+        /* One click on a member selects the whole group, and moving it moves
+         * every member. */
+        fm.select([a.id]);
+        this.eq("groups: a click expands", fm.sel.length, 2);
+        const ax = fm.doc.shapeById(a.id).x;
+        const bx = fm.doc.shapeById(b.id).x;
+        fm.nudge(10, 0);
+        this.eq("groups: moving moves A", fm.doc.shapeById(a.id).x, ax + 10);
+        this.eq("groups: moving moves B", fm.doc.shapeById(b.id).x, bx + 10);
+
+        fm.select([c.id]);
+        this.eq("groups: an outsider is alone", fm.sel.length, 1);
+        this.check("groups: ungroup is disabled",
+                   !fm.ActUngroup.Enabled);
+
+        /* A copy gets a new group id, not the original one. */
+        fm.select([a.id]);
+        fm.ActDuplicate_Execute();
+        const copies = fm.selectedShapes();
+        this.eq("groups: duplicate copies both", copies.length, 2);
+        this.check("groups: the copy has a new id",
+                   copies[0].group !== group && copies[1].group !== group);
+        this.eq("groups: the copy shares its new id",
+                copies[0].group, copies[1].group);
+        fm.ActUndo_Execute();
+
+        fm.select([a.id]);
+        fm.ActUngroup_Execute();
+        this.eq("groups: ungroup clears A", fm.doc.shapeById(a.id).group, "");
+        this.eq("groups: ungroup clears B", fm.doc.shapeById(b.id).group, "");
+        fm.ActUndo_Execute();
+        this.eq("groups: undo restores the id",
+                fm.doc.shapeById(a.id).group, group);
+
+        const round = Diagram.fromJSON(JSON.parse(JSON.stringify(fm.doc.toJSON())));
+        this.eq("groups: the file keeps it", round.shapeById(a.id).group, group);
+
+        /* draw.io groups are the parent cells with style=group. */
+        const imported = DrawioImport.parse(`<mxfile><diagram id="p"><mxGraphModel><root>
+            <mxCell id="0"/><mxCell id="1" parent="0"/>
+            <mxCell id="grp" value="" style="group" vertex="1" parent="1"><mxGeometry x="50" y="50" width="200" height="80" as="geometry"/></mxCell>
+            <mxCell id="a" value="A" vertex="1" parent="grp"><mxGeometry x="0" y="0" width="80" height="40" as="geometry"/></mxCell>
+            <mxCell id="b" value="B" vertex="1" parent="grp"><mxGeometry x="100" y="0" width="80" height="40" as="geometry"/></mxCell>
+        </root></mxGraphModel></diagram></mxfile>`);
+        const importedShapes = imported.diagram.shapes;
+        this.eq("groups: draw.io group is imported",
+                importedShapes[0].group, importedShapes[1].group);
+        this.check("groups: and it has an id", importedShapes[0].group !== "");
+        this.eq("groups: the group offset is applied", importedShapes[0].x, 50);
+    }
+
     confirmDialog() {
         let answer = "";
         let dialog = ConfirmForm.ask("Title", "Message", "Save",
@@ -829,6 +896,7 @@ class TestForm extends Form {
             ActAlignMiddle: ["Execute"], ActAlignBottom: ["Execute"],
             ActDistributeHorizontal: ["Execute"],
             ActDistributeVertical: ["Execute"],
+            ActGroup: ["Execute"], ActUngroup: ["Execute"],
             ActBringFront: ["Execute"], ActSendBack: ["Execute"],
             ActBringForward: ["Execute"], ActSendBackward: ["Execute"],
             ActZoomIn: ["Execute"], ActZoomOut: ["Execute"],

@@ -54,6 +54,10 @@ The window is started with a blank canvas and the shape palette on the left.
 - **Order** — `Edit > Order` and the canvas context menu bring the selection to
   the front or the back, or move it one step forward or backward inside its
   layer.
+- **Groups** — `Ctrl+G` groups the selected shapes; one click then selects the
+  whole group, moving it moves every member, and `Ctrl+Shift+G` ungroups. A
+  group is drawn with one dashed box around its members, copies get a new group
+  id, and the draw.io import keeps its groups.
 - **Alignment** — while a shape is moved or resized, its edges and centre snap
   to the other shapes and a dotted guide shows why. `Edit > Align` lines up a
   selection; `Edit > Distribute` spaces its centres.
@@ -80,6 +84,7 @@ The window is started with a blank canvas and the shape palette on the left.
 | `Ctrl+X` / `Ctrl+C` / `Ctrl+V` / `Ctrl+D` | Cut, copy, paste, duplicate |
 | `Delete` | Delete the selection |
 | `Ctrl+A` | Select all shapes and connectors |
+| `Ctrl+G` / `Ctrl+Shift+G` | Group / ungroup the selection |
 | Arrow keys / `Shift`+arrows | Move the selection 10 / 1 units |
 | `+` / `-` / `0` | Zoom in, zoom out, actual size |
 | Middle drag | Pan |
@@ -105,7 +110,7 @@ One object, two arrays, and numbers in canvas units on an unbounded plane:
         { "id": "l2", "name": "Annotations", "visible": true, "locked": false }
       ],
       "shapes": [
-        { "id": "s1", "kind": "rect", "layer": "l1",
+        { "id": "s1", "kind": "rect", "layer": "l1", "group": "",
           "x": 40, "y": 40, "w": 160, "h": 70,
           "text": "Start", "fill": "#dae8fc", "stroke": "#6c8ebf",
           "strokeWidth": 2, "dash": "solid", "textColor": "#1f2937",
@@ -170,8 +175,8 @@ handler whose control name is misspelled is silently dead.
 ## What it does not do yet
 
 This is a first editor, not a draw.io replacement. Missing, in the order they
-would change what a person can draw: rotation, grouping, custom shape libraries
-and stencils, curved connectors with movable waypoints, images and icons,
+would change what a person can draw: rotation, custom shape libraries and
+stencils, curved connectors with movable waypoints, images and icons,
 system-clipboard interchange with other applications, SVG import/export, and
 collaboration.
 
@@ -179,8 +184,8 @@ The draw.io import is deliberately the basic half: it reads every uncompressed
 page of a file, maps the common shapes by style (`rounded`, `ellipse`,
 `rhombus`, `shape=note`, `shape=terminator`, `shape=parallelogram`,
 `shape=cylinder3`), keeps fill and stroke colours, labels, dashed edges, the
-draw.io layers and the page names. It does not read compressed pages, rotation,
-groups with their own layout or images.
+draw.io layers, the page names and the group membership. It does not read
+compressed pages, rotation, images or a group cell's own label and style.
 There is no autosave and no recovery file; the unsaved-changes question is the
 whole of the safety net.
 
