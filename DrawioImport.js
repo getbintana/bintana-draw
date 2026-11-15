@@ -6,12 +6,12 @@
  * useful half of that onto a `Diagram`: top-level and grouped vertices become
  * our shapes, edges become our connectors, and the label loses its HTML.
  *
- * **The compressed form is not read.** draw.io normally writes the page as raw
- * deflate + base64, which this runtime has no verb for; rather than fail with
- * a parser error, the diagram is refused with the sentence that says how to
- * export it uncompressed. The uncompressed form is the one draw.io calls
- * "XML" (`File > Export as > XML`) and it is also what `Extras > Edit Diagram`
- * shows.
+ * **Both forms are read.** draw.io normally writes a page as raw DEFLATE of
+ * its percent-encoded XML, then Base64; `Zlib` inflates it and the percent
+ * escapes are decoded. The uncompressed form is what draw.io calls "XML"
+ * (`File > Export as > XML`), and it is also what `Extras > Edit Diagram`
+ * shows. A page that is compressed and still cannot be read is refused with a
+ * sentence, rather than a parser error.
  */
 "use strict";
 
@@ -354,12 +354,49 @@ function stylePort(map, xKey, yKey) {
 
 export class DrawioImport {
 
+    /* A compressed page: Base64 over raw DEFLATE (or the zlib wrapper, which
+     * `Graph.compress(data, true)` writes), of the page's percent-encoded XML.
+     * `Zlib` gets it back; `decodeURIComponent` undoes draw.io's escaping. */
+    static inflate(text) {
+        try {
+            /* Base64 carries no whitespace; a hand-wrapped page may still
+             * have some, and `FromBase64` refuses it. */
+            const bytes = Bytes.FromBase64(text.replace(/\s+/g, ""));
+            let xml;
+            try {
+                xml = Zlib.Decompress(bytes, { Raw: true }).ToText();
+            } catch (raw) {
+                xml = Zlib.Decompress(bytes).ToText();
+            }
+            xml = xml.trim();
+            if (xml.indexOf("%3C") === 0 || xml.indexOf("%3c") === 0)
+                xml = decodeURIComponent(xml);
+            return xml.trim();
+        } catch (e) {
+            throw new Error(Locale.Text("This compressed draw.io content could not be read. Export it as uncompressed XML and open that."));
+        }
+    }
+
+    /* The page's `<mxGraphModel>`, inline or compressed inside its `<diagram>`. */
+    static modelOf(diagram) {
+        const model = diagram.Find("mxGraphModel");
+        if (model) return model;
+
+        const text = diagram.Text.trim();
+        if (text === "") return null;
+
+        const document = Xml.Parse(DrawioImport.inflate(text));
+        const root = document.Root;
+        if (!root || root.Name !== "mxGraphModel")
+            throw new Error(Locale.Text("This compressed draw.io page does not hold a diagram."));
+        return root;
+    }
+
     static parse(text) {
         const document = Xml.Parse(text);
         const root = document.Root;
         if (!root) throw new Error(Locale.Text("Not a draw.io diagram."));
 
-        const compressed = Locale.Text("This .drawio file is compressed. In draw.io, use File > Export as > XML and open that file.");
         const pages = [];
         const names = [];
 
@@ -367,31 +404,23 @@ export class DrawioImport {
             pages.push(importModel(root));
             names.push("");
         } else if (root.Name === "diagram") {
-            const model = root.Find("mxGraphModel");
-            if (!model) {
-                if (root.Text.trim() !== "") throw new Error(compressed);
-                pages.push(new Diagram());
-            } else {
-                pages.push(importModel(model));
-            }
+            const model = DrawioImport.modelOf(root);
+            if (model) pages.push(importModel(model));
+            else pages.push(new Diagram());
             names.push(root.Attr("name") || "");
         } else if (root.Name === "mxfile") {
             const diagrams = root.FindAll("diagram");
             if (!diagrams.length) {
                 const model = root.Find("mxGraphModel");
-                if (!model) throw new Error(compressed);
+                if (!model) throw new Error(Locale.Text("Not a draw.io diagram."));
                 pages.push(importModel(model));
                 names.push("");
             } else {
                 for (const diagram of diagrams) {
-                    const model = diagram.Find("mxGraphModel");
+                    const model = DrawioImport.modelOf(diagram);
                     const name = diagram.Attr("name") || "";
-                    if (!model) {
-                        if (diagram.Text.trim() !== "") throw new Error(compressed);
-                        pages.push(new Diagram());
-                    } else {
-                        pages.push(importModel(model));
-                    }
+                    if (model) pages.push(importModel(model));
+                    else pages.push(new Diagram());
                     names.push(name);
                 }
             }

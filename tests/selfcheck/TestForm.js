@@ -386,12 +386,27 @@ class TestForm extends Form {
                 parsed.diagram.shapeById(parsed.diagram.edges[1].from).kind,
                 "diamond");
 
-        /* A page without a model is the compressed form. */
+        /* A page without a model is the compressed form: Base64 over raw
+         * DEFLATE of the percent-encoded XML, which is what draw.io writes. */
+        const packed = `<mxfile><diagram id="p" name="Packed">vZJBDsIgEEVPM3sKceEatStXngBlUppAIYBKby8pxNpoExfGBcnM/8yfvGSAcZNaL5w6Woka2B4Y99bGUpnEUWugpJfAdkApyQ/oYcVtJpc44XGI3wyIMnAT+opF4dY4jyGgrBb6iGk1fpJqdovWYPRj/pJel5Nx0d17GVVRtlVS2HeqJm6qJkLpu2fqzJGLivIZ6/yGdcKLHX6B1PwLKrfzHUze4kwe</diagram></mxfile>`;
+        const unpacked = DrawioImport.parse(packed);
+        this.eq("draw.io: a compressed page is read", unpacked.pages, 1);
+        this.eq("draw.io: its shapes came through", unpacked.diagram.shapes.length, 2);
+        this.eq("draw.io: its label came through",
+                unpacked.diagram.shapes[0].text, "Compressed");
+        this.eq("draw.io: its page name came through", unpacked.names[0], "Packed");
+
+        /* `Graph.compress(data, true)` writes the zlib wrapper instead. */
+        const zpacked = `<mxfile><diagram id="z">eJy9kkEOwiAQRU8zezrEhWu0XbnyBCiT0gRKQ7HS25sAsTbaxIVxx7yf+eQlA1zY2Hg56JNTZIAfgQvvXMgvGwUZA8g6BfwAiAwQAeuNtEopG6SnPnyzIPPCJM2NMhHODp7GkVSJyAeKm/UJle6GnKXgZ0AWXz9n82q6dyroTPYFaepaXRp3hckxz+2zdfEArIvKZ63Lm9aZrq7/hVL1LynAermDlK3O5AGscpje</diagram></mxfile>`;
+        this.eq("draw.io: a zlib-framed page is read too",
+                DrawioImport.parse(zpacked).diagram.shapes.length, 2);
+
+        /* What is not compressed and not Base64 is still refused, and says so. */
         let compressed = false;
         try {
             DrawioImport.parse(`<mxfile><diagram id="p">N4IgZgLg5gLgpgAgA==</diagram></mxfile>`);
-        } catch (e) { compressed = true; }
-        this.check("a compressed draw.io page is refused", compressed);
+        } catch (e) { compressed = e.message.indexOf("compressed") >= 0; }
+        this.check("a damaged compressed page is refused", compressed);
 
         /* Two pages: the first one is imported and the count is reported. */
         const twoPages = `<mxfile>
@@ -1477,6 +1492,16 @@ class TestForm extends Form {
         this.eq("library: with its title", stencil[0].name, "Stencil");
         this.eq("library: and its shape", stencil[0].shapes.length, 1);
         File.Delete(mx);
+
+        /* An entry too large for inline XML is Base64 over raw DEFLATE of the
+         * percent-encoded XML -- what draw.io writes. */
+        const mxPacked = File.Join(Application.Directory, "test-packed.mxlibrary");
+        File.Save(mxPacked, '<mxlibrary>[{"title":"Packed","xml":"jZBBDsIgEEVPM3sEF+5RuzLxChOZFCJIQ7HS20sArV00cUEy/33mwwwI6VIXcNAXr8iCOIGQwftYK5ckWQucGQXiCJyzfICfN9xdcdmAgR7xnwasDRPaJ1VyxdudVGZjRDc0m0KktPlEQS2/I+8ohjlfSb8fYPNKvYyKupJDQ5pMr1vivjEcq+6/qcssuWjjfOSytuKttvoG"}]</mxlibrary>');
+        const packedItems = importLibrary(mxPacked);
+        this.eq("library: a compressed mxlibrary imports", packedItems.length, 1);
+        this.eq("library: with its title", packedItems[0].name, "Packed");
+        this.eq("library: and its shape", packedItems[0].shapes.length, 1);
+        File.Delete(mxPacked);
 
         const dio = File.Join(Application.Directory, "test.drawio");
         File.Save(dio, '<mxfile><diagram><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/><mxCell id="a" value="Imported" vertex="1" parent="1"><mxGeometry x="0" y="0" width="90" height="50" as="geometry"/></mxCell></root></mxGraphModel></diagram></mxfile>');

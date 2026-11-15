@@ -27,8 +27,9 @@ BINTANA=/path/to/build/bintana tests/run.sh
   fetch. AWS, Azure and GCP are absent on purpose.
 - `StencilsForm.*` — the downloader's modal form: a `TreeView` grouped by
   category, a filter over names and shape words, and its `HttpClient` part.
-- `DrawioImport.js` — an uncompressed draw.io file mapped onto a `Diagram`.
-  Compressed pages are refused on purpose; there is no deflate verb here.
+- `DrawioImport.js` — a draw.io file mapped onto a `Diagram`, compressed pages
+  included: `Zlib.Decompress(..., { Raw: true })` over the Base64, then the
+  percent escapes draw.io puts around the XML.
 - `Render.js` — the only painter code. The screen and the export are the same
   routine with different transforms.
 - `MainForm.js` — the tool, the selection, the gesture, the file and the undo

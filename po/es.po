@@ -515,8 +515,8 @@ msgstr "Vacío"
 msgid "Item"
 msgstr "Elemento"
 
-msgid "This stencil is compressed. Export it as uncompressed XML and import that."
-msgstr "Este esténcil está comprimido. Exportalo como XML sin comprimir e importá ese archivo."
+msgid "This stencil is compressed and could not be read. Export it as uncompressed XML and import that."
+msgstr "Este esténcil está comprimido y no se pudo leer. Exportalo como XML sin comprimir e importá ese archivo."
 
 msgid "Stencil"
 msgstr "Esténcil"
@@ -782,8 +782,11 @@ msgstr "Enviar atrás"
 msgid "Not a draw.io diagram."
 msgstr "No es un diagrama de draw.io."
 
-msgid "This .drawio file is compressed. In draw.io, use File > Export as > XML and open that file."
-msgstr "Este archivo .drawio está comprimido. En draw.io usá Archivo > Exportar como > XML y abrí ese archivo."
+msgid "This compressed draw.io content could not be read. Export it as uncompressed XML and open that."
+msgstr "Este contenido comprimido de draw.io no se pudo leer. Exportalo como XML sin comprimir y abrí ese archivo."
+
+msgid "This compressed draw.io page does not hold a diagram."
+msgstr "Esta página comprimida de draw.io no contiene un diagrama."
 
 msgid "Imported {0}"
 msgstr "Importado {0}"

@@ -44,9 +44,10 @@ The window is started with a blank canvas and the shape palette on the left.
   and deletes it. The list groups stamps by where they came from — **My
   shapes**, an imported file or a downloaded set — and filters by name. The
   library lives in the application's config directory and can be exported as
-  `.btlib`. **Import** accepts a `.btlib`, a `.draw`, an uncompressed
-  `.drawio`/XML diagram, a draw.io stencil set (`<shapes>`), or a draw.io
-  `.mxlibrary` with uncompressed `xml` entries. Stencil geometry is kept as
+  `.btlib`. **Import** accepts a `.btlib`, a `.draw`, a `.drawio`/XML diagram
+  (compressed pages included), a draw.io stencil set (`<shapes>`), or a
+  draw.io `.mxlibrary` whose `xml` entries are inline or compressed. Stencil
+  geometry is kept as
   vector paths, so the imported shapes resize without a picture. **Get
   stencils…** downloads a curated set into the library, grouped by category
   and filtered by name or shape word, with its license shown before the
@@ -108,10 +109,9 @@ The window is started with a blank canvas and the shape palette on the left.
 - **View** — zoom in and out from the toolbar or with `+`/`-`, fit the diagram,
   pan with the middle button, scroll with the wheel, and toggle the grid from
   the View menu.
-- **Files** — `.draw` is JSON, written atomically. An uncompressed draw.io
-  file (`.drawio` or XML) can be imported and saved as a `.draw`; compressed
-  draw.io pages are refused with the sentence that says how to re-export them
-  as XML. The application asks before throwing unsaved work away; a diagram
+- **Files** — `.draw` is JSON, written atomically. A draw.io file (`.drawio`
+  or XML) can be imported, compressed pages included, and saved as a `.draw`.
+  The application asks before throwing unsaved work away; a diagram
   dropped on the window opens. Export is PNG (at twice the diagram's size) or
   A4 landscape PDF.
 - **Spanish** — the whole interface is in `po/es.po`; run it with
@@ -189,7 +189,7 @@ Stencil.js       draw.io stencil sets, read as vector library items
 StencilCatalog.js what the stencil downloader may offer, and its terms
 StencilsForm.*   the downloader's window: set, license, one request
 Library.js       saved stamps, their insertion and every library importer
-DrawioImport.js  an uncompressed draw.io diagram mapped onto a page
+DrawioImport.js  a draw.io diagram, compressed or not, mapped onto a page
 Render.js        the canvas and the export, as one painter routine
 MainForm.form    the window: menus, toolbar, palette, canvas, status bar
 MainForm.js      the hand: tool, selection, gesture, file, undo
@@ -234,15 +234,15 @@ without carrying its XML, library thumbnails, AWS/Azure/GCP icon libraries,
 system-clipboard interchange with other applications, SVG import/export, and
 collaboration.
 
-The draw.io import is deliberately the basic half: it reads every uncompressed
-page of a file, maps the common shapes by style (`rounded`, `ellipse`,
+The draw.io import is deliberately the basic half: it reads every page of a
+file, compressed or not, maps the common shapes by style (`rounded`, `ellipse`,
 `rhombus`, `shape=note`, `shape=terminator`, `shape=parallelogram`,
 `shape=cylinder3`), keeps fill and stroke colours, labels, dashed edges, the
 draw.io layers, the page names, the group membership and image cells whose
 pixels are inline as base64. Stencil sets are imported into the library; a
 diagram that only names `shape=mxgraph...` is not resolved, because the file
-carries no geometry for it. It does not read compressed pages, rotation, images
-referred to by a path or URL, or a group cell's own label and style.
+carries no geometry for it. It does not read rotation, images referred to by a
+path or URL, or a group cell's own label and style.
 There is no autosave and no recovery file; the unsaved-changes question is the
 whole of the safety net.
 

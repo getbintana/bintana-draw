@@ -293,10 +293,17 @@ function entriesFromStencil(root) {
         const title = entry.title || "";
         let xml = entry.xml || "";
         if (!xml) continue;
-        if (xml.indexOf("%3C") === 0 || xml.indexOf("%3c") === 0)
+        if (xml.indexOf("%3C") === 0 || xml.indexOf("%3c") === 0) {
             xml = decodeURIComponent(xml);
-        if (xml.charAt(0) !== "<")
-            throw new Error(Locale.Text("This stencil is compressed. Export it as uncompressed XML and import that."));
+        } else if (xml.charAt(0) !== "<") {
+            /* Base64 over raw DEFLATE, which is what draw.io writes for a
+             * stencil too large to keep as inline XML. */
+            try {
+                xml = DrawioImport.inflate(xml);
+            } catch (e) {
+                throw new Error(Locale.Text("This stencil is compressed and could not be read. Export it as uncompressed XML and import that."));
+            }
+        }
         const document = Xml.Parse(xml);
         if (document.Root && (document.Root.Name === "shape" ||
                               document.Root.Name === "shapes")) {
