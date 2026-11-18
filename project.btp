@@ -1,5 +1,5 @@
 {
-  "name": "bintana-draw",
+  "name": "Bintana Draw",
   "id": "io.github.getbintana.Draw",
   "startup": "MainForm",
   "sources": [
